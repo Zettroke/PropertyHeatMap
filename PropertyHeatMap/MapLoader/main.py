@@ -2,11 +2,11 @@ from multiprocessing import Process
 import requests
 import math
 
-# from 10 to 16 zoom
+# from 10 to 17 zoom
 UPDATE = False
 PROC_NUM = 16
 
-map_folder = "map/"
+map_folder = "C:/PropertyHeatMap/map/"
 
 zoom_start = 10
 zoom_end = 17
