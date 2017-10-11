@@ -60,10 +60,9 @@ class MapApp(Canvas):
                     canv_img = self.create_image((1+x)*256, (1+y)*256, image=self.miss_photo, anchor=NW)
                     self.image_list[-1].append([canv_img, self.miss_photo])
 
-    def update_tiles(self, prev_pos):
-        new_pos = (self.map_x//256, self.map_y//256)
+    def update_tiles(self, prev_pos, new_pos):
+        
         if prev_pos[0] < new_pos[0]:
-            print(":dsadas")
             new_list = []
             for x in range(1, self.total_canv_size[0]//256):
                 new_list.append([])
@@ -73,11 +72,11 @@ class MapApp(Canvas):
             new_list.append([])
             for y in range(self.total_canv_size[1]//256):
                 self.move(self.image_list[0][y][0], self.total_canv_size[0]-256, 0)
-                if 0 <= self.total_canv_size[0]//256+self.map_x//256-2 < self.res[0] and 0 <= self.map_y//256+y-1 < self.res[1]:
+                if 0 <= self.total_canv_size[0]//256+new_pos[0]-2 < self.res[0] and 0 <= new_pos[1]+y-1 < self.res[1]:
                     self.image_list[0][y][1] = ImageTk.PhotoImage(Image.open(
                         self.map_folder + "z{}/{}.{}.png".format(self.zoom,
-                                                                 self.total_canv_size[0]//256+self.map_x//256-2,
-                                                                 self.map_y//256+y-1)))
+                                                                 self.total_canv_size[0]//256+new_pos[0]-2,
+                                                                 new_pos[1]+y-1)))
                 else:
                     self.image_list[0][y][1] = self.miss_photo
                 self.itemconfigure(self.image_list[0][y][0], image=self.image_list[0][y][1])
@@ -93,11 +92,11 @@ class MapApp(Canvas):
                     new_list[-1].append(self.image_list[x][y])
             for y in range(self.total_canv_size[1] // 256):
                 self.move(self.image_list[-1][y][0], -(self.total_canv_size[0] - 256), 0)
-                if 0 <= self.map_x // 256 - 1 < self.res[0] and 0 <= self.map_y // 256 + y - 1 < self.res[1]:
+                if 0 <= new_pos[0] - 1 < self.res[0] and 0 <= new_pos[1] + y - 1 < self.res[1]:
                     self.image_list[-1][y][1] = ImageTk.PhotoImage(Image.open(
                         self.map_folder + "z{}/{}.{}.png".format(self.zoom,
-                                                                 self.map_x // 256-1,
-                                                                 self.map_y // 256 + y - 1)))
+                                                                 new_pos[0]-1,
+                                                                 new_pos[1] + y - 1)))
                 else:
                     self.image_list[-1][y][1] = self.miss_photo
                 self.itemconfigure(self.image_list[-1][y][0], image=self.image_list[-1][y][1])
@@ -105,7 +104,6 @@ class MapApp(Canvas):
             self.image_list = new_list
 
         if prev_pos[1] < new_pos[1]:
-            print(":xzxczx")
             new_list = []
             for x in range(self.total_canv_size[0] // 256):
                 new_list.append([])
@@ -115,12 +113,12 @@ class MapApp(Canvas):
 
             for x in range(self.total_canv_size[0] // 256):
                 self.move(self.image_list[x][0][0], 0, self.total_canv_size[1] - 256)
-                if 0 <= x + self.map_x // 256 - 1 < self.res[0] and 0 <= self.total_canv_size[1] // 256 + self.map_y // 256 - 2 < self.res[1]:
+                if 0 <= x + new_pos[0] - 1 < self.res[0] and 0 <= self.total_canv_size[1] // 256 + new_pos[1] - 2 < self.res[1]:
 
                     self.image_list[x][0][1] = ImageTk.PhotoImage(Image.open(
                         self.map_folder + "z{}/{}.{}.png".format(self.zoom,
-                                                                 x + self.map_x // 256 - 1,
-                                                                 self.total_canv_size[1] // 256 + self.map_y // 256 - 2)))
+                                                                 x + new_pos[0] - 1,
+                                                                 self.total_canv_size[1] // 256 + new_pos[1] - 2)))
                 else:
                     self.image_list[x][0][1] = self.miss_photo
                 self.itemconfigure(self.image_list[x][0][0], image=self.image_list[x][0][1])
@@ -136,12 +134,12 @@ class MapApp(Canvas):
 
             for x in range(self.total_canv_size[0] // 256):
                 self.move(self.image_list[x][-1][0], 0, -(self.total_canv_size[1] - 256))
-                if 0 <= x + self.map_x // 256 - 1 < self.res[0] and 0 <= self.map_y // 256 - 1 < self.res[1]:
+                if 0 <= x + new_pos[0] - 1 < self.res[0] and 0 <= new_pos[1] - 1 < self.res[1]:
 
                     self.image_list[x][-1][1] = ImageTk.PhotoImage(Image.open(
                         self.map_folder + "z{}/{}.{}.png".format(self.zoom,
-                                                                 x + self.map_x // 256 - 1,
-                                                                 self.map_y // 256 - 1)))
+                                                                 x + new_pos[0] - 1,
+                                                                 new_pos[1] - 1)))
                 else:
                     self.image_list[x][-1][1] = self.miss_photo
                 self.itemconfigure(self.image_list[x][-1][0], image=self.image_list[x][-1][1])
@@ -223,8 +221,22 @@ class MapApp(Canvas):
         self.map_x += x
         self.map_y += y
         if (self.map_x-x)//256 != self.map_x // 256 or (self.map_y-y)//256 != self.map_y // 256:
-            self.update_tiles(((self.map_x-x)//256, (self.map_y-y)//256))
-            print("Update")
+            if x >= 256 or y >= 256:
+                print("too fast, split updates")
+                '''x_temp = x
+                y_temp = y
+                x2 = 0
+                y2 = 0
+                while x2 != x and y2 != y:
+                    x1, y1 = x2, y2
+                    x2 += min(x_temp, 255)
+                    y2 += min(y_temp, 255)
+                    x_temp -= min(x_temp, 255)
+                    y_temp -= min(y_temp, 255)
+                    self.update_tiles(((self.map_x-x)//256+x1, (self.map_y-y)//256+y1), ((self.map_x-x)//256+x2, (self.map_y-y)//256+y2))'''
+                    
+            else:
+                self.update_tiles(((self.map_x-x)//256, (self.map_y-y)//256), (self.map_x//256, self.map_y//256))
 
 
         # viewport pos is map_pos % 256
