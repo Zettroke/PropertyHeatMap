@@ -2,7 +2,8 @@ from tkinter import Tk, Canvas, NW, ALL
 from PIL import Image, ImageTk
 import time
 from threading import Thread
-from math import copysign, ceil
+import math
+import os
 
 
 class MapApp(Canvas):
@@ -11,8 +12,15 @@ class MapApp(Canvas):
         self.root = root
         self.miss_photo = ImageTk.PhotoImage(Image.open("miss.png"))
 
-        self.zoom = 13
         self.map_folder = "map/"
+
+        self.min_zoom = 9999
+        self.max_zoom = 0
+        for i in os.listdir(self.map_folder):
+            self.min_zoom = min(self.min_zoom, int(i[1:]))
+            self.max_zoom = max(self.max_zoom, int(i[1:]))
+
+        self.zoom = self.min_zoom
 
         self.map_x = 0
         self.map_y = 0
@@ -41,6 +49,7 @@ class MapApp(Canvas):
         self.bind("<Button-1>", self.mouse_press)
         self.bind("<B1-Motion>", self.mouse_move)
         self.bind("<ButtonRelease-1>", self.mouse_release)
+        self.bind("<MouseWheel>", self.zoom_map)
 
     def load_tiles(self, event=None):
         self.delete(ALL)
@@ -178,8 +187,8 @@ class MapApp(Canvas):
                 break
             new_x = round(self.map_x + x_speed)
             new_y = round(self.map_y + y_speed)
-            x_speed = copysign(max(0, abs(x_speed)-self.kinetic_slow), x_speed)
-            y_speed = copysign(max(0, abs(y_speed)-self.kinetic_slow), y_speed)
+            x_speed = math.copysign(max(0, abs(x_speed)-self.kinetic_slow), x_speed)
+            y_speed = math.copysign(max(0, abs(y_speed)-self.kinetic_slow), y_speed)
 
             self.after_idle(self.move_viewport, new_x-self.map_x, new_y-self.map_y)
             # self.move_viewport(new_x-self.map_x, new_y-self.map_y)
@@ -241,8 +250,18 @@ class MapApp(Canvas):
 
         # viewport pos is map_pos % 256
 
+    def zoom_map(self, event):
 
-
+        if not (self.zoom == self.max_zoom and event.delta > 0) and not (self.zoom == self.min_zoom and event.delta < 0):
+            self.kinetic_thread_running = False
+            self.zoom += event.delta//abs(event.delta)
+            if event.delta // abs(event.delta) > 0:
+                self.map_x *= 2
+                self.map_y *= 2
+            else:
+                self.map_x //= 2
+                self.map_y //= 2
+            self.load_tiles()
 
 root = Tk()
 root.geometry("1024x768")
