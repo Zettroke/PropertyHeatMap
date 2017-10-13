@@ -13,6 +13,7 @@ class MapApp(Canvas):
         self.miss_photo = ImageTk.PhotoImage(Image.open("miss.png"))
 
         self.map_folder = "map/"
+        self.map_folder = "C:/PropertyHeatMap/map/"
 
         self.min_zoom = 9999
         self.max_zoom = 0
@@ -27,6 +28,7 @@ class MapApp(Canvas):
         self.res = (0, 0)
 
         self.image_list = []
+        self.image_canvas_list = []
 
         self.kinetic_thread_running = True
         self.kinetic_slow = 0.2  # px per 0.001sec
@@ -40,8 +42,8 @@ class MapApp(Canvas):
         self.prev_win_x_size, self.prev_win_y_size = 0, 0
         super().__init__(root, **kwargs)
         self.place(x=0, y=0)
-        canv_x_size = ((self.root.winfo_width() - 1) // 256 + 7) * 256
-        canv_y_size = ((self.root.winfo_height() - 1) // 256 + 7) * 256
+        canv_x_size = ((self.root.winfo_width() - 1) // 256 + 3) * 256
+        canv_y_size = ((self.root.winfo_height() - 1) // 256 + 3) * 256
         self.total_canv_size = (canv_x_size, canv_y_size)
         self.configure(scrollregion=(0, 0, canv_x_size, canv_y_size))
         self.root.after(10, self.move_viewport, 0, 0)
@@ -68,9 +70,13 @@ class MapApp(Canvas):
                 else:
                     canv_img = self.create_image((1+x)*256, (1+y)*256, image=self.miss_photo, anchor=NW)
                     self.image_list[-1].append([canv_img, self.miss_photo])
+        for x in range(0, self.total_canv_size[0], 256):
+            self.create_line(x, 0, x, self.total_canv_size[1])
+        for y in range(0, self.total_canv_size[1], 256):
+            self.create_line(0, y, self.total_canv_size[0], y)
 
-    def update_tiles(self, prev_pos, new_pos):
-        
+    '''def update_tiles(self, prev_pos, new_pos):
+
         if prev_pos[0] < new_pos[0]:
             new_list = []
             for x in range(1, self.total_canv_size[0]//256):
@@ -154,7 +160,7 @@ class MapApp(Canvas):
                 self.itemconfigure(self.image_list[x][-1][0], image=self.image_list[x][-1][1])
                 new_list[x][0] = self.image_list[x][-1]
             self.image_list = new_list
-
+'''
     def c_on_resize(self, event):
         if root.winfo_width() != self.prev_win_x_size or root.winfo_height() != self.prev_win_y_size:
             print("resize!")
@@ -221,47 +227,53 @@ class MapApp(Canvas):
         Thread(target=self.kinetic_move).start()
 
     def move_viewport(self, x, y):
+        print(self.map_x, self.map_y)
         # relative
         # print(self.map_x, self.map_y)
         pos_x = 256+(self.map_x+x) % 256
         pos_y = 256+(self.map_y+y) % 256
-        self.xview_moveto(min(max(pos_x / self.total_canv_size[0], 0), 1))
-        self.yview_moveto(min(max(pos_y / self.total_canv_size[1], 0), 1))
+        self.xview_moveto(pos_x / self.total_canv_size[0])
+        self.yview_moveto(pos_y / self.total_canv_size[1])
         self.map_x += x
         self.map_y += y
         if (self.map_x-x)//256 != self.map_x // 256 or (self.map_y-y)//256 != self.map_y // 256:
-            if x >= 256 or y >= 256:
-                print("too fast, split updates")
-                '''x_temp = x
-                y_temp = y
-                x2 = 0
-                y2 = 0
-                while x2 != x and y2 != y:
-                    x1, y1 = x2, y2
-                    x2 += min(x_temp, 255)
-                    y2 += min(y_temp, 255)
-                    x_temp -= min(x_temp, 255)
-                    y_temp -= min(y_temp, 255)
-                    self.update_tiles(((self.map_x-x)//256+x1, (self.map_y-y)//256+y1), ((self.map_x-x)//256+x2, (self.map_y-y)//256+y2))'''
-                    
-            else:
-                self.update_tiles(((self.map_x-x)//256, (self.map_y-y)//256), (self.map_x//256, self.map_y//256))
+
+
+            '''x_temp = x
+            y_temp = y
+            x2 = 0
+            y2 = 0
+            while x2 != x and y2 != y:
+                x1, y1 = x2, y2
+                x2 += min(x_temp, 255)
+                y2 += min(y_temp, 255)
+                x_temp -= min(x_temp, 255)
+                y_temp -= min(y_temp, 255)
+                self.update_tiles(((self.map_x-x)//256+x1, (self.map_y-y)//256+y1), ((self.map_x-x)//256+x2, (self.map_y-y)//256+y2))'''
+
+            # self.update_tiles(((self.map_x-x)//256, (self.map_y-y)//256), (self.map_x//256, self.map_y//256))
+            self.load_tiles()
 
 
         # viewport pos is map_pos % 256
 
     def zoom_map(self, event):
-
         if not (self.zoom == self.max_zoom and event.delta > 0) and not (self.zoom == self.min_zoom and event.delta < 0):
             self.kinetic_thread_running = False
             self.zoom += event.delta//abs(event.delta)
             if event.delta // abs(event.delta) > 0:
-                self.map_x *= 2
-                self.map_y *= 2
+                self.map_x = self.map_x*2+event.x
+                self.map_y = self.map_y*2+event.y
             else:
-                self.map_x //= 2
-                self.map_y //= 2
+                self.map_x = self.map_x//2-event.x//2
+                self.map_y = self.map_y//2-event.y//2
+            pos_x = 256 + self.map_x % 256
+            pos_y = 256 + self.map_y % 256
+            self.xview_moveto(pos_x / self.total_canv_size[0])
+            self.yview_moveto(pos_y / self.total_canv_size[1])
             self.load_tiles()
+            print(self.map_x, self.map_y)
+
 
 root = Tk()
 root.geometry("1024x768")
