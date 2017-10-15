@@ -4,11 +4,11 @@ import math
 
 # from 10 to 17 zoom
 UPDATE = False
-PROC_NUM = 16
+PROC_NUM = 1
 
 map_folder = "C:/PropertyHeatMap/map/"
 
-zoom_start = 10
+zoom_start = 9
 zoom_end = 17
 
 
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     end_y = 55.379
     bounds = [start_x, start_y, end_x, end_y]
 
-    servers = ["vec01", "vec02", "vec03", "vec04"]*(PROC_NUM//4)
+    servers = ["vec01", "vec02", "vec03", "vec04"]*max((PROC_NUM//4), 1)
     import os
     exclude = []
     for i in range(zoom_start, zoom_end+1):

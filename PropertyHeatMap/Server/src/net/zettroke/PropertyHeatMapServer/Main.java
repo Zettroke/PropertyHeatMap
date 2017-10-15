@@ -1,4 +1,4 @@
-package net.zettroke.phmServer;
+package net.zettroke.PropertyHeatMapServer;
 
 public class Main {
 
