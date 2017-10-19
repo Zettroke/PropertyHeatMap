@@ -1,13 +1,8 @@
 package net.zettroke.PropertyHeatMapServer;
 
-import javafx.util.Pair;
-import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
 
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamReader;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,65 +11,91 @@ import java.util.HashMap;
  * Created by Olleggerr on 15.10.2017.
  */
 public class PropertyMapLoaderOSM implements PropertyMapLoader{
+    private boolean dataLoad = false;
     private HashMap<Long, Node> nodes = new HashMap<>();
-    private ArrayList<Way> ways = new ArrayList<>();
+    private HashMap<Long, Way> ways = new HashMap<>();
+    private HashMap<Long, Relation> relations = new HashMap<>();
     private String name;
-
-    class OSMhandler extends DefaultHandler{
-        Node tempNode;
-        Way tempWay;
-        @Override
-        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-            switch (qName) {
-                case "node":
-                    Long id = Long.decode(attributes.getValue(0));
-                    tempNode = new Node();
-                    tempNode.id = id;
-                    break;
-                case "way":
-                    tempWay = new Way();
-                case "tag":
-                    if (tempNode != null) {
-                        tempNode.data.put(attributes.getValue(0), attributes.getValue(1));
-                    }else if (tempWay != null){
-                        tempWay.data.put(attributes.getValue(0), attributes.getValue(1));
-                    }
-                    break;
-                case "nd":
-
-                    tempWay.nodes.add(nodes.get(Long.decode(attributes.getValue(0))));
-
-                    break;
-
-
-            }
-        }
-
-        @Override
-        public void endElement(String uri, String localName, String qName) throws SAXException {
-            switch (qName){
-                case "node":
-                    nodes.put(tempNode.id, tempNode);
-                    tempNode = null;
-                    break;
-                case "way":
-                    ways.add(tempWay);
-                    tempWay = null;
-
-            }
-        }
-    }
-
 
     @Override
     public void load() {
+
         try {
-            SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
-            // parser.getXMLReader().setContentHandler(new OSMhandler());
-            parser.parse(new FileInputStream(name), new OSMhandler());
+            XMLStreamReader streamReader = XMLInputFactory.newInstance().createXMLStreamReader(new FileInputStream(name));
+
+            Node tempNode = null;
+            Way tempWay = null;
+            Relation tempRelation = null;
+            while (streamReader.hasNext()) {
+                if (streamReader.hasName()) {
+                    if (streamReader.isStartElement()) {
+                        switch (streamReader.getLocalName()) {
+
+                            case "node":
+                                tempNode = new Node();
+                                tempNode.id = Long.decode(streamReader.getAttributeValue(0));
+                                break;
+                            case "way":
+                                tempWay = new Way();
+                                tempWay.id = Long.decode(streamReader.getAttributeValue(0));
+                                break;
+                            case "tag":
+                                if (tempNode != null) {
+                                    tempNode.data.put(streamReader.getAttributeValue(0), streamReader.getAttributeValue(1));
+                                } else if (tempWay != null) {
+                                    tempWay.data.put(streamReader.getAttributeValue(0), streamReader.getAttributeValue(1));
+                                } else if (tempRelation != null) {
+                                    tempRelation.data.put(streamReader.getAttributeValue(0), streamReader.getAttributeValue(1));
+                                }
+                                break;
+                            case "nd":
+                                tempWay.nodes.add(nodes.get(Long.decode(streamReader.getAttributeValue(0))));
+                                break;
+                            case "relation":
+                                tempRelation = new Relation();
+                                tempRelation.id = Long.decode(streamReader.getAttributeValue(0));
+                                break;
+                            case "member":
+                                long id = Long.decode(streamReader.getAttributeValue(1));
+                                switch (streamReader.getAttributeValue(0)) {
+                                    case "node":
+                                        tempRelation.nodes.add(nodes.get(id));
+                                        break;
+                                    case "way":
+                                        tempRelation.ways.add(ways.get(id));
+                                        break;
+                                    case "relation":
+                                        tempRelation.relations.add(relations.get(id));
+                                        break;
+                                }
+                                break;
+                        }
+                    } else {
+                        switch (streamReader.getLocalName()) {
+                            case "node":
+                                nodes.put(tempNode.id, tempNode);
+                                tempNode = null;
+                                break;
+                            case "way":
+                                ways.put(tempWay.id, tempWay);
+                                tempWay = null;
+                                break;
+                            case "relation":
+                                relations.put(tempRelation.id, tempRelation);
+                                tempRelation = null;
+                                break;
+                        }
+                    }
+                }
+                streamReader.next();
+            }
 
             System.out.println(nodes.size());
             System.out.println(ways.size());
+            System.out.println(relations.size());
+            streamReader.close();
+            dataLoad = true;
+
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -83,20 +104,26 @@ public class PropertyMapLoaderOSM implements PropertyMapLoader{
 
     @Override
     public ArrayList<Node> getNodes() {
-        return null;
+        ArrayList<Node> nds = new ArrayList<>(nodes.values());
+        nodes = null;
+        return nds;
     }
 
     @Override
     public ArrayList<Way> getWays() {
-        return null;
+        ArrayList<Way> wys = new ArrayList<>(ways.values());
+        ways = null;
+        return wys;
     }
 
     @Override
     public ArrayList<Relation> getRelations() {
-        return null;
+        ArrayList<Relation> rlt = new ArrayList<>(relations.values());
+        relations = null;
+        return rlt;
     }
 
-    public PropertyMapLoaderOSM(String name){
+    PropertyMapLoaderOSM(String name){
         this.name = name;
     }
 }

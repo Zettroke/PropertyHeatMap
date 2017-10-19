@@ -12,16 +12,6 @@ public class PropertyMap {
 
 }
 
-class QuadTree{
-    class TreeNode{
-        boolean isFinal;
-        int[] bounds;
-        ArrayList<MapPolygon> polys;
-        ArrayList<Node> node;
-        ArrayList<Road> roads;
-
-    }
-}
 
 class MapPoint{
     double x, y;
