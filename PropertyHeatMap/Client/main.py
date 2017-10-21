@@ -56,8 +56,8 @@ class MapApp(Canvas):
         self.prev_win_x_size, self.prev_win_y_size = 0, 0
         super().__init__(root, **kwargs)
         self.place(x=0, y=0)
-        canv_x_size = (self.root.winfo_width() // 256 + 3) * 256
-        canv_y_size = (self.root.winfo_height() // 256 + 3) * 256
+        canv_x_size = (self.root.winfo_width() // 256 + 1) * 256
+        canv_y_size = (self.root.winfo_height() // 256 + 1) * 256
         self.total_canv_size = (canv_x_size, canv_y_size)
         self.configure(scrollregion=(0, 0, canv_x_size, canv_y_size))
         self.root.after(10, self.move_viewport, 0, 0)
@@ -67,13 +67,15 @@ class MapApp(Canvas):
         self.bind("<ButtonRelease-1>", self.mouse_release)
         self.bind("<MouseWheel>", self.zoom_map)
 
+        # root.bind("<Delete>", self.clear_image_dict)
+        self.clear_image_dict()
+
         root.bind("<Configure>", self.c_on_resize)
         root.bind("<Return>", self.load_tiles)
 
         self.tile_loader_lock = Lock()
         Thread(target=self.tile_loader, daemon=True).start()
 
-    # (frag_x, frag_y) : ((x, y), canv_image, photo_image)
     def load_tiles(self, event=None):
         # print(len(self.image_dict))
         while not self.image_load_queue.empty():
@@ -107,12 +109,14 @@ class MapApp(Canvas):
                     self.image_dict[(offx + x, offy + y)] = [(1 + x, 1 + y), canv, self.miss_photo]
                     if 0 <= offx + x < self.res[0] and 0 <= offy + y < self.res[1]:
                         self.image_load_queue.put_nowait(((self.total_canv_size[0]//512 - (x+1))**2 + (self.total_canv_size[1]//512 - (y+1))**2, (canv, offx + x, offy + y)))
-
+        '''offx, offy = self.map_x // 256, self.map_y // 256
         k = set(self.image_dict.keys())
         for i in k:
-            if not offx-5 <= i[0] <= offx + self.total_canv_size[0] // 256+3 or not offy -5 <= i[1] <= offy + self.total_canv_size[1] // 256+3:
+            if not offx - 5 <= i[0] <= offx + self.total_canv_size[0] // 256 + 3 or not offy - 5 <= i[1] <= offy + \
+                            self.total_canv_size[1] // 256 + 3:
                 self.delete(self.image_dict[i][1])
-                del self.image_dict[i]
+                # del self.image_dict[i]
+                self.image_dict.__delitem__(i)'''
 
     def tile_loader(self):
         while True:
@@ -132,6 +136,7 @@ class MapApp(Canvas):
             self.create_line(x, 0, x, self.total_canv_size[1])
         for y in range(0, self.total_canv_size[1], 256):
             self.create_line(0, y, self.total_canv_size[0], y)
+
     '''def update_tiles(self, prev_pos, new_pos):
 
         if prev_pos[0] < new_pos[0]:
@@ -263,6 +268,7 @@ class MapApp(Canvas):
         self.mouse_pos_y = event.y
         self.move_event = event
         self.kinetic_run = True
+        # self.clear_image_dict()
         self.kinetic()
         self.movement.clear()
 
@@ -295,6 +301,7 @@ class MapApp(Canvas):
         if not (self.zoom == self.max_zoom and event.delta > 0) and not (self.zoom == self.min_zoom and event.delta < 0):
             self.kinetic_thread_running = False
             self.zoom += event.delta//abs(event.delta)
+            print(self.zoom)
             if event.delta // abs(event.delta) > 0:
                 self.map_x = self.map_x*2+event.x
                 self.map_y = self.map_y*2+event.y
@@ -308,10 +315,23 @@ class MapApp(Canvas):
             self.res = tuple(map(int, requests.get(self.map_server + "z{}/config".format(self.zoom), "r").text.split()))
             self.load_tiles()
 
+    def clear_image_dict(self, event=None):
+        # print("Before remove:", len(self.image_dict))
+
+        offx, offy = self.map_x // 256, self.map_y // 256
+        k = set(self.image_dict.keys())
+        for i in k:
+            if not offx - 5 <= i[0] <= offx + self.total_canv_size[0] // 256 + 3 or not offy - 5 <= i[1] <= offy + \
+                            self.total_canv_size[1] // 256 + 3:
+                self.delete(self.image_dict[i][1])
+                del self.image_dict[i]
+                # self.image_dict.__delitem__(i)
+        self.after(600, self.clear_image_dict)
+
 
 if __name__ == "__main__":
     root = Tk()
     root.geometry("1024x768")
     canv = MapApp(root, width=1024, height=768, bg="blue")
-
+    # root.after(1000, canv.clear_image_dict)
     root.mainloop()
