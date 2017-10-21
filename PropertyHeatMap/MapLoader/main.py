@@ -4,12 +4,12 @@ import math
 
 # from 10 to 17 zoom
 UPDATE = False
-PROC_NUM = 1
+PROC_NUM = 16
 
 map_folder = "C:/PropertyHeatMap/map/"
 
-zoom_start = 9
-zoom_end = 17
+zoom_start = 10
+zoom_end = 18
 
 
 def mercator(lat, lon, z):

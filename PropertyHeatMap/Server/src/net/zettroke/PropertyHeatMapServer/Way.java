@@ -8,6 +8,7 @@ import java.util.HashMap;
  */
 public class Way {
     long id;
-    ArrayList<Node> nodes = new ArrayList<>();
+    ArrayList<SimpleNode> nodes = new ArrayList<>();
     HashMap<String, String> data = new HashMap<>();
+    int[] legth;
 }
