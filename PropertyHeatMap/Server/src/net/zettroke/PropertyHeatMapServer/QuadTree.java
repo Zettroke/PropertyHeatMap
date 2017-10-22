@@ -1,6 +1,8 @@
 package net.zettroke.PropertyHeatMapServer;
 
 
+import com.sun.istack.internal.Nullable;
+
 import java.util.ArrayList;
 
 /**
@@ -8,6 +10,34 @@ import java.util.ArrayList;
  */
 public class QuadTree {
     static int THRESHOLD = 100;
+
+    @Nullable
+    static int[] HorzCross(int horz, int x1, int x2, MapPoint p1, MapPoint p2){
+        if ((p1.y > horz && p2.y > horz) || (p1.y < horz && p2.y < horz)){
+            return null;
+        }else{
+            int x = (int)Math.round(p1.x + ((horz-p1.y)/(double)(p2.y-p1.y))*(p2.x-p1.x));
+            if (x >= Math.min(x1, x2) && x <= Math.max(x1, x2)) {
+                return new int[]{x, horz};
+            }else {
+                return null;
+            }
+        }
+    }
+
+    @Nullable
+    static int[] VertCross(int vert, int y1, int y2, MapPoint p1, MapPoint p2){
+        if ((p1.x > vert && p2.x > vert) || (p1.x < vert && p2.x < vert)){
+            return null;
+        }else{
+            int y = (int)Math.round(p1.y + ((vert-p1.x)/(double)(p2.x-p1.x))*(p2.y-p1.y));
+            if (y >= Math.min(y1, y2) && y <= Math.max(y1, y2)) {
+                return new int[]{vert, y};
+            }else {
+                return null;
+            }
+        }
+    }
 
     class TreeNode{
         int items = 0;
@@ -51,16 +81,13 @@ public class QuadTree {
                 }
             }
             nodes = null;
-
-
-
+            //------------------------------------------
 
 
         }
 
         void add(Node n){
             if (!this.isEndNode){
-                // compare and add recursive
                 if (n.x <= (bounds[0] + bounds[2])/2){
                     if (n.y <= (bounds[1] + bounds[3])/2){
                         nw.add(n);
@@ -85,6 +112,15 @@ public class QuadTree {
 
         void add(MapShape m){
             // Уххх, это надолго.....
+            if (this.isEndNode){
+                shapes.add(m);
+            }else{
+                if (m.isPoly){
+
+                }else{
+
+                }
+            }
         }
 
     }
@@ -92,6 +128,7 @@ public class QuadTree {
 
 
     TreeNode root;
+
 
 
 

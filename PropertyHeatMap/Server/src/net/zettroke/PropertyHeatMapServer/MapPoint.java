@@ -8,4 +8,11 @@ package net.zettroke.PropertyHeatMapServer;
 public class MapPoint {
     int x;
     int y;
+
+    public MapPoint(){}
+
+    public MapPoint(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
 }
