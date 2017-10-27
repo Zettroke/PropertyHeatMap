@@ -12,13 +12,13 @@ public class QuadTree {
     static int THRESHOLD = 100;
 
     @Nullable
-    static int[] HorzCross(int horz, int x1, int x2, MapPoint p1, MapPoint p2){
+    static MapPoint HorzCross(int horz, int x1, int x2, MapPoint p1, MapPoint p2){
         if ((p1.y > horz && p2.y > horz) || (p1.y < horz && p2.y < horz)){
             return null;
         }else{
             int x = (int)Math.round(p1.x + ((horz-p1.y)/(double)(p2.y-p1.y))*(p2.x-p1.x));
             if (x >= Math.min(x1, x2) && x <= Math.max(x1, x2)) {
-                return new int[]{x, horz};
+                return new MapPoint(x, horz);
             }else {
                 return null;
             }
@@ -26,13 +26,13 @@ public class QuadTree {
     }
 
     @Nullable
-    static int[] VertCross(int vert, int y1, int y2, MapPoint p1, MapPoint p2){
+    static MapPoint VertCross(int vert, int y1, int y2, MapPoint p1, MapPoint p2){
         if ((p1.x > vert && p2.x > vert) || (p1.x < vert && p2.x < vert)){
             return null;
         }else{
             int y = (int)Math.round(p1.y + ((vert-p1.x)/(double)(p2.x-p1.x))*(p2.y-p1.y));
             if (y >= Math.min(y1, y2) && y <= Math.max(y1, y2)) {
-                return new int[]{vert, y};
+                return new MapPoint(vert, y);
             }else {
                 return null;
             }
@@ -40,6 +40,19 @@ public class QuadTree {
     }
 
     class TreeNode{
+
+        /*
+
+        -------------------
+        |        |        |
+        |   NW   |   NE   |
+        |        |        |
+        ---------|---------
+        |        |        |
+        |   SW   |   SE   |
+        |        |        |
+        -------------------
+         */
         int items = 0;
         boolean isEndNode = true;
         int[] bounds;
@@ -52,6 +65,10 @@ public class QuadTree {
 
         TreeNode(int[] bounds){
             this.bounds = bounds;
+        }
+
+        boolean inBounds(MapPoint p){
+            return (p.x >= bounds[0] && p.x <= bounds[2] && p.y >= bounds[1] && p.y <= bounds[3]);
         }
 
         void split(){
@@ -86,40 +103,76 @@ public class QuadTree {
 
         }
 
-        void add(Node n){
-            if (!this.isEndNode){
-                if (n.x <= (bounds[0] + bounds[2])/2){
-                    if (n.y <= (bounds[1] + bounds[3])/2){
+        void add(Node n) {
+            if (!this.isEndNode) {
+                if (n.x <= (bounds[0] + bounds[2]) / 2) {
+                    if (n.y <= (bounds[1] + bounds[3]) / 2) {
                         nw.add(n);
-                    }else{
+                    } else {
                         ne.add(n);
                     }
-                }else{
-                    if (n.y <= (bounds[1] + bounds[3])/2){
+                } else {
+                    if (n.y <= (bounds[1] + bounds[3]) / 2) {
                         sw.add(n);
-                    }else{
+                    } else {
                         se.add(n);
                     }
                 }
-            }else{
+            } else {
                 this.nodes.add(n);
                 this.items++;
-                if (this.items > THRESHOLD){
+                if (this.items > THRESHOLD) {
                     this.split();
                 }
             }
         }
 
+
         void add(MapShape m){
             // Уххх, это надолго.....
             if (this.isEndNode){
-                shapes.add(m);
-            }else{
+                // Обрезаем её как сучку, ухххх
                 if (m.isPoly){
 
                 }else{
+                    MapShape shape = new MapShape();
+                    MapPoint p1 = m.points.get(0);
+                    boolean inTreeNode = inBounds(p1);
+                    if (inTreeNode){shape.points.add(p1);}
 
+                    for (int i=1; i < m.points.size(); i++){
+                        MapPoint p2 = m.points.get(i);
+                        MapPoint h1 = HorzCross(bounds[1], bounds[0], bounds[2], p1, p2);
+                        MapPoint h2 = HorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
+                        MapPoint v1 = VertCross(bounds[0], bounds[1], bounds[3], p1, p2);
+                        MapPoint v2 = VertCross(bounds[2], bounds[1], bounds[3], p1, p2);
+                        int intersections = (h1 != null ? 1: 0) + (h2 != null ? 1: 0) + (v1 != null ? 1: 0) + (v2 != null ? 1: 0);
+                        if (inTreeNode && intersections == 0){
+                            shape.points.add(p2);
+                        }else if (intersections == 1){
+                            inTreeNode = !inTreeNode;
+                            shape.points.add((h1 != null ? h1:(h2 != null? h2: (v1 != null ? v1: v2))));
+                        }else if (intersections == 2){
+                            if (h1 != null){
+                                shape.points.add(h1);
+                            }
+                            if (h2 != null){
+                                shape.points.add(h2);
+                            }
+                            if (v1 != null){
+                                shape.points.add(v1);
+                            }
+                            if (v2 != null){
+                                shape.points.add(v2);
+                            }
+                        }
+                    }
                 }
+            }else{
+                nw.add(m);
+                ne.add(m);
+                sw.add(m);
+                se.add(m);
             }
         }
 
