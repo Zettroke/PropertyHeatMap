@@ -45,7 +45,7 @@ public class Main {
 
         ImageIO.write(img, "png", new FileOutputStream("test.png"));*/
 
-        TestRoadClipping.test();
+        TestPolygonClipping.test();
 
 
     }

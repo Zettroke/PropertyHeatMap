@@ -134,6 +134,38 @@ public class QuadTree {
             if (this.isEndNode){
                 // Обрезаем её как сучку, ухххх
                 if (m.isPoly){
+                    MapShape shape = new MapShape();
+                    MapPoint p1 = m.points.get(0);
+                    shape.points.add(p1);
+                    for (int i=1; i<m.points.size(); i++){
+                        MapPoint p2 = m.points.get(i);
+
+                        MapPoint h1 = HorzCross(bounds[1], bounds[0], bounds[2], p1, p2);
+                        MapPoint h2 = HorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
+                        MapPoint v1 = VertCross(bounds[0], bounds[1], bounds[3], p1, p2);
+                        MapPoint v2 = VertCross(bounds[2], bounds[1], bounds[3], p1, p2);
+                        int intersections = (h1 != null ? 1: 0) + (h2 != null ? 1: 0) + (v1 != null ? 1: 0) + (v2 != null ? 1: 0);
+
+                        if (intersections == 1){
+                            shape.points.add((h1 != null ? h1:(h2 != null? h2: (v1 != null ? v1: v2))));
+                        }else if (intersections == 2){
+                            MapPoint intersec1 = (h1 != null ? h1:(h2 != null? h2: (v1 != null ? v1: v2)));
+                            MapPoint intersec2 = (v2 != null ? v2:(v1 != null? v1: (h2 != null ? h2: h1)));
+
+                            if ((p1.x-intersec1.x)*(p1.x-intersec1.x) + (p1.y-intersec1.y)*(p1.y-intersec1.y)
+                                    < (p1.x-intersec2.x)*(p1.x-intersec2.x) + (p1.y-intersec2.y)*(p1.y-intersec2.y)){
+                                shape.points.add(intersec1);
+                                shape.points.add(intersec2);
+                            }else{
+                                shape.points.add(intersec2);
+                                shape.points.add(intersec1);
+                            }
+                        }
+                        shape.points.add(p2);
+                        p1 = p2;
+                    }
+
+                    shapes.add(shape);
 
                 }else{
                     MapShape shape = new MapShape();

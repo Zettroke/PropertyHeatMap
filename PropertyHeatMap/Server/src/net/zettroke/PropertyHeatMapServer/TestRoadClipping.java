@@ -37,7 +37,7 @@ public class TestRoadClipping {
         m.points.add(new MapPoint(550, 400));
         m.points.add(new MapPoint(450, 450));
         m.points.add(new MapPoint(600, 550));
-        g.setStroke(new BasicStroke(2f));
+        g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.setColor(new Color(60, 230, 57));
         Path2D path = new Path2D.Float();
         path.moveTo(m.points.get(0).x, m.points.get(0).y);
@@ -52,7 +52,7 @@ public class TestRoadClipping {
         }
         t.add(m);
         g.setColor(new Color(0, 0, 0));
-        g.setStroke(new BasicStroke(3f));
+        g.setStroke(new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         ArrayList<MapPoint> marks = new ArrayList<>();
         for (QuadTree.TreeNode tn: t){
         //QuadTree.TreeNode tn = t.nw;
