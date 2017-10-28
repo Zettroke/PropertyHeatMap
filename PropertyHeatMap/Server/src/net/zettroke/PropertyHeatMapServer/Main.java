@@ -18,7 +18,7 @@ public class Main {
         System.out.println("done in " + (System.nanoTime()-start)/1000000000.0 + " sec.");
         System.out.println(sc.nextLine());*/
 
-        BufferedImage img = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_RGB);
+        /*BufferedImage img = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = (Graphics2D) img.getGraphics();
 
 
@@ -43,7 +43,9 @@ public class Main {
             g.fillRect(res[0]-s/2, res[1]-s/2, s, s);
         }
 
-        ImageIO.write(img, "png", new FileOutputStream("test.png"));
+        ImageIO.write(img, "png", new FileOutputStream("test.png"));*/
+
+        TestRoadClipping.test();
 
 
     }

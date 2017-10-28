@@ -4,6 +4,7 @@ package net.zettroke.PropertyHeatMapServer;
 import com.sun.istack.internal.Nullable;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * Created by Zettroke on 19.10.2017.
@@ -39,7 +40,7 @@ public class QuadTree {
         }
     }
 
-    class TreeNode{
+    static class TreeNode implements Iterable<TreeNode>{
 
         /*
 
@@ -151,8 +152,17 @@ public class QuadTree {
                             shape.points.add(p2);
                         }else if (intersections == 1){
                             inTreeNode = !inTreeNode;
+                            if (inTreeNode){
+                                shape = new MapShape();
+                            }else{
+                                shapes.add(shape);
+                            }
                             shape.points.add((h1 != null ? h1:(h2 != null? h2: (v1 != null ? v1: v2))));
+                            if (inTreeNode) {
+                                shape.points.add(p2);
+                            }
                         }else if (intersections == 2){
+                            shape = new MapShape();
                             if (h1 != null){
                                 shape.points.add(h1);
                             }
@@ -165,7 +175,9 @@ public class QuadTree {
                             if (v2 != null){
                                 shape.points.add(v2);
                             }
+                            shapes.add(shape);
                         }
+                        p1 = p2;
                     }
                 }
             }else{
@@ -176,6 +188,32 @@ public class QuadTree {
             }
         }
 
+        public Iterator<TreeNode> iterator(){
+            return new Iterator<TreeNode>() {
+                byte ind = 0;
+                @Override
+                public boolean hasNext() {
+                    return ind < 4;
+                }
+
+                @Override
+                public TreeNode next() {
+                    ind++;
+                    switch (ind-1){
+                        case 0:
+                            return nw;
+                        case 1:
+                            return ne;
+                        case 2:
+                            return sw;
+                        case 3:
+                            return se;
+                        default:
+                            return null;
+                    }
+                }
+            };
+        }
     }
 
 

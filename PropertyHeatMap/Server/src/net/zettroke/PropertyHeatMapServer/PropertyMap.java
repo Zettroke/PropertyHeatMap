@@ -21,7 +21,7 @@ public class PropertyMap {
 
 
 class MapShape {
-    ArrayList<MapPoint> points;
+    ArrayList<MapPoint> points = new ArrayList<>();
 
 
     Way way;
