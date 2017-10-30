@@ -4,6 +4,7 @@ package net.zettroke.PropertyHeatMapServer;
 import com.sun.istack.internal.Nullable;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 
 /**
@@ -41,6 +42,21 @@ public class QuadTree {
     }
 
     static class TreeNode implements Iterable<TreeNode>{
+
+        static class SquareSidesComparator implements Comparator<MapPoint>{
+            MapPoint begin;
+
+            @Override
+            public int compare(MapPoint p1, MapPoint p2) {
+                return  (Math.abs(p1.x-begin.x)+Math.abs(p1.y-begin.y)) - (Math.abs(p2.x-begin.x)+Math.abs(p2.y-begin.y));
+
+            }
+
+            SquareSidesComparator(MapPoint begin){
+                this.begin = begin;
+
+            }
+        }
 
         /*
 
@@ -134,6 +150,10 @@ public class QuadTree {
             if (this.isEndNode){
                 // Обрезаем её как сучку, ухххх
                 if (m.isPoly){
+                    ArrayList<MapPoint> s1 = new ArrayList<>();
+                    ArrayList<MapPoint> s2 = new ArrayList<>();
+                    ArrayList<MapPoint> s3 = new ArrayList<>();
+                    ArrayList<MapPoint> s4 = new ArrayList<>();
                     MapShape shape = new MapShape();
                     MapPoint p1 = m.points.get(0);
                     shape.points.add(p1);
@@ -144,6 +164,19 @@ public class QuadTree {
                         MapPoint h2 = HorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
                         MapPoint v1 = VertCross(bounds[0], bounds[1], bounds[3], p1, p2);
                         MapPoint v2 = VertCross(bounds[2], bounds[1], bounds[3], p1, p2);
+                        if (h1 != null){
+                            s1.add(h1);
+                        }
+                        if (v2 != null){
+                            s2.add(v2);
+                        }
+                        if (h2 != null){
+                            s3.add(h2);
+                        }
+                        if (v1 != null){
+                            s4.add(v1);
+                        }
+
                         int intersections = (h1 != null ? 1: 0) + (h2 != null ? 1: 0) + (v1 != null ? 1: 0) + (v2 != null ? 1: 0);
 
                         if (intersections == 1){
@@ -164,6 +197,38 @@ public class QuadTree {
                         shape.points.add(p2);
                         p1 = p2;
                     }
+
+                    s1.sort(new SquareSidesComparator(new MapPoint(bounds[0], bounds[1])));
+                    s2.sort(new SquareSidesComparator(new MapPoint(bounds[2], bounds[1])));
+                    s3.sort(new SquareSidesComparator(new MapPoint(bounds[2], bounds[3])));
+                    s4.sort(new SquareSidesComparator(new MapPoint(bounds[0], bounds[3])));
+
+                    ArrayList<MapPoint> square = new ArrayList<MapPoint>(){};
+                    square.add(new MapPoint(bounds[0], bounds[1]));
+                    square.addAll(s1);
+                    square.add(new MapPoint(bounds[2], bounds[1]));
+                    square.addAll(s2);
+                    square.add(new MapPoint(bounds[2], bounds[3]));
+                    square.addAll(s3);
+                    square.add(new MapPoint(bounds[0], bounds[3]));
+                    square.addAll(s4);
+
+
+                    // main loop of poly clipping
+                    MapShape currentShape = new MapShape();
+                    MapPoint point = shape.points.get(0);
+                    int index = 0;
+                    while (true){
+                        if (inBounds(point)){
+
+                        }else{
+
+                        }
+
+                    }
+
+
+
 
                     shapes.add(shape);
 
@@ -247,6 +312,8 @@ public class QuadTree {
             };
         }
     }
+
+
 
 
 

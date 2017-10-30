@@ -20,19 +20,4 @@ public class PropertyMap {
 
 
 
-class MapShape {
-    ArrayList<MapPoint> points = new ArrayList<>();
 
-
-    Way way;
-    int index;
-    boolean isPoly;
-
-    MapShape(){}
-
-    MapShape(MapShape m){
-        this.points = m.points;
-        this.way = m.way;
-        this.index = m.index;
-    }
-}

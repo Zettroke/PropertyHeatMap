@@ -33,7 +33,7 @@ public class TestPolygonClipping {
         g.drawRect(100, 100, 400, 400);
 
         g.setStroke(new BasicStroke(2f));
-        g.setColor(new Color(7, 228, 0));
+        g.setColor(new Color(44, 230, 168));
 
         Polygon polygon = new Polygon();
         for (MapPoint p: m.points){
