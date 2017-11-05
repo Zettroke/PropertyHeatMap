@@ -42,21 +42,6 @@ public class QuadTree {
 
     static class TreeNode implements Iterable<TreeNode>{
 
-        static class SquareSidesComparator implements Comparator<MapPoint>{
-            MapPoint begin;
-
-            @Override
-            public int compare(MapPoint p1, MapPoint p2) {
-                return  (Math.abs(p1.x-begin.x)+Math.abs(p1.y-begin.y)) - (Math.abs(p2.x-begin.x)+Math.abs(p2.y-begin.y));
-
-            }
-
-            SquareSidesComparator(MapPoint begin){
-                this.begin = begin;
-
-            }
-        }
-
         static class SquareComparator implements Comparator<MapPoint>{
 
 
@@ -64,9 +49,6 @@ public class QuadTree {
 
             @Override
             public int compare(MapPoint point1, MapPoint point2) {
-                if (point1.x == 100 && point1.y == 281 || point2.x == 100 && point2.y == 281){
-                    System.out.println("dkasl;d");
-                }
                 int side1 = 0;
                 int side2 = 0;
 
@@ -86,7 +68,6 @@ public class QuadTree {
                             side2 = i;
                         }
                     }
-
                 }
 
 
@@ -110,7 +91,7 @@ public class QuadTree {
             }
 
             public SquareComparator(MapPoint p0, MapPoint p1, MapPoint p2, MapPoint p3) {
-                points = new ArrayList<MapPoint>(Arrays.asList(p0, p1, p2, p3));
+                points = new ArrayList<>(Arrays.asList(p0, p1, p2, p3));
             }
         }
 
@@ -248,11 +229,8 @@ public class QuadTree {
         }
 
         private void addPoly(final MapShape m){
-            ArrayList<MapPoint> s1 = new ArrayList<>();
-            ArrayList<MapPoint> s2 = new ArrayList<>();
-            ArrayList<MapPoint> s3 = new ArrayList<>();
-            ArrayList<MapPoint> s4 = new ArrayList<>();
             ArrayList<MapPoint> shape = new ArrayList<>();
+            ArrayList<MapPoint> square = new ArrayList<>();
             MapPoint p1 = m.points.get(0);
             shape.add(p1);
             for (int i=1; i<m.points.size(); i++){
@@ -262,16 +240,16 @@ public class QuadTree {
                 MapPoint v1 = VertCross(bounds[0], bounds[1], bounds[3], p1, p2);
                 MapPoint v2 = VertCross(bounds[2], bounds[1], bounds[3], p1, p2);
                 if (h1 != null){
-                    s1.add(h1);
+                    square.add(h1);
                 }
                 if (v2 != null){
-                    s2.add(v2);
+                    square.add(v2);
                 }
                 if (h2 != null){
-                    s3.add(h2);
+                    square.add(h2);
                 }
                 if (v1 != null){
-                    s4.add(v1);
+                    square.add(v1);
                 }
                 int intersections = (h1 != null ? 1: 0) + (h2 != null ? 1: 0) + (v1 != null ? 1: 0) + (v2 != null ? 1: 0);
 
@@ -295,24 +273,14 @@ public class QuadTree {
                 p1 = p2;
             }
 
-            s1.sort(new SquareSidesComparator(new MapPoint(bounds[0], bounds[1])));
-            s2.sort(new SquareSidesComparator(new MapPoint(bounds[2], bounds[1])));
-            s3.sort(new SquareSidesComparator(new MapPoint(bounds[2], bounds[3])));
-            s4.sort(new SquareSidesComparator(new MapPoint(bounds[0], bounds[3])));
-
-            ArrayList<MapPoint> square = new ArrayList<>();
             MapPoint p00 = new MapPoint(bounds[0], bounds[1]), p11=new MapPoint(bounds[2], bounds[1]), p22=new MapPoint(bounds[2], bounds[3]), p33=new MapPoint(bounds[0], bounds[3]);
             square.add(p00);
-            square.addAll(s1);
             square.add(p11);
-            square.addAll(s2);
             square.add(p22);
-            square.addAll(s3);
             square.add(p33);
-            square.addAll(s4);
-            s1 = null; s2 = null; s3 = null; s4 = null;
-            
 
+            square.sort(new SquareComparator(p00, p11, p22, p33));
+            
 
             ArrayList<Integer> shapeCrossPointsInd = new ArrayList<>();
             ArrayList<Integer> squareCrossPointsInd = new ArrayList<>(Arrays.asList(new Integer[square.size()]));

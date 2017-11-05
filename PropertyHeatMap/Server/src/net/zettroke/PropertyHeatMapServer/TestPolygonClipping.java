@@ -44,8 +44,10 @@ public class TestPolygonClipping {
         }
 
         g.draw(polygon);
+
+        t.add(m);
         // warm up
-        for (int i=0; i<1000000; i++) {
+        /*for (int i=0; i<1000000; i++) {
             t.add(m);
             t.shapes.clear();
         }
@@ -58,9 +60,9 @@ public class TestPolygonClipping {
         }
         long end = System.nanoTime();
         System.out.println("Total time: " + (end-start)/1000000D + " milliseconds. Time per op: " + ((end-start)/(double)test_iter)/1000D + " microseconds.");
+*/
 
-
-        /*for (MapShape shp: t.shapes){
+        for (MapShape shp: t.shapes){
             Polygon poly = new Polygon();
             for (MapPoint p: shp.points){
                 poly.addPoint(p.x, p.y);
@@ -72,6 +74,6 @@ public class TestPolygonClipping {
         }
 
 
-        ImageIO.write(image, "png", new File("testPolygonClip.png"));*/
+        ImageIO.write(image, "png", new File("testPolygonClip.png"));
     }
 }
