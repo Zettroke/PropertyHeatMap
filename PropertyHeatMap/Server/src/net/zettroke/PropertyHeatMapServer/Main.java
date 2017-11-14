@@ -2,51 +2,130 @@ package net.zettroke.PropertyHeatMapServer;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Scanner;
 //-XX:+UnlockCommercialFeatures -XX:+FlightRecorder
 
 public class Main {
 
+    static HashMap<Long, MapPoint> map = new HashMap<>();
+    static PropertyMap propertyMap;
+    static ArrayList<Polygon> mapPoly = new ArrayList<>();
+
     public static void main(String[] args) throws Exception{
-        /*Scanner sc = new Scanner(System.in);
-        System.out.println(sc.nextLine());
+        Scanner scanner = new Scanner(System.in);
+        scanner.nextLine();
+
+        propertyMap = new PropertyMap();
+        PropertyMapLoaderOSM.load(propertyMap, "map_small.osm");
         long start = System.nanoTime();
-        PropertyMap m = new PropertyMap();
-        PropertyMapLoaderOSM.load(m, "C:/PropertyHeatMap/map.osm");
-        System.out.println("done in " + (System.nanoTime()-start)/1000000000.0 + " sec.");
-        System.out.println(sc.nextLine());*/
-
-        /*BufferedImage img = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g = (Graphics2D) img.getGraphics();
+        //propertyMap.tree.root.split();
+        propertyMap.initParallel();
 
 
-        MapPoint p1 = new MapPoint(600, 100);
-        MapPoint p2 = new MapPoint(600, 750);
-        MapPoint p3 = new MapPoint(540, 600);
-        MapPoint p4 = new MapPoint(700, 430);
-        g.fillRect(0, 0, 1000, 1000);
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.setStroke(new BasicStroke(5f));
-        g.setColor(new Color(240, 0, 0));
-        g.drawLine(p1.x, p1.y, p2.x, p2.y);
+        //propertyMap.ways.stream().filter(p -> p.data.containsKey("highway") && p.data.containsKey("alt_name:mcm") && p.data.get("alt_name:mcm").equals("Измайловское шоссе")).collect(Collectors.toList());
 
+
+        System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
+        scanner.nextLine();
+
+
+
+        BufferedImage image = new BufferedImage(propertyMap.x_end-propertyMap.x_begin, propertyMap.y_end-propertyMap.y_begin, BufferedImage.TYPE_INT_RGB);
+
+        Graphics2D g = (Graphics2D) image.getGraphics();
+        g.setColor(new Color(255, 255, 255));
+        g.fillRect(0, 0, propertyMap.x_end-propertyMap.x_begin, propertyMap.y_end-propertyMap.y_begin);
         g.setColor(new Color(0, 0, 0));
-        g.drawLine(p3.x, p3.y, p4.x, p4.y);
+        draw(g, propertyMap.tree.root);
 
-        int[] res = QuadTree.VertCross(p1.x, p1.y, p2.y, p3, p4);
-        if (res != null){
-            System.out.println(res[0]+" "+ res[1]);
-            g.setColor(new Color(0, 200, 48));
-            int s = 15;
-            g.fillRect(res[0]-s/2, res[1]-s/2, s, s);
+        g.setColor(new Color(255, 0, 0));
+        for (Polygon polygon: mapPoly) {
+            g.fill(polygon);
         }
-
-        ImageIO.write(img, "png", new FileOutputStream("test.png"));*/
-
-        TestPolygonClipping.test();
+        ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));
 
 
+        //TestPolygonClipping.test();
+
+    }
+
+    static void draw(Graphics2D g, QuadTree.TreeNode t){
+        if (!t.isEndNode){
+            for (QuadTree.TreeNode tn: t){
+                draw(g, tn);
+            }
+        }else{
+            g.setColor(new Color(7, 228, 0, 74));
+            g.setStroke(new BasicStroke(8f));
+            g.drawRect(t.bounds[0], t.bounds[1], t.bounds[2]-t.bounds[0], t.bounds[3]-t.bounds[1]);
+            //g.setColor(new Color(255, 238, 192));
+            g.setColor(new Color(0, 0, 0));
+            for (MapShape mh: t.shapes){
+                if (mh.isPoly && mh.way.data.containsKey("building")) {
+                    g.setStroke(new BasicStroke(4f));
+                    Polygon poly = new Polygon();
+                    for (MapPoint p : mh.points) {
+                        poly.addPoint(p.x, p.y);
+                    }
+                    if (mh.way.data.containsKey("building")) {
+                        g.setColor(new Color(255, 238, 192));
+                        g.fill(poly);
+                    }
+                    g.setColor(new Color(0, 0, 0));
+                    g.draw(poly);
+                } else{
+                    g.setColor(new Color(0, 0, 0));
+                    /*if (mh.way.data.get("highway").equals("secondary") && mh.way.data.containsKey("alt_name:mcm")) {
+                        if (mh.way.data.get("alt_name:mcm").equals("Измайловское шоссе")) {
+                            g.setColor(new Color(255, 0, 0));
+                        }
+                    }*/
+
+                    g.setStroke(new BasicStroke(10f));
+                    Path2D path2D = new Path2D.Float();
+                    path2D.moveTo(mh.points.get(0).x, mh.points.get(0).y);
+                    for (MapPoint p : mh.points) {
+                        path2D.lineTo(p.x, p.y);
+                    }
+
+                    g.draw(path2D);
+                }
+
+            }
+
+
+        }
+    }
+
+    static int recursive_count(QuadTree.TreeNode t){
+        if (t.isEndNode){
+            int points = 0;
+            for (MapShape m: t.shapes){
+                for (int i=0; i<m.points.size(); i++) {
+                    MapPoint p = m.points.get(i);
+                    long key = (long) p.x << 32 | (long) p.y;
+                    if (!map.containsKey(key)) {
+                        map.put(key, p);
+                        points++;
+                    }else {
+                        m.points.set(i, map.get(key));
+                    }
+                }
+            }
+            return points;
+        }else{
+            int sum = 0;
+            for (QuadTree.TreeNode tn: t){
+                sum += recursive_count(tn);
+            }
+            return sum;
+        }
     }
 }

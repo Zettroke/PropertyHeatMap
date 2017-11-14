@@ -4,8 +4,10 @@ package net.zettroke.PropertyHeatMapServer;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -13,16 +15,38 @@ import java.util.HashMap;
  * Created by Olleggerr on 15.10.2017.
  */
 public class PropertyMapLoaderOSM{
-    static void load(PropertyMap m, String name) throws XMLStreamException, FileNotFoundException{
+    static void load(PropertyMap m, FileInputStream fileIn) throws XMLStreamException, FileNotFoundException{
         HashMap<Long, Node> nodes = new HashMap<>();
         HashMap<Long, Way> ways = new HashMap<>();
         HashMap<Long, Relation> relations = new HashMap<>();
 
-        XMLStreamReader streamReader = XMLInputFactory.newInstance().createXMLStreamReader(new FileInputStream(name));
+        XMLStreamReader streamReader = XMLInputFactory.newInstance().createXMLStreamReader(fileIn);
         Node tempNode = null;
         Way tempWay = null;
         Relation tempRelation = null;
         int count = 0;
+        while (true) {
+            if (streamReader.hasName()) {
+                if (streamReader.isStartElement()) {
+                    if (streamReader.getLocalName().equals("bounds")) {
+                        break;
+                    }
+                }
+            }
+
+        streamReader.next();
+        }
+        //streamReader.next(); streamReader.next(); streamReader.next();
+        m.maxlat = Double.valueOf(streamReader.getAttributeValue("", "maxlat"));
+        m.maxlon = Double.valueOf(streamReader.getAttributeValue("", "maxlon"));
+        m.minlat = Double.valueOf(streamReader.getAttributeValue("", "minlat"));
+        m.minlon = Double.valueOf(streamReader.getAttributeValue("", "minlon"));
+        int[] coords = m.mercator(m.maxlat, m.maxlon);
+        int[] coords1 = m.mercator(m.minlat, m.minlon);
+        m.x_end = coords[0]; m.y_begin = coords[1];
+        m.x_begin = coords1[0]; m.y_end = coords1[1];
+
+
         while (streamReader.hasNext()) {
             if (streamReader.hasName()) {
                 if (streamReader.isStartElement()) {
@@ -79,6 +103,8 @@ public class PropertyMapLoaderOSM{
                                 tempNode.data = null;
                                 count++;
                             }
+                            coords = m.mercator(tempNode.lat, tempNode.lon);
+                            tempNode.x = coords[0]; tempNode.y = coords[1];
                             nodes.put(tempNode.id, tempNode);
                             tempNode = null;
                             break;
@@ -124,7 +150,6 @@ public class PropertyMapLoaderOSM{
                 w.nodes.set(w.nodes.indexOf((SimpleNode) n2), n);
             }
             nodes.remove(n.id);
-
         }
         m.simpleNodes = simpleNodes;
         m.nodes = new ArrayList<>(nodes.values());
@@ -136,4 +161,12 @@ public class PropertyMapLoaderOSM{
 
     }
 
+    static void load(PropertyMap m, String name) throws XMLStreamException, FileNotFoundException{
+        load(m, new FileInputStream(name));
+    }
+
+    static void load(PropertyMap m, File file) throws XMLStreamException, FileNotFoundException{
+        load(m, new FileInputStream(file));
+    }
 }
+

@@ -25,4 +25,5 @@ public class Node extends SimpleNode{
         this.lon = lon;
         this.lat = lat;
     }
+
 }

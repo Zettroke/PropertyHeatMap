@@ -4,13 +4,12 @@ package net.zettroke.PropertyHeatMapServer;
 import com.sun.istack.internal.Nullable;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 /**
  * Created by Zettroke on 19.10.2017.
  */
 public class QuadTree {
-    static int THRESHOLD = 100;
+    static int THRESHOLD = 20;
 
     @Nullable
     static MapPoint HorzCross(int horz, int x1, int x2, MapPoint p1, MapPoint p2){
@@ -40,10 +39,38 @@ public class QuadTree {
         }
     }
 
+    @Nullable
+    static MapPoint RoadHorzCross(int horz, int x1, int x2, MapPoint p1, MapPoint p2){
+        if ((p1.y >= horz && p2.y >= horz) || (p1.y <= horz && p2.y <= horz)){
+            return null;
+        }else{
+            int x = (int)Math.round(p1.x + ((horz-p1.y)/(double)(p2.y-p1.y))*(p2.x-p1.x));
+            if (x >= Math.min(x1, x2) && x <= Math.max(x1, x2)) {
+                return new MapPoint(x, horz);
+            }else {
+                return null;
+            }
+        }
+    }
+
+    @Nullable
+    static MapPoint RoadVertCross(int vert, int y1, int y2, MapPoint p1, MapPoint p2){
+        if ((p1.x >= vert && p2.x >= vert) || (p1.x <= vert && p2.x <= vert)){
+            return null;
+        }else{
+            int y = (int)Math.round(p1.y + ((vert-p1.x)/(double)(p2.x-p1.x))*(p2.y-p1.y));
+            if (y >= Math.min(y1, y2) && y <= Math.max(y1, y2)) {
+                return new MapPoint(vert, y);
+            }else {
+                return null;
+            }
+        }
+    }
+
+
     static class TreeNode implements Iterable<TreeNode>{
 
         static class SquareComparator implements Comparator<MapPoint>{
-
 
             ArrayList<MapPoint> points;
 
@@ -70,15 +97,14 @@ public class QuadTree {
                     }
                 }
 
-
-                int ind1 = points.indexOf(point1);
-                if (ind1 != -1){
-                    side1 = ind1;
-                }
-
-                int ind2 = points.indexOf(point2);
-                if (ind2 != -1){
-                    side2 = ind2;
+                for (int i=0; i<4; i++){
+                    MapPoint p_temp = points.get(i);
+                    if (point1.equals(p_temp)){
+                        side1 = i;
+                    }
+                    if (point2.equals(p_temp)){
+                        side2 = i;
+                    }
                 }
 
 
@@ -107,6 +133,10 @@ public class QuadTree {
         -------------------
          */
 
+        //PropertyMap.ParallelInitThread th_temp;
+
+        int depth = 0;
+
         int items = 0;
         boolean isEndNode = true;
         int[] bounds;
@@ -125,6 +155,15 @@ public class QuadTree {
             return (p.x >= bounds[0] && p.x <= bounds[2] && p.y >= bounds[1] && p.y <= bounds[3]);
         }
 
+        boolean inBounds(MapShape m){
+            for (MapPoint p: m.points){
+                if (!inBounds(p)){
+                    return false;
+                }
+            }
+            return true;
+        }
+
         void split(){
             this.isEndNode = false;
 
@@ -136,22 +175,38 @@ public class QuadTree {
             this.sw = new TreeNode(new int[]{bounds[0], hy, hx, bounds[3]});
             this.se = new TreeNode(new int[]{hx, hy, bounds[2], bounds[3]});
 
+            nw.depth = depth+1;
+            ne.depth = depth+1;
+            sw.depth = depth+1;
+            se.depth = depth+1;
+
             for (Node n: nodes){
-                if (n.x <= (bounds[0] + bounds[2])/2){
-                    if (n.y <= (bounds[1] + bounds[3])/2){
+                if (n.x <= hx){
+                    if (n.y <= hy){
                         nw.add(n);
                     }else{
-                        ne.add(n);
+                        sw.add(n);
                     }
                 }else{
-                    if (n.y <= (bounds[1] + bounds[3])/2){
-                        sw.add(n);
+                    if (n.y <= hy){
+                        ne.add(n);
                     }else{
                         se.add(n);
                     }
                 }
             }
+            nodes.clear();
             nodes = null;
+
+            for (MapShape m: shapes){
+                nw.add(m);
+                ne.add(m);
+                sw.add(m);
+                se.add(m);
+            }
+
+            shapes.clear();
+            shapes = null;
             //------------------------------------------
 
 
@@ -163,11 +218,11 @@ public class QuadTree {
                     if (n.y <= (bounds[1] + bounds[3]) / 2) {
                         nw.add(n);
                     } else {
-                        ne.add(n);
+                        sw.add(n);
                     }
                 } else {
                     if (n.y <= (bounds[1] + bounds[3]) / 2) {
-                        sw.add(n);
+                        ne.add(n);
                     } else {
                         se.add(n);
                     }
@@ -183,16 +238,17 @@ public class QuadTree {
 
         private void addRoad(final MapShape m){
             MapShape shape = new MapShape();
+            shape.copyParams(m);
             MapPoint p1 = m.points.get(0);
             boolean inTreeNode = inBounds(p1);
             if (inTreeNode){shape.points.add(p1);}
 
             for (int i=1; i < m.points.size(); i++){
                 MapPoint p2 = m.points.get(i);
-                MapPoint h1 = HorzCross(bounds[1], bounds[0], bounds[2], p1, p2);
-                MapPoint h2 = HorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
-                MapPoint v1 = VertCross(bounds[0], bounds[1], bounds[3], p1, p2);
-                MapPoint v2 = VertCross(bounds[2], bounds[1], bounds[3], p1, p2);
+                MapPoint h1 = RoadHorzCross(bounds[1], bounds[0], bounds[2], p1, p2);
+                MapPoint h2 = RoadHorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
+                MapPoint v1 = RoadVertCross(bounds[0], bounds[1], bounds[3], p1, p2);
+                MapPoint v2 = RoadVertCross(bounds[2], bounds[1], bounds[3], p1, p2);
                 int intersections = (h1 != null ? 1: 0) + (h2 != null ? 1: 0) + (v1 != null ? 1: 0) + (v2 != null ? 1: 0);
                 if (inTreeNode && intersections == 0){
                     shape.points.add(p2);
@@ -200,6 +256,7 @@ public class QuadTree {
                     inTreeNode = !inTreeNode;
                     if (inTreeNode){
                         shape = new MapShape();
+                        shape.copyParams(m);
                     }else{
                         shapes.add(shape);
                     }
@@ -208,7 +265,6 @@ public class QuadTree {
                         shape.points.add(p2);
                     }
                 }else if (intersections == 2){
-                    shape = new MapShape();
                     if (h1 != null){
                         shape.points.add(h1);
                     }
@@ -222,43 +278,132 @@ public class QuadTree {
                         shape.points.add(v2);
                     }
                     shapes.add(shape);
+                    items++;
+                    inTreeNode = false;
+                    shape = new MapShape();
+                    shape.copyParams(m);
                 }
                 p1 = p2;
             }
-
+            if (shape.points.size() >= 2){
+                shapes.add(shape);
+            }
         }
 
         private void addPoly(final MapShape m){
+            //th_temp.count_calls_addPoly++;
+            boolean containShape = true;
+            for (MapPoint p : m.points){
+                containShape &= inBounds(p);
+            }
+            if (containShape){
+                shapes.add(m);
+                items++;
+                return;
+            }
+            MapPoint p00 = new MapPoint(bounds[0], bounds[1]), p11=new MapPoint(bounds[2], bounds[1]), p22=new MapPoint(bounds[2], bounds[3]), p33=new MapPoint(bounds[0], bounds[3]);
             ArrayList<MapPoint> shape = new ArrayList<>();
             ArrayList<MapPoint> square = new ArrayList<>();
             MapPoint p1 = m.points.get(0);
             shape.add(p1);
+            int total_intersec = 0;
+            boolean flag = true;
+
             for (int i=1; i<m.points.size(); i++){
                 MapPoint p2 = m.points.get(i);
                 MapPoint h1 = HorzCross(bounds[1], bounds[0], bounds[2], p1, p2);
                 MapPoint h2 = HorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
                 MapPoint v1 = VertCross(bounds[0], bounds[1], bounds[3], p1, p2);
                 MapPoint v2 = VertCross(bounds[2], bounds[1], bounds[3], p1, p2);
-                if (h1 != null){
-                    square.add(h1);
-                }
-                if (v2 != null){
-                    square.add(v2);
-                }
-                if (h2 != null){
-                    square.add(h2);
-                }
-                if (v1 != null){
-                    square.add(v1);
-                }
-                int intersections = (h1 != null ? 1: 0) + (h2 != null ? 1: 0) + (v1 != null ? 1: 0) + (v2 != null ? 1: 0);
 
+                MapPoint[] lul = new MapPoint[]{h1, h2, v1, v2};
+                int intersections = 0;
+                boolean flag_another_one = false;
+                for (int z=0; z<4; z++){
+                    if (lul[z] != null) {
+                        if (lul[z].equals(p1) || lul[z].equals(p2)) {
+                            MapPoint pp, pc;
+                            if (lul[z].equals(p1)) {
+                                pp = m.points.get(i - 2 >= 0 ? i - 2 : m.points.size() - 1);
+                                pc = p2;
+                            } else {
+                                pp = m.points.get((i + 1) % m.points.size());
+                                pc = p1;
+                            }
+                            switch (z) {
+                                case 0:
+                                    if (pc.y >= bounds[1] && pp.y >= bounds[1] || pc.y <= bounds[1] && pp.y <= bounds[1]) {
+                                        lul[z] = null;
+                                    }
+                                    break;
+                                case 1:
+                                    if (pc.y >= bounds[3] && pp.y >= bounds[3] || pc.y <= bounds[3] && pp.y <= bounds[3]) {
+                                        lul[z] = null;
+                                    }
+                                    break;
+                                case 2:
+                                    if (pc.x >= bounds[0] && pp.x >= bounds[0] || pc.x <= bounds[0] && pp.x <= bounds[0]) {
+                                        lul[z] = null;
+                                    }
+                                    break;
+                                case 3:
+                                    if (pc.x >= bounds[2] && pp.x >= bounds[2] || pc.x <= bounds[2] && pp.x <= bounds[2]) {
+                                        lul[z] = null;
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                    if (lul[z] != null) {
+                        if (lul[z].equals(p00) || lul[z].equals(p11) || lul[z].equals(p22) || lul[z].equals(p33)) {
+                            if (!(inBounds(p1) || inBounds(p2))) {
+                                lul[z] = null;
+                                // TODO: Чекнуть на пересечение одиной из диагоналей квадрата.
+                            }
+                        }
+                    }
+
+                    if (lul[z] != null){
+
+                        intersections++;
+
+                        if (lul[z].equals(p00)) {
+                            lul[z] = p00;
+                        } else if (lul[z].equals(p11)) {
+                            lul[z] = p11;
+                        } else if (lul[z].equals(p22)) {
+                            lul[z] = p22;
+                        } else if (lul[z].equals(p33)) {
+                            lul[z] = p33;
+                        }
+
+
+                        square.add(lul[z]);
+                    }
+                }
+
+                total_intersec += intersections;
                 if (intersections == 1){
-                    MapPoint pt = (h1 != null ? h1:(h2 != null? h2: (v1 != null ? v1: v2)));
+                    MapPoint pt = (lul[0] != null ? lul[0]: (lul[1] != null? lul[1]: (lul[2] != null ? lul[2]: lul[3])));
+                    if (p1.equals(pt)){
+                        shape.remove(shape.size()-1);
+                    }
+                    if (p2.equals(pt)){
+                        flag = false;
+                    }
+
                     shape.add(pt);
                 }else if (intersections == 2){
-                    MapPoint intersec1 = (h1 != null ? h1:(h2 != null? h2: (v1 != null ? v1: v2)));
-                    MapPoint intersec2 = (v2 != null ? v2:(v1 != null? v1: (h2 != null ? h2: h1)));
+                    MapPoint intersec1 = (lul[0] != null ? lul[0]:(lul[1] != null? lul[1]: (lul[2] != null ? lul[2]: lul[3])));
+                    MapPoint intersec2 = (lul[3] != null ? lul[3]:(lul[2] != null? lul[2]: (lul[1] != null ? lul[1]: lul[0])));
+
+
+                    if (p1.equals(intersec1) || p1.equals(intersec2)){
+                        shape.remove(shape.size()-1);
+                    }
+                    if (p2.equals(intersec1) || p2.equals(intersec2)) {
+                        flag = false;
+                    }
 
                     if ((p1.x-intersec1.x)*(p1.x-intersec1.x) + (p1.y-intersec1.y)*(p1.y-intersec1.y)
                             < (p1.x-intersec2.x)*(p1.x-intersec2.x) + (p1.y-intersec2.y)*(p1.y-intersec2.y)){
@@ -269,19 +414,39 @@ public class QuadTree {
                         shape.add(intersec1);
                     }
                 }
-                shape.add(p2);
+                if (flag) {
+                    shape.add(p2);
+                }else{
+                    flag = true;
+                }
                 p1 = p2;
             }
 
-            MapPoint p00 = new MapPoint(bounds[0], bounds[1]), p11=new MapPoint(bounds[2], bounds[1]), p22=new MapPoint(bounds[2], bounds[3]), p33=new MapPoint(bounds[0], bounds[3]);
+            if (total_intersec < 2){
+                //th_temp.count_calls_contain++;
+                if (m.contain(p00) && m.contain(p11) && m.contain(p22) && m.contain(p33)){
+                    //т.к. на этот момент может быть только 2 ситуации (Нода внутри полигона или нода вне полигона,
+                    // то достаточно по положения только одного угла можно судить о положении всей ноды.
+                    MapShape sh = new MapShape(new ArrayList<>(Arrays.asList(p00, p11, p22, p33, p00)));
+                    sh.copyParams(m);
+                    shapes.add(sh);
+                    items++;
+                }
+                return;
+            }
+
+            shape = deduplicate(shape);
+
             square.add(p00);
             square.add(p11);
             square.add(p22);
             square.add(p33);
 
-            square.sort(new SquareComparator(p00, p11, p22, p33));
-            
+            square = deduplicate(square);
 
+            square.sort(new SquareComparator(p00, p11, p22, p33));
+
+            //Linking cross points on shape and on square.
             ArrayList<Integer> shapeCrossPointsInd = new ArrayList<>();
             ArrayList<Integer> squareCrossPointsInd = new ArrayList<>(Arrays.asList(new Integer[square.size()]));
             Collections.fill(squareCrossPointsInd, -1);
@@ -290,6 +455,13 @@ public class QuadTree {
             for (MapPoint p: shape){
                 shapeAvail.add(inBounds(p));
             }
+
+
+            int index = _findFineStartIndex(shape, shapeAvail)+1;
+            if (index == 0){
+                return; // magic
+            }
+
             for (int i=0; i<shape.size(); i++){
                 int ind = square.indexOf(shape.get(i));
                 shapeCrossPointsInd.add(ind);
@@ -298,10 +470,8 @@ public class QuadTree {
                 }
             }
 
-            // main loop of poly clipping
-
             MapShape currentShape = new MapShape();
-            int index = _findFineStartIndex(shape, shapeAvail)+1;
+            currentShape.copyParams(m);
             MapPoint start = shape.get(index-1);
             boolean onShape = true;
             MapPoint p;
@@ -333,8 +503,10 @@ public class QuadTree {
                 currentShape.points.add(p);
                 if (p == start){
                     shapes.add(currentShape);
+                    items++;
                     shapeAvail.set(shape.indexOf(start), false);
                     currentShape = new MapShape();
+                    currentShape.copyParams(m);
                     index = _findFineStartIndex(shape, shapeAvail);
                     if (index == -1){
                         break;
@@ -346,6 +518,17 @@ public class QuadTree {
                 }
             }
 
+        }
+
+        private ArrayList<MapPoint> deduplicate(ArrayList<MapPoint> m){
+            ArrayList<MapPoint> res = new ArrayList<>();
+            for (MapPoint p: m){
+                if (!res.contains(p)){
+                    res.add(p);
+                }
+            }
+            res.add(res.get(0));
+            return res;
         }
 
         private int _findFineStartIndex(final List<MapPoint> m, final ArrayList<Boolean> avail){
@@ -366,6 +549,7 @@ public class QuadTree {
                     addPoly(m);
                 }else {
                     addRoad(m);
+                    //shapes.add(m);
                 }
             }else{
                 nw.add(m);
@@ -404,9 +588,20 @@ public class QuadTree {
         }
     }
 
+    void add(Node n){
+        if (root.inBounds(n)) {
+            root.add(n);
+        }
+    }
+
+    void add(MapShape m){
+        root.add(m);
+
+    }
+
     TreeNode root;
 
-    public QuadTree(int[] bounds){
+    public QuadTree(int... bounds){
         root = new TreeNode(bounds);
     }
 
