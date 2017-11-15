@@ -32,15 +32,18 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception{
-        Scanner scanner = new Scanner(System.in);
+
+        PropertyMapServer server = new PropertyMapServer();
+        server.start();
+        /*Scanner scanner = new Scanner(System.in);
 
         propertyMap = new PropertyMap();
         PropertyMapLoaderOSM.load(propertyMap, "map_small.osm");
         long start = System.nanoTime();
         propertyMap.initParallel();
 
-        System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
-        String s = scanner.nextLine();
+        System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");*/
+        /*String s = scanner.nextLine();
         JSONParser parser = new JSONParser();
         while (!s.equals("stop")){
             JSONObject jsonObject = (JSONObject) parser.parse(s);
@@ -70,7 +73,7 @@ public class Main {
             }
             System.out.println(answer.toString());
             s = scanner.nextLine();
-        }
+        }*/
 
 
         //scanner.nextLine();

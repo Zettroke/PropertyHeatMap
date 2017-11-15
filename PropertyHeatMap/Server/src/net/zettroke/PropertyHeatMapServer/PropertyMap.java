@@ -113,9 +113,6 @@ public class PropertyMap {
                 res = mh.way;
             }
         }
-        if (count > 1){
-            throw new Exception("Shiit");
-        }
         return res;
 
     }
