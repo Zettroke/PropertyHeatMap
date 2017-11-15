@@ -1,5 +1,5 @@
 from tkinter import Tk, Canvas, NW, ALL, Button, Label
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw
 import time
 from threading import Thread, Lock
 import math
@@ -7,6 +7,9 @@ import queue
 import requests
 import io
 import getpass
+import subprocess
+import os
+import json
 
 
 class MapApp(Canvas):
@@ -33,6 +36,8 @@ class MapApp(Canvas):
         self.min_zoom, self.max_zoom = map(int, requests.get(self.map_server + "zoom_levels").text.split())
         self.zoom = self.min_zoom
 
+        self.server_zoom = 19  # TODO: request server zoom
+
         self.map_x = 0
         self.map_y = 0
         self.res = tuple(map(int, requests.get(self.map_server+"z{}/config".format(self.zoom), "r").text.split()))
@@ -43,13 +48,21 @@ class MapApp(Canvas):
         self.tiles_updating = False
 
         self.kinetic_thread_running = True
-        self.kinetic_slow = 0.5  # px per 0.001sec
+        self.kinetic_slow = 1  # px per 0.001sec
         self.kinetic_run = True
         self.x_speed = 0
         self.y_speed = 0
 
+        self.pressed_and_dont_moved = False
+        self.server_process = None
+        self.server_started = False
+        self.current_shapes = []
+
         self.mouse_pos_x = 0
         self.mouse_pos_y = 0
+
+        self.shapes = []
+        self.shapes_images = []
 
         self.movement = []
         self.move_event = None
@@ -70,11 +83,12 @@ class MapApp(Canvas):
         # root.bind("<Delete>", self.clear_image_dict)
         self.clear_image_dict()
 
+
         root.bind("<Configure>", self.c_on_resize)
         root.bind("<Return>", self.load_tiles)
 
-        self.tile_loader_lock = Lock()
         Thread(target=self.tile_loader, daemon=True).start()
+        Thread(target=self.init_server_process, daemon=True).start()
 
     def load_tiles(self, event=None):
         # print(len(self.image_dict))
@@ -137,93 +151,6 @@ class MapApp(Canvas):
         for y in range(0, self.total_canv_size[1], 256):
             self.create_line(0, y, self.total_canv_size[0], y)
 
-    '''def update_tiles(self, prev_pos, new_pos):
-
-        if prev_pos[0] < new_pos[0]:
-            new_list = []
-            for x in range(1, self.total_canv_size[0]//256):
-                new_list.append([])
-                for y in range(self.total_canv_size[1]//256):
-                    self.move(self.image_list[x][y][0], -256, 0)
-                    new_list[-1].append(self.image_list[x][y])
-            new_list.append([])
-            for y in range(self.total_canv_size[1]//256):
-                self.move(self.image_list[0][y][0], self.total_canv_size[0]-256, 0)
-                if 0 <= self.total_canv_size[0]//256+new_pos[0]-2 < self.res[0] and 0 <= new_pos[1]+y-1 < self.res[1]:
-                    self.image_list[0][y][1] = ImageTk.PhotoImage(Image.open(
-                        self.map_folder + "z{}/{}.{}.png".format(self.zoom,
-                                                                 self.total_canv_size[0]//256+new_pos[0]-2,
-                                                                 new_pos[1]+y-1)))
-                else:
-                    self.image_list[0][y][1] = self.miss_photo
-                self.itemconfigure(self.image_list[0][y][0], image=self.image_list[0][y][1])
-                new_list[-1].append(self.image_list[0][y])
-            self.image_list = new_list
-
-        elif prev_pos[0] > new_pos[0]:
-            new_list = [[]]
-            for x in range(self.total_canv_size[0] // 256-1):
-                new_list.append([])
-                for y in range(self.total_canv_size[1] // 256):
-                    self.move(self.image_list[x][y][0], 256, 0)
-                    new_list[-1].append(self.image_list[x][y])
-            for y in range(self.total_canv_size[1] // 256):
-                self.move(self.image_list[-1][y][0], -(self.total_canv_size[0] - 256), 0)
-                if 0 <= new_pos[0] - 1 < self.res[0] and 0 <= new_pos[1] + y - 1 < self.res[1]:
-                    self.image_list[-1][y][1] = ImageTk.PhotoImage(Image.open(
-                        self.map_folder + "z{}/{}.{}.png".format(self.zoom,
-                                                                 new_pos[0]-1,
-                                                                 new_pos[1] + y - 1)))
-                else:
-                    self.image_list[-1][y][1] = self.miss_photo
-                self.itemconfigure(self.image_list[-1][y][0], image=self.image_list[-1][y][1])
-                new_list[0].append(self.image_list[-1][y])
-            self.image_list = new_list
-
-        if prev_pos[1] < new_pos[1]:
-            new_list = []
-            for x in range(self.total_canv_size[0] // 256):
-                new_list.append([])
-                for y in range(1, self.total_canv_size[1] // 256):
-                    self.move(self.image_list[x][y][0], 0, -256)
-                    new_list[-1].append(self.image_list[x][y])
-
-            for x in range(self.total_canv_size[0] // 256):
-                self.move(self.image_list[x][0][0], 0, self.total_canv_size[1] - 256)
-                if 0 <= x + new_pos[0] - 1 < self.res[0] and 0 <= self.total_canv_size[1] // 256 + new_pos[1] - 2 < self.res[1]:
-
-                    self.image_list[x][0][1] = ImageTk.PhotoImage(Image.open(
-                        self.map_folder + "z{}/{}.{}.png".format(self.zoom,
-                                                                 x + new_pos[0] - 1,
-                                                                 self.total_canv_size[1] // 256 + new_pos[1] - 2)))
-                else:
-                    self.image_list[x][0][1] = self.miss_photo
-                self.itemconfigure(self.image_list[x][0][0], image=self.image_list[x][0][1])
-                new_list[x].append(self.image_list[x][0])
-            self.image_list = new_list
-        elif prev_pos[1] > new_pos[1]:
-            new_list = []
-            for x in range(self.total_canv_size[0] // 256):
-                new_list.append([0])
-                for y in range(self.total_canv_size[1] // 256-1):
-                    self.move(self.image_list[x][y][0], 0, 256)
-                    new_list[-1].append(self.image_list[x][y])
-
-            for x in range(self.total_canv_size[0] // 256):
-                self.move(self.image_list[x][-1][0], 0, -(self.total_canv_size[1] - 256))
-                if 0 <= x + new_pos[0] - 1 < self.res[0] and 0 <= new_pos[1] - 1 < self.res[1]:
-
-                    self.image_list[x][-1][1] = ImageTk.PhotoImage(Image.open(
-                        self.map_folder + "z{}/{}.{}.png".format(self.zoom,
-                                                                 x + new_pos[0] - 1,
-                                                                 new_pos[1] - 1)))
-                else:
-                    self.image_list[x][-1][1] = self.miss_photo
-                self.itemconfigure(self.image_list[x][-1][0], image=self.image_list[x][-1][1])
-                new_list[x][0] = self.image_list[x][-1]
-            self.image_list = new_list
-'''
-
     def c_on_resize(self, event):
         if root.winfo_width() != self.prev_win_x_size or root.winfo_height() != self.prev_win_y_size:
             print("resize!")
@@ -249,8 +176,8 @@ class MapApp(Canvas):
     def kinetic_move(self):
         pos_start = self.movement[min(49, len(self.movement) - 1)]
         pos_end = self.movement[0]
-        x_speed = (pos_end[0] - pos_start[0]) / min(50, len(self.movement))  # px per sec
-        y_speed = (pos_end[1] - pos_start[1]) / min(50, len(self.movement))
+        x_speed = (pos_end[0] - pos_start[0]) / min(50, len(self.movement))/2  # px per sec
+        y_speed = (pos_end[1] - pos_start[1]) / min(50, len(self.movement))/2
         for i in range(round(max(abs(x_speed), abs(y_speed)) / self.kinetic_slow + 0.5)):
             if not self.kinetic_thread_running:
                 break
@@ -264,6 +191,7 @@ class MapApp(Canvas):
 
     def mouse_press(self, event):
         self.kinetic_thread_running = False
+        self.pressed_and_dont_moved = True
         self.mouse_pos_x = event.x
         self.mouse_pos_y = event.y
         self.move_event = event
@@ -273,11 +201,16 @@ class MapApp(Canvas):
         self.movement.clear()
 
     def mouse_move(self, event):
+        self.pressed_and_dont_moved = False
         self.move_event = event
         self.move_viewport(self.mouse_pos_x-event.x, self.mouse_pos_y-event.y)
         self.mouse_pos_x, self.mouse_pos_y = event.x, event.y
     
     def mouse_release(self, event):
+        if self.pressed_and_dont_moved:
+            if self.server_started:
+                Thread(target=self.request_location, args=(self.map_x + event.x, self.map_y + event.y), daemon=True).start()
+
         self.kinetic_run = False
         self.kinetic_thread_running = True
         pos_start = self.movement[min(99, len(self.movement) - 1)]
@@ -285,7 +218,7 @@ class MapApp(Canvas):
         self.x_speed = (pos_end[0] - pos_start[0]) / min(100, len(self.movement))  # px per sec
         self.y_speed = (pos_end[1] - pos_start[1]) / min(100, len(self.movement))
 
-        Thread(target=self.kinetic_move).start()
+        Thread(target=self.kinetic_move, daemon=True).start()
 
     def move_viewport(self, x, y):
         pos_x = 256+(self.map_x+x) % 256
@@ -296,6 +229,7 @@ class MapApp(Canvas):
         self.map_y += y
         if (self.map_x-x)//256 != self.map_x // 256 or (self.map_y-y)//256 != self.map_y // 256:
             self.update_tiles()
+            self.update_shapes()
 
     def zoom_map(self, event):
         if not (self.zoom == self.max_zoom and event.delta > 0) and not (self.zoom == self.min_zoom and event.delta < 0):
@@ -314,6 +248,8 @@ class MapApp(Canvas):
             self.yview_moveto(pos_y / self.total_canv_size[1])
             self.res = tuple(map(int, requests.get(self.map_server + "z{}/config".format(self.zoom), "r").text.split()))
             self.load_tiles()
+            self.re_render_shapes()
+            self.update_shapes()
 
     def clear_image_dict(self, event=None):
         # print("Before remove:", len(self.image_dict))
@@ -327,6 +263,82 @@ class MapApp(Canvas):
                 del self.image_dict[i]
                 # self.image_dict.__delitem__(i)
         self.after(600, self.clear_image_dict)
+
+    def request_location(self, x, y):
+        if self.server_process.poll():
+            exit()
+        s = json.dumps({"x":x, "y":y, "z":self.zoom})
+        # print("send to server", s)
+        self.server_process.stdin.write(s + "\n")
+        self.server_process.stdin.flush()
+        # print(self.server_process.stderr.readline())
+        answer = json.loads(self.server_process.stdout.readline())
+
+        if answer["status"] == "success":
+            flag = True
+            for i in range(len(self.shapes)):
+                if self.shapes[i]["id"] == answer["id"]:
+                    flag = False
+                    del self.shapes[i]
+                    for z in range(len(self.shapes_images)):
+                        if self.shapes_images[z]["id"] == answer["id"]:
+                            del self.shapes_images[z]
+                            break
+                    break
+
+            if flag:
+                print(json.dumps(answer["data"], indent=4, sort_keys=True, ensure_ascii=False))
+                # self.shapes.clear()
+                bounds = [2**20, 2**20, 0, 0]
+                for i in answer["points"]:
+                    if i[0] < bounds[0]:
+                        bounds[0] = i[0]
+                    if i[1] < bounds[1]:
+                        bounds[1] = i[1]
+                    if i[0] > bounds[2]:
+                        bounds[2] = i[0]
+                    if i[1] > bounds[3]:
+                        bounds[3] = i[1]
+
+                self.shapes.append({"points":answer["points"], "bounds": bounds, "id": answer["id"]})
+                self.render_shape(self.shapes[-1])
+            self.update_shapes()
+
+    def init_server_process(self):
+        # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
+        self.server_process = subprocess.Popen(("java", "-Dfile.encoding=UTF-8", "-jar", "Server.jar"), cwd=os.getcwd()+"/jv", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                               universal_newlines=True, encoding="utf-8")
+        print("Server:", self.server_process.stdout.readline())
+        self.server_started = True
+
+    def update_shapes(self):
+        self.delete("shape")
+        for i in self.shapes_images:
+            self.create_image(256+i["xy"][0]-self.map_x//256*256, 256+i["xy"][1]-self.map_y//256*256, image=i["image"], anchor="nw", tag="shape")
+            # print("draw at ", 256+i["xy"][0]-self.map_x//256*256, i["xy"][1])
+
+    def render_shape(self, shape):
+        i = shape
+        image = Image.new("RGBA",
+                          (round((i["bounds"][2] - i["bounds"][0]) / 2 ** (self.server_zoom - self.zoom)),
+                           round((i["bounds"][3] - i["bounds"][1]) / 2 ** (self.server_zoom - self.zoom))),
+                          (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        l = []
+        for p in i["points"]:
+            l.append(round((p[0] - i["bounds"][0]) / 2 ** (self.server_zoom - self.zoom)))
+            l.append(round((p[1] - i["bounds"][1]) / 2 ** (self.server_zoom - self.zoom)))
+        draw.polygon(l, (255, 0, 0, 120), (255, 0, 0, 255))
+        image.save("lel.png")
+        self.shapes_images.append({"image": ImageTk.PhotoImage(image),
+                                   "xy": (round(i["bounds"][0] / 2 ** (self.server_zoom - self.zoom)),
+                                          round(i["bounds"][1] / 2 ** (self.server_zoom - self.zoom))),
+                                   "id": shape["id"]})
+
+    def re_render_shapes(self):
+        self.shapes_images.clear()
+        for i in self.shapes:
+            self.render_shape(i)
 
 
 if __name__ == "__main__":

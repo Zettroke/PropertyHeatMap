@@ -4,12 +4,12 @@ import math
 
 # from 10 to 17 zoom
 UPDATE = False
-PROC_NUM = 16
+PROC_NUM = 2
 
-map_folder = "C:/PropertyHeatMap/map/"
+map_folder = "C:/PropertyHeatMap/osm_map/"
 
-zoom_start = 10
-zoom_end = 18
+zoom_start = 16
+zoom_end = 17
 
 
 def mercator(lat, lon, z):
@@ -18,11 +18,12 @@ def mercator(lat, lon, z):
 
 
 def tiles_loader(ind, server, bounds, exclude):
-    url = "http://" + server + ".maps.yandex.net/tiles?l=map&v=17.10.01-0&x={}&y={}&z={}&scale=1&lang=ru_RU"
+    # url = "http://" + server + ".maps.yandex.net/tiles?l=map&v=17.10.01-0&x={}&y={}&z={}&scale=1&lang=ru_RU"
+    url = "http://" + server + ".tile.openstreetmap.org/{z}/{x}/{y}.png"
     tmp = mercator(bounds[0], bounds[1], zoom_start)
-    offset_tile_x, offset_tile_y = int(tmp[0]), int(tmp[1])
+    offset_tile_x, offset_tile_y = round(tmp[0]), round(tmp[1])
     tmp = mercator(bounds[2], bounds[3], zoom_start)
-    tiles_x, tiles_y = int(tmp[0])-offset_tile_x, math.ceil(tmp[1])-offset_tile_y
+    tiles_x, tiles_y = round(tmp[0])-offset_tile_x, round(tmp[1])-offset_tile_y
 
     for z in range(zoom_start, zoom_end+1):
         if z not in exclude:
@@ -47,7 +48,7 @@ def tiles_loader(ind, server, bounds, exclude):
                 y = i % m_tiles_y
                 while True:
                     try:
-                        r = requests.get(url.format(m_offset_tile_x+x, m_offset_tile_y+y, z))
+                        r = requests.get(url.format(x=m_offset_tile_x+x, y=m_offset_tile_y+y, z=z))
                         open(map_folder + zoom_folder +"{}.{}.png".format(x, y), "wb").write(r.content)
                         break
                     except Exception:
@@ -61,13 +62,18 @@ if __name__ == '__main__':
 
     start_time = time.clock()
 
-    start_x = 36.9141
+    '''start_x = 36.9141
     start_y = 55.9737
     end_x = 38.322
-    end_y = 55.379
+    end_y = 55.379'''
+    start_x = 37.6996
+    start_y = 55.7828
+    end_x = 37.7491
+    end_y = 55.7550
     bounds = [start_x, start_y, end_x, end_y]
 
-    servers = ["vec01", "vec02", "vec03", "vec04"]*max((PROC_NUM//4), 1)
+    # servers = ["vec01", "vec02", "vec03", "vec04"]*max((PROC_NUM//4), 1)
+    servers = ["a", "b", "c"]*max((PROC_NUM//3), 1)
     import os
     exclude = []
     for i in range(zoom_start, zoom_end+1):

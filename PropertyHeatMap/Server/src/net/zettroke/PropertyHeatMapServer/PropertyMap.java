@@ -8,7 +8,8 @@ import java.util.ArrayList;
  */
 public class PropertyMap {
 
-    public static int MAP_RESOLUTION = 67108864*2; //(2**10)*256
+    public static int default_zoom = 19;
+    public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**10)*256
     double minlat, minlon;
     double maxlat, maxlon;
 
@@ -23,8 +24,8 @@ public class PropertyMap {
     QuadTree tree;
 
     int[] mercator(double lon, double lat){
-        int x = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.toRadians(lat)+Math.PI))-x_begin);
-        int y = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.PI-Math.log(Math.tan(Math.toRadians(lon)/2+Math.PI/4))))-y_begin);
+        int x = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.toRadians(lon)+Math.PI))-x_begin);
+        int y = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.PI-Math.log(Math.tan(Math.toRadians(lat)/2+Math.PI/4))))-y_begin);
         return new int[]{x, y};
     }
 
@@ -34,17 +35,14 @@ public class PropertyMap {
 
     void init(){
         tree = new QuadTree(0, 0, x_end-x_begin, y_end-y_begin);
-        QuadTree.TreeNode t = tree.root;
         //t.split();
         for (Node n: nodes){
-            if (t.inBounds(n)){
-                t.add(n);
-            }
+            tree.add(n);
         }
         System.out.println("Done with nodes!");
         for (int i=0; i<ways.size(); i++){
-            if (ways.get(i).data.containsKey("building") || ways.get(i).data.containsKey("highway") || ways.get(i).data.containsKey("railway") ) {
-                t.add(new MapShape(ways.get(i)));
+            if (ways.get(i).data.containsKey("building") || ways.get(i).data.containsKey("highway")){// || ways.get(i).data.containsKey("railway") ) {
+                tree.add(new MapShape(ways.get(i)));
             }
 
         }
@@ -71,9 +69,9 @@ public class PropertyMap {
                     t.add(n);
                 }
             }
-            System.out.println(getName() + " Done with nodes!");
+            //System.out.println(getName() + " Done with nodes!");
             for (int i=0; i<m.ways.size(); i++){
-                if (ways.get(i).data.containsKey("building") || ways.get(i).data.containsKey("highway") || ways.get(i).data.containsKey("railway")) {
+                if (ways.get(i).data.containsKey("building") || ways.get(i).data.containsKey("highway")){// || ways.get(i).data.containsKey("railway")) {
                     t.add(new MapShape(ways.get(i)));
                 }
 
@@ -98,11 +96,28 @@ public class PropertyMap {
                 pit.join();
                 count_addPoly += pit.count_calls_addPoly;
                 count_contain += pit.count_calls_contain;
-                System.out.println(pit.getName() + " is done!");
+                //System.out.println(pit.getName() + " is done!");
             }catch (InterruptedException e){}
         }
-        System.out.println("addPoly calls - " + count_addPoly);
-        System.out.println("contain calls - " + count_contain);
+        //System.out.println("addPoly calls - " + count_addPoly);
+        //System.out.println("contain calls - " + count_contain);
+    }
+
+    Way findShapeByPoint(MapPoint p) throws Exception{
+        QuadTree.TreeNode treeNode = tree.getEndNode(p);
+        int count = 0;
+        Way res = null;
+        for (MapShape mh: treeNode.shapes){
+            if (mh.isPoly && mh.contain(p)){
+                count++;
+                res = mh.way;
+            }
+        }
+        if (count > 1){
+            throw new Exception("Shiit");
+        }
+        return res;
+
     }
 
 }

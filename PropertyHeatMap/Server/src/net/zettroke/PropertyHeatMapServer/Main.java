@@ -10,6 +10,12 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
+
+import org.json.simple.*;
+import org.json.simple.parser.JSONParser;
+
+
+
 //-XX:+UnlockCommercialFeatures -XX:+FlightRecorder
 
 public class Main {
@@ -17,42 +23,89 @@ public class Main {
     static HashMap<Long, MapPoint> map = new HashMap<>();
     static PropertyMap propertyMap;
     static ArrayList<Polygon> mapPoly = new ArrayList<>();
+    static double coefficent = 1;
+    static int x;
+    static int y;
+
+    static int coef(int n){
+        return (int)Math.round(n*coefficent);
+    }
 
     public static void main(String[] args) throws Exception{
         Scanner scanner = new Scanner(System.in);
-        scanner.nextLine();
 
         propertyMap = new PropertyMap();
         PropertyMapLoaderOSM.load(propertyMap, "map_small.osm");
         long start = System.nanoTime();
-        //propertyMap.tree.root.split();
         propertyMap.initParallel();
 
-
-        //propertyMap.ways.stream().filter(p -> p.data.containsKey("highway") && p.data.containsKey("alt_name:mcm") && p.data.get("alt_name:mcm").equals("Измайловское шоссе")).collect(Collectors.toList());
-
-
         System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
-        scanner.nextLine();
+        String s = scanner.nextLine();
+        JSONParser parser = new JSONParser();
+        while (!s.equals("stop")){
+            JSONObject jsonObject = (JSONObject) parser.parse(s);
+            JSONObject answer = new JSONObject();
+
+            int z = ((Long) jsonObject.get("z")).intValue();
+
+            int mult = (int)Math.pow(2, PropertyMap.default_zoom - z);
+
+            int x = mult*((Long)jsonObject.get("x")).intValue();
+            int y = mult*((Long)jsonObject.get("y")).intValue();
+
+            Way w = propertyMap.findShapeByPoint(new MapPoint(x, y));
+            if (w != null){
+                answer.put("status", "success");
+                answer.put("data", w.data);
+                answer.put("id", w.id);
+                answer.put("zoom_level", PropertyMap.default_zoom);
+                JSONArray points = new JSONArray();
+                for (MapPoint p: w.nodes){
+                    JSONArray point = new JSONArray(); point.add(p.x); point.add(p.y);
+                    points.add(point);
+                }
+                answer.put("points", points);
+            }else{
+                answer.put("status", "not found");
+            }
+            System.out.println(answer.toString());
+            s = scanner.nextLine();
+        }
 
 
+        //scanner.nextLine();
 
-        BufferedImage image = new BufferedImage(propertyMap.x_end-propertyMap.x_begin, propertyMap.y_end-propertyMap.y_begin, BufferedImage.TYPE_INT_RGB);
+
+        //double size = 30000;
+        //int x_size = (int) size;
+        //coefficent = size/(propertyMap.x_end-propertyMap.x_begin);
+        //int y_size = coef(propertyMap.y_end-propertyMap.y_begin);
+
+        //{"x": 929, "y": 819, "z": 16}
+        //
+
+        /*int z = 16;
+        int mult = (int)Math.pow(2, PropertyMap.default_zoom - z);
+        int x = mult*929;
+        int y = mult*819;
+
+        int x_size = propertyMap.x_end-propertyMap.x_begin;
+        int y_size = propertyMap.y_end-propertyMap.y_begin;
+
+        BufferedImage image = new BufferedImage(x_size, y_size, BufferedImage.TYPE_INT_RGB);
 
         Graphics2D g = (Graphics2D) image.getGraphics();
         g.setColor(new Color(255, 255, 255));
-        g.fillRect(0, 0, propertyMap.x_end-propertyMap.x_begin, propertyMap.y_end-propertyMap.y_begin);
+        g.fillRect(0, 0, x_size, y_size);
         g.setColor(new Color(0, 0, 0));
         draw(g, propertyMap.tree.root);
 
         g.setColor(new Color(255, 0, 0));
-        for (Polygon polygon: mapPoly) {
-            g.fill(polygon);
-        }
-        ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));
+        g.fillRect(x-100, y-100, 200, 200);
+        ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));*/
 
 
-        //TestPolygonClipping.test();
+        //TestPolyContain.test();
 
     }
 
@@ -62,17 +115,17 @@ public class Main {
                 draw(g, tn);
             }
         }else{
-            g.setColor(new Color(7, 228, 0, 74));
+            g.setColor(new Color(7, 228, 0, 75));
             g.setStroke(new BasicStroke(8f));
-            g.drawRect(t.bounds[0], t.bounds[1], t.bounds[2]-t.bounds[0], t.bounds[3]-t.bounds[1]);
+            g.drawRect(coef(t.bounds[0]), coef(t.bounds[1]), coef(t.bounds[2]-t.bounds[0]), coef(t.bounds[3]-t.bounds[1]));
             //g.setColor(new Color(255, 238, 192));
             g.setColor(new Color(0, 0, 0));
             for (MapShape mh: t.shapes){
                 if (mh.isPoly && mh.way.data.containsKey("building")) {
-                    g.setStroke(new BasicStroke(4f));
+                    g.setStroke(new BasicStroke(3f));
                     Polygon poly = new Polygon();
                     for (MapPoint p : mh.points) {
-                        poly.addPoint(p.x, p.y);
+                        poly.addPoint(coef(p.x), coef(p.y));
                     }
                     if (mh.way.data.containsKey("building")) {
                         g.setColor(new Color(255, 238, 192));
@@ -80,7 +133,7 @@ public class Main {
                     }
                     g.setColor(new Color(0, 0, 0));
                     g.draw(poly);
-                } else{
+                } else if (!(mh.way.data.get("highway").equals("footway") || mh.way.data.get("highway").equals("path"))){
                     g.setColor(new Color(0, 0, 0));
                     /*if (mh.way.data.get("highway").equals("secondary") && mh.way.data.containsKey("alt_name:mcm")) {
                         if (mh.way.data.get("alt_name:mcm").equals("Измайловское шоссе")) {
@@ -88,11 +141,11 @@ public class Main {
                         }
                     }*/
 
-                    g.setStroke(new BasicStroke(10f));
+                    g.setStroke(new BasicStroke(6f));
                     Path2D path2D = new Path2D.Float();
-                    path2D.moveTo(mh.points.get(0).x, mh.points.get(0).y);
+                    path2D.moveTo(coef(mh.points.get(0).x), coef(mh.points.get(0).y));
                     for (MapPoint p : mh.points) {
-                        path2D.lineTo(p.x, p.y);
+                        path2D.lineTo(coef(p.x), coef(p.y));
                     }
 
                     g.draw(path2D);

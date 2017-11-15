@@ -3,6 +3,7 @@ package net.zettroke.PropertyHeatMapServer;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 
 class MapShape {
     ArrayList<MapPoint> points = new ArrayList<>();
@@ -33,6 +34,9 @@ class MapShape {
         isPoly = way.data.containsKey("building");
         if (isPoly) {
             makeClockwise();
+            if (!points.get(0).equals(points.get(points.size()-1))){
+                 points.add(points.get(0).clone());
+            }
         }
     }
 
@@ -61,26 +65,19 @@ class MapShape {
     }
 
     boolean contain(MapPoint p){
-        int cross = 0;
+        HashSet<Integer> crosses = new HashSet<>();
         MapPoint p1, p2;
         for (int i=0; i<points.size()-1; i++){
             p1 = points.get(i);
             p2 = points.get(i+1);
-            if (Math.max(p1.y, p2.y) >= p.y && Math.min(p1.y, p2.y) <= p.y) {
-                if (!(p1.y == p.y && p2.y == p.y)) {
-                    if (p1.x >= p.x && p2.x >= p.x) {
-                        cross++;
-                    } else if (p1.x >= p.x || p2.x >= p.x) {
-                        double coef = (p.y - p1.y) / (double) (p2.y - p1.y);
-                        int x = (int) Math.round(p1.x + (p2.x - p1.x) * coef);
-                        if (x >= p.x) {
-                            cross++;
-                        }
-                    }
+            if (!((p1.y > p.y && p2.y > p.y) || (p1.y < p.y && p2.y < p.y))){
+                int x = (int)Math.round(p1.x + ((p.y-p1.y)/(double)(p2.y-p1.y))*(p2.x-p1.x));
+                if (x > p.x) {
+                    crosses.add(x);
                 }
             }
         }
-        return cross % 2 == 1;
+        return crosses.size() % 2 == 1;
     }
 
     Polygon getPolygon(){
@@ -91,5 +88,11 @@ class MapShape {
         }
 
         return polygon;
+    }
+
+    void closePolygon(){
+        if (!points.get(0).equals(points.get(points.size()-1))){
+            points.add(points.get(0).clone());
+        }
     }
 }

@@ -9,7 +9,7 @@ import java.util.*;
  * Created by Zettroke on 19.10.2017.
  */
 public class QuadTree {
-    static int THRESHOLD = 20;
+    static int THRESHOLD = 50;
 
     @Nullable
     static MapPoint HorzCross(int horz, int x1, int x2, MapPoint p1, MapPoint p2){
@@ -249,7 +249,19 @@ public class QuadTree {
                 MapPoint h2 = RoadHorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
                 MapPoint v1 = RoadVertCross(bounds[0], bounds[1], bounds[3], p1, p2);
                 MapPoint v2 = RoadVertCross(bounds[2], bounds[1], bounds[3], p1, p2);
-                int intersections = (h1 != null ? 1: 0) + (h2 != null ? 1: 0) + (v1 != null ? 1: 0) + (v2 != null ? 1: 0);
+                MapPoint temp[] = new MapPoint[]{h1, h2, v1, v2};
+                for (int z1=0; z1<4; z1++){
+                    for (int z2=0; z2<4; z2++){
+                        if (z1 != z2 && temp[z1] != null && temp[z2] != null){
+                            if (temp[z1].equals(temp[z2])){
+                                temp[z2] = null;
+                            }
+                        }
+
+                    }
+                }
+
+                int intersections = (temp[0] != null ? 1: 0) + (temp[1] != null ? 1: 0) + (temp[2] != null ? 1: 0) + (temp[3] != null ? 1: 0);
                 if (inTreeNode && intersections == 0){
                     shape.points.add(p2);
                 }else if (intersections == 1){
@@ -260,22 +272,15 @@ public class QuadTree {
                     }else{
                         shapes.add(shape);
                     }
-                    shape.points.add((h1 != null ? h1:(h2 != null? h2: (v1 != null ? v1: v2))));
+                    shape.points.add((temp[0] != null ? temp[0]:(temp[1] != null? temp[1]: (temp[2] != null ? temp[2]: temp[3]))));
                     if (inTreeNode) {
                         shape.points.add(p2);
                     }
                 }else if (intersections == 2){
-                    if (h1 != null){
-                        shape.points.add(h1);
-                    }
-                    if (h2 != null){
-                        shape.points.add(h2);
-                    }
-                    if (v1 != null){
-                        shape.points.add(v1);
-                    }
-                    if (v2 != null){
-                        shape.points.add(v2);
+                    for (MapPoint point: temp){
+                        if (point != null){
+                            shape.points.add(point);
+                        }
                     }
                     shapes.add(shape);
                     items++;
@@ -428,6 +433,7 @@ public class QuadTree {
                     //т.к. на этот момент может быть только 2 ситуации (Нода внутри полигона или нода вне полигона,
                     // то достаточно по положения только одного угла можно судить о положении всей ноды.
                     MapShape sh = new MapShape(new ArrayList<>(Arrays.asList(p00, p11, p22, p33, p00)));
+
                     sh.copyParams(m);
                     shapes.add(sh);
                     items++;
@@ -502,6 +508,7 @@ public class QuadTree {
                 }
                 currentShape.points.add(p);
                 if (p == start){
+                    currentShape.closePolygon();
                     shapes.add(currentShape);
                     items++;
                     shapeAvail.set(shape.indexOf(start), false);
@@ -605,5 +612,28 @@ public class QuadTree {
         root = new TreeNode(bounds);
     }
 
+    
+    public TreeNode getEndNode(MapPoint p){
+        TreeNode curr = root;
+        while (true) {
+            if (curr.isEndNode) {
+                return curr;
+            } else {
+                if (p.x <= (curr.bounds[0] + curr.bounds[2]) / 2) {
+                    if (p.y <= (curr.bounds[1] + curr.bounds[3]) / 2) {
+                        curr = curr.nw;
+                    } else {
+                        curr = curr.sw;
+                    }
+                } else {
+                    if (p.y <= (curr.bounds[1] + curr.bounds[3]) / 2) {
+                        curr = curr.ne;
+                    } else {
+                        curr = curr.se;
+                    }
+                }
+            }
+        }
+    }
 
 }

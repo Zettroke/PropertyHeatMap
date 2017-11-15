@@ -41,8 +41,8 @@ public class PropertyMapLoaderOSM{
         m.maxlon = Double.valueOf(streamReader.getAttributeValue("", "maxlon"));
         m.minlat = Double.valueOf(streamReader.getAttributeValue("", "minlat"));
         m.minlon = Double.valueOf(streamReader.getAttributeValue("", "minlon"));
-        int[] coords = m.mercator(m.maxlat, m.maxlon);
-        int[] coords1 = m.mercator(m.minlat, m.minlon);
+        int[] coords = m.mercator(m.maxlon, m.maxlat);
+        int[] coords1 = m.mercator(m.minlon, m.minlat);
         m.x_end = coords[0]; m.y_begin = coords[1];
         m.x_begin = coords1[0]; m.y_end = coords1[1];
 
@@ -103,7 +103,7 @@ public class PropertyMapLoaderOSM{
                                 tempNode.data = null;
                                 count++;
                             }
-                            coords = m.mercator(tempNode.lat, tempNode.lon);
+                            coords = m.mercator(tempNode.lon, tempNode.lat);
                             tempNode.x = coords[0]; tempNode.y = coords[1];
                             nodes.put(tempNode.id, tempNode);
                             tempNode = null;
@@ -121,9 +121,9 @@ public class PropertyMapLoaderOSM{
             }
             streamReader.next();
         }
-        System.out.println(nodes.size());
-        System.out.println(ways.size());
-        System.out.println(relations.size());
+        //System.out.println(nodes.size());
+        //System.out.println(ways.size());
+        //System.out.println(relations.size());
         streamReader.close();
         ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
         for (Node n: nodes.values()){
