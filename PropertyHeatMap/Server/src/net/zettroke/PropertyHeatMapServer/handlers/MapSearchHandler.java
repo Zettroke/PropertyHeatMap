@@ -4,13 +4,16 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import javafx.util.Pair;
+import jdk.nashorn.internal.ir.debug.JSONWriter;
 import net.zettroke.PropertyHeatMapServer.map.MapPoint;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.Way;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonArray;
 
 import java.nio.charset.Charset;
+import java.util.Map;
 
 public class MapSearchHandler implements ShittyHttpHandler {
     private PropertyMap propertyMap;
@@ -29,23 +32,30 @@ public class MapSearchHandler implements ShittyHttpHandler {
         int mult = (int)Math.pow(2, PropertyMap.default_zoom - z);
         int x = mult*Integer.decode(decoder.parameters().get("x").get(0));
         int y = mult*Integer.decode(decoder.parameters().get("y").get(0));
-        JSONObject answer = new JSONObject();
+        JsonObject answer = new JsonObject();
+        //JSONObject answer = new JSONObject();
         Way w = propertyMap.findShapeByPoint(new MapPoint(x, y));
         if (w != null) {
-            answer.put("status", "success");
-            answer.put("status", "success");
-            answer.put("data", w.data);
-            answer.put("id", w.id);
-            answer.put("zoom_level", PropertyMap.default_zoom);
-            JSONArray points = new JSONArray();
+
+            answer.add("status", "success");
+            answer.add("status", "success");
+            JsonObject data = new JsonObject();
+            for (Map.Entry<String, String> p: w.data.entrySet()){
+                answer.add(p.getKey(), p.getValue());
+            }
+            answer.add("data", data);
+            answer.add("id", w.id);
+            answer.add("zoom_level", PropertyMap.default_zoom);
+            JsonArray points = new JsonArray();
             for (MapPoint p: w.nodes){
-                JSONArray point = new JSONArray(); point.add(p.x); point.add(p.y);
+                JsonArray point = new JsonArray(); point.add(p.x); point.add(p.y);
                 points.add(point);
             }
-            answer.put("points", points);
+            answer.add("points", points);
         }else{
-            answer.put("status", "not found");
+            answer.add("status", "not found");
         }
+
         ByteBuf buf = ctx.alloc().buffer();
         buf.writeBytes(answer.toString().getBytes(Charset.forName("utf-8")));
         HttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);

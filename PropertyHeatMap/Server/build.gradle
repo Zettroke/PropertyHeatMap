@@ -18,7 +18,7 @@ compileJava.options.encoding = 'UTF-8'
 dependencies{
     //compile files('libs/netty-all-4.1.17.Final.jar')
     compile 'io.netty:netty-all:4.1.17.Final'
-    compile 'com.googlecode.json-simple:json-simple:1.1.1'
+    compile 'com.eclipsesource.minimal-json:minimal-json:0.9.4'
 }
 
 jar{

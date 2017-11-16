@@ -24,7 +24,8 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception{
-
+        //ab -n 5000 -c 8 "http://localhost:24062/draw?text=Zettroke"
+        //ab -n 50000 -c 8 "http://localhost:24062/search/?x=946&y=205&z=16"
         PropertyMapServer server = new PropertyMapServer();
         server.start();
         /*Scanner scanner = new Scanner(System.in);

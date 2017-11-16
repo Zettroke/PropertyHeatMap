@@ -264,7 +264,7 @@ class MapApp(Canvas):
     def request_location(self, x, y):
         response = requests.get(self.map_data_server.format(x=x, y=y, z=self.zoom))
         answer = json.loads(response.text)
-
+        print(self.map_data_server.format(x=x, y=y, z=self.zoom))
         if answer["status"] == "success":
             flag = True
             for i in range(len(self.shapes)):
