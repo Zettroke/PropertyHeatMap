@@ -1,19 +1,11 @@
 package net.zettroke.PropertyHeatMapServer;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
-import java.awt.image.BufferedImage;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Scanner;
 
-import org.json.simple.*;
-import org.json.simple.parser.JSONParser;
-
+import net.zettroke.PropertyHeatMapServer.map.*;
 
 
 //-XX:+UnlockCommercialFeatures -XX:+FlightRecorder
@@ -112,7 +104,7 @@ public class Main {
 
     }
 
-    static void draw(Graphics2D g, QuadTree.TreeNode t){
+    /*static void draw(Graphics2D g, QuadTreeNode t){
         if (!t.isEndNode){
             for (QuadTree.TreeNode tn: t){
                 draw(g, tn);
@@ -138,11 +130,6 @@ public class Main {
                     g.draw(poly);
                 } else if (!(mh.way.data.get("highway").equals("footway") || mh.way.data.get("highway").equals("path"))){
                     g.setColor(new Color(0, 0, 0));
-                    /*if (mh.way.data.get("highway").equals("secondary") && mh.way.data.containsKey("alt_name:mcm")) {
-                        if (mh.way.data.get("alt_name:mcm").equals("Измайловское шоссе")) {
-                            g.setColor(new Color(255, 0, 0));
-                        }
-                    }*/
 
                     g.setStroke(new BasicStroke(6f));
                     Path2D path2D = new Path2D.Float();
@@ -183,5 +170,5 @@ public class Main {
             }
             return sum;
         }
-    }
+    }*/
 }

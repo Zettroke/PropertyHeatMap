@@ -19,7 +19,7 @@ class MapApp(Canvas):
         self.miss_photo = ImageTk.PhotoImage(Image.new("RGB", (256, 256), 0xC3C3C3))
 
         self.map_server = "http://178.140.109.241:25565/"
-        self.map_data_server = "http://178.140.109.241:24062/?x={x}&y={y}&z={z}"
+        self.map_data_server = "http://178.140.109.241:24062/search/?x={x}&y={y}&z={z}"
 
         try:
             requests.get(self.map_server, timeout=2)
