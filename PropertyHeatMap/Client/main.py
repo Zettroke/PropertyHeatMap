@@ -19,6 +19,7 @@ class MapApp(Canvas):
         self.miss_photo = ImageTk.PhotoImage(Image.new("RGB", (256, 256), 0xC3C3C3))
 
         self.map_server = "http://178.140.109.241:25565/"
+        self.map_data_server = "http://178.140.109.241:24062/?x={x}&y={y}&z={z}"
 
         try:
             requests.get(self.map_server, timeout=2)
@@ -53,9 +54,7 @@ class MapApp(Canvas):
         self.x_speed = 0
         self.y_speed = 0
 
-        self.pressed_and_dont_moved = False
-        self.server_process = None
-        self.server_started = False
+        self.pressed_and_didnt_move = False
         self.current_shapes = []
 
         self.mouse_pos_x = 0
@@ -83,12 +82,10 @@ class MapApp(Canvas):
         # root.bind("<Delete>", self.clear_image_dict)
         self.clear_image_dict()
 
-
         root.bind("<Configure>", self.c_on_resize)
         root.bind("<Return>", self.load_tiles)
 
         Thread(target=self.tile_loader, daemon=True).start()
-        Thread(target=self.init_server_process, daemon=True).start()
 
     def load_tiles(self, event=None):
         # print(len(self.image_dict))
@@ -191,7 +188,7 @@ class MapApp(Canvas):
 
     def mouse_press(self, event):
         self.kinetic_thread_running = False
-        self.pressed_and_dont_moved = True
+        self.pressed_and_didnt_move = True
         self.mouse_pos_x = event.x
         self.mouse_pos_y = event.y
         self.move_event = event
@@ -201,15 +198,15 @@ class MapApp(Canvas):
         self.movement.clear()
 
     def mouse_move(self, event):
-        self.pressed_and_dont_moved = False
+        self.pressed_and_didnt_move = False
         self.move_event = event
         self.move_viewport(self.mouse_pos_x-event.x, self.mouse_pos_y-event.y)
         self.mouse_pos_x, self.mouse_pos_y = event.x, event.y
     
     def mouse_release(self, event):
-        if self.pressed_and_dont_moved:
-            if self.server_started:
-                Thread(target=self.request_location, args=(self.map_x + event.x, self.map_y + event.y), daemon=True).start()
+        if self.pressed_and_didnt_move:
+
+            Thread(target=self.request_location, args=(self.map_x + event.x, self.map_y + event.y), daemon=True).start()
 
         self.kinetic_run = False
         self.kinetic_thread_running = True
@@ -265,14 +262,8 @@ class MapApp(Canvas):
         self.after(600, self.clear_image_dict)
 
     def request_location(self, x, y):
-        if self.server_process.poll():
-            exit()
-        s = json.dumps({"x":x, "y":y, "z":self.zoom})
-        # print("send to server", s)
-        self.server_process.stdin.write(s + "\n")
-        self.server_process.stdin.flush()
-        # print(self.server_process.stderr.readline())
-        answer = json.loads(self.server_process.stdout.readline())
+        response = requests.get(self.map_data_server.format(x=x, y=y, z=self.zoom))
+        answer = json.loads(response.text)
 
         if answer["status"] == "success":
             flag = True
@@ -300,16 +291,16 @@ class MapApp(Canvas):
                     if i[1] > bounds[3]:
                         bounds[3] = i[1]
 
-                self.shapes.append({"points":answer["points"], "bounds": bounds, "id": answer["id"]})
+                self.shapes.append({"points": answer["points"], "bounds": bounds, "id": answer["id"]})
                 self.render_shape(self.shapes[-1])
-            self.update_shapes()
+            self.root.after(1, self.update_shapes)
 
-    def init_server_process(self):
+    '''def init_server_process(self):
         # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
         self.server_process = subprocess.Popen(("java", "-Dfile.encoding=UTF-8", "-jar", "Server.jar"), cwd=os.getcwd()+"/jv", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                                universal_newlines=True, encoding="utf-8")
         print("Server:", self.server_process.stdout.readline())
-        self.server_started = True
+        self.server_started = True'''
 
     def update_shapes(self):
         self.delete("shape")

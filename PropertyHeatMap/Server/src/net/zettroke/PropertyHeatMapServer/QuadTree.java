@@ -1,8 +1,6 @@
 package net.zettroke.PropertyHeatMapServer;
 
 
-import com.sun.istack.internal.Nullable;
-
 import java.util.*;
 
 /**
@@ -11,7 +9,7 @@ import java.util.*;
 public class QuadTree {
     static int THRESHOLD = 50;
 
-    @Nullable
+    //@Nullable
     static MapPoint HorzCross(int horz, int x1, int x2, MapPoint p1, MapPoint p2){
         if ((p1.y > horz && p2.y > horz) || (p1.y < horz && p2.y < horz)){
             return null;
@@ -25,7 +23,7 @@ public class QuadTree {
         }
     }
 
-    @Nullable
+    //@Nullable
     static MapPoint VertCross(int vert, int y1, int y2, MapPoint p1, MapPoint p2){
         if ((p1.x > vert && p2.x > vert) || (p1.x < vert && p2.x < vert)){
             return null;
@@ -39,7 +37,7 @@ public class QuadTree {
         }
     }
 
-    @Nullable
+    //@Nullable
     static MapPoint RoadHorzCross(int horz, int x1, int x2, MapPoint p1, MapPoint p2){
         if ((p1.y >= horz && p2.y >= horz) || (p1.y <= horz && p2.y <= horz)){
             return null;
@@ -53,7 +51,7 @@ public class QuadTree {
         }
     }
 
-    @Nullable
+    //@Nullable
     static MapPoint RoadVertCross(int vert, int y1, int y2, MapPoint p1, MapPoint p2){
         if ((p1.x >= vert && p2.x >= vert) || (p1.x <= vert && p2.x <= vert)){
             return null;
