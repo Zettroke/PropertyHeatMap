@@ -65,42 +65,38 @@ class ServerInitializer extends ChannelInitializer<SocketChannel> {
 }
 
 
-class MapRequestHandler extends SimpleChannelInboundHandler<Object> {
+class MapRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private PropertyMap propertyMap;
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof HttpRequest){
-            HttpRequest request = (HttpRequest) msg;
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
 
-            QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-
-            int z = Integer.decode(decoder.parameters().get("z").get(0));
-            int mult = (int)Math.pow(2, PropertyMap.default_zoom - z);
-            int x = mult*Integer.decode(decoder.parameters().get("x").get(0));
-            int y = mult*Integer.decode(decoder.parameters().get("y").get(0));
-            JSONObject answer = new JSONObject();
-
-            Way w = propertyMap.findShapeByPoint(new MapPoint(x, y));
-            if (w != null) {
-                answer.put("status", "success");
-                answer.put("status", "success");
-                answer.put("data", w.data);
-                answer.put("id", w.id);
-                answer.put("zoom_level", PropertyMap.default_zoom);
-                JSONArray points = new JSONArray();
-                for (MapPoint p: w.nodes){
-                    JSONArray point = new JSONArray(); point.add(p.x); point.add(p.y);
-                    points.add(point);
-                }
-                answer.put("points", points);
-            }else{
-                answer.put("status", "not found");
+        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        int z = Integer.decode(decoder.parameters().get("z").get(0));
+        int mult = (int)Math.pow(2, PropertyMap.default_zoom - z);
+        int x = mult*Integer.decode(decoder.parameters().get("x").get(0));
+        int y = mult*Integer.decode(decoder.parameters().get("y").get(0));
+        JSONObject answer = new JSONObject();
+        Way w = propertyMap.findShapeByPoint(new MapPoint(x, y));
+        if (w != null) {
+            answer.put("status", "success");
+            answer.put("status", "success");
+            answer.put("data", w.data);
+            answer.put("id", w.id);
+            answer.put("zoom_level", PropertyMap.default_zoom);
+            JSONArray points = new JSONArray();
+            for (MapPoint p: w.nodes){
+                JSONArray point = new JSONArray(); point.add(p.x); point.add(p.y);
+                points.add(point);
             }
-            ByteBuf buf = ctx.alloc().buffer();
-            buf.writeBytes(answer.toString().getBytes(Charset.forName("utf-8")));
-            HttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
-            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+            answer.put("points", points);
+        }else{
+            answer.put("status", "not found");
         }
+        ByteBuf buf = ctx.alloc().buffer();
+        buf.writeBytes(answer.toString().getBytes(Charset.forName("utf-8")));
+        HttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+
     }
 
     MapRequestHandler(PropertyMap p){
