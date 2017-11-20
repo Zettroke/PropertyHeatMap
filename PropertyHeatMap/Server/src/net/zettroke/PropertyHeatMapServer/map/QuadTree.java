@@ -7,7 +7,7 @@ import java.util.*;
  * Created by Zettroke on 19.10.2017.
  */
 public class QuadTree {
-    static int THRESHOLD = 100;
+    static int THRESHOLD = 2000;
 
     //@Nullable
 

@@ -15,17 +15,29 @@ import com.eclipsesource.json.JsonArray;
 import java.nio.charset.Charset;
 import java.util.Map;
 
-public class MapSearchHandler implements ShittyHttpHandler {
+public class MapPointSearchHandler implements ShittyHttpHandler {
     private PropertyMap propertyMap;
 
-   public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+
+    static String path = "search/point";
+
+    @Override
+    public String getPath() {
+        return path;
+    }
+
+
+
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         //System.out.println(Thread.currentThread().getName());
         //System.out.println(request.uri());
 
 
-        long start = System.nanoTime();
+
+
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         if (!(decoder.parameters().containsKey("x")&&decoder.parameters().containsKey("y")&&decoder.parameters().containsKey("z"))){
+            ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST)).addListener(ChannelFutureListener.CLOSE);
             return;
         }
         int z = Integer.decode(decoder.parameters().get("z").get(0));
@@ -33,17 +45,16 @@ public class MapSearchHandler implements ShittyHttpHandler {
         int x = mult*Integer.decode(decoder.parameters().get("x").get(0));
         int y = mult*Integer.decode(decoder.parameters().get("y").get(0));
         JsonObject answer = new JsonObject();
-        //JSONObject answer = new JSONObject();
         Way w = propertyMap.findShapeByPoint(new MapPoint(x, y));
         if (w != null) {
+            answer.add("status", "success");
 
-            answer.add("status", "success");
-            answer.add("status", "success");
             JsonObject data = new JsonObject();
             for (Map.Entry<String, String> p: w.data.entrySet()){
-                answer.add(p.getKey(), p.getValue());
+                data.add(p.getKey(), p.getValue());
             }
             answer.add("data", data);
+
             answer.add("id", w.id);
             answer.add("zoom_level", PropertyMap.default_zoom);
             JsonArray points = new JsonArray();
@@ -58,13 +69,14 @@ public class MapSearchHandler implements ShittyHttpHandler {
 
         ByteBuf buf = ctx.alloc().buffer();
         buf.writeBytes(answer.toString().getBytes(Charset.forName("utf-8")));
-        HttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
+        response.headers().set("Content-Type", "text/json; charset=UTF-8");
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 
 
     }
 
-    public MapSearchHandler(PropertyMap p){
+    public MapPointSearchHandler(PropertyMap p){
         propertyMap = p;
     }
 }

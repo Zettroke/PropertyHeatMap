@@ -9,17 +9,34 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Created by Olleggerr on 15.10.2017.
  */
 public class PropertyMapLoaderOSM{
+
+    private static class Deduplicator{
+        //before ~1823MB
+        //after ~1430MB
+        //OSM reading +5sec
+        // ez 400MB win
+        HashMap<String, String> container = new HashMap<>();
+
+        String dedup(String t){
+            String res = container.putIfAbsent(t, t);
+            return res == null ? t: res;
+        }
+    }
+
     public static void load(PropertyMap m, FileInputStream fileIn) throws XMLStreamException, FileNotFoundException{
+        Deduplicator dedup = new Deduplicator();
         HashMap<Long, Node> nodes = new HashMap<>();
         HashMap<Long, Way> ways = new HashMap<>();
         HashMap<Long, Relation> relations = new HashMap<>();
 
         XMLStreamReader streamReader = XMLInputFactory.newInstance().createXMLStreamReader(fileIn);
+        long start = System.nanoTime();
         Node tempNode = null;
         Way tempWay = null;
         Relation tempRelation = null;
@@ -60,9 +77,9 @@ public class PropertyMapLoaderOSM{
                             break;
                         case "tag":
                             if (tempNode != null) {
-                                tempNode.data.put(streamReader.getAttributeValue(0), streamReader.getAttributeValue(1));
+                                tempNode.data.put(dedup.dedup(streamReader.getAttributeValue(0)), dedup.dedup(streamReader.getAttributeValue(1)));
                             } else if (tempWay != null) {
-                                tempWay.data.put(streamReader.getAttributeValue(0), streamReader.getAttributeValue(1));
+                                tempWay.data.put(dedup.dedup(streamReader.getAttributeValue(0)), dedup.dedup(streamReader.getAttributeValue(1)));
                             } else if (tempRelation != null) {
                                 tempRelation.data.put(streamReader.getAttributeValue(0), streamReader.getAttributeValue(1));
                             }
@@ -120,9 +137,13 @@ public class PropertyMapLoaderOSM{
             }
             streamReader.next();
         }
-        //System.out.println(nodes.size());
-        //System.out.println(ways.size());
-        //System.out.println(relations.size());
+
+        dedup = null;
+        System.gc();
+        System.out.println("Loaded osm in " + (System.nanoTime()-start)/1000000.0 + " millis.");
+        System.out.println("Nodes: "+nodes.size());
+        System.out.println("Ways: "+ways.size());
+        System.out.println("Relations: "+relations.size());
         streamReader.close();
         ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
         for (Node n: nodes.values()){
@@ -155,7 +176,7 @@ public class PropertyMapLoaderOSM{
         m.ways = new ArrayList<>(ways.values());
         m.relations = new ArrayList<>(relations.values());
 
-        System.gc();
+        //System.gc();
 
 
     }

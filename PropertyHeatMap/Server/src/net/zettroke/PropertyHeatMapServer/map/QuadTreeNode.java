@@ -129,6 +129,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     int items = 0;
     boolean isEndNode = true;
     int[] bounds;
+    QuadTreeNode parent;
     QuadTreeNode nw;
     QuadTreeNode ne;
     QuadTreeNode sw;
@@ -168,6 +169,8 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         ne.depth = depth+1;
         sw.depth = depth+1;
         se.depth = depth+1;
+
+        nw.parent = ne.parent = sw.parent = se.parent = this;
 
         for (Node n: nodes){
             if (n.x <= hx){
@@ -566,8 +569,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
 
             @Override
             public QuadTreeNode next() {
-                ind++;
-                switch (ind-1){
+                switch (ind++){
                     case 0:
                         return nw;
                     case 1:

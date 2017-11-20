@@ -18,9 +18,10 @@ class MapApp(Canvas):
         self.root = root
         self.miss_photo = ImageTk.PhotoImage(Image.new("RGB", (256, 256), 0xC3C3C3))
 
+        #self.map_server = "http://192.168.1.34:25565/z{z}/{x}.{y}.png"
+        #self.map_data_server = "http://192.168.1.34:24062/search/point/?x={x}&y={y}&z={z}"
         self.map_server = "http://178.140.109.241:25565/"
-        self.map_data_server = "http://178.140.109.241:24062/search/?x={x}&y={y}&z={z}"
-
+        self.map_data_server = "http://178.140.109.241:24062/search/point/?x={x}&y={y}&z={z}"
         try:
             requests.get(self.map_server, timeout=2)
         except Exception:
@@ -134,7 +135,7 @@ class MapApp(Canvas):
             o = self.image_load_queue.get()[1]
 
             if (o[1], o[2]) in self.image_dict.keys():
-                f = io.BytesIO(requests.get("http://178.140.109.241:25565/z{}/{}.{}.png".format(self.zoom, o[1], o[2]), headers={"UserName": getpass.getuser()}).content)
+                f = io.BytesIO(requests.get(self.map_server + "z{z}/{x}.{y}.png".format(z=self.zoom, x=o[1], y=o[2]), headers={"UserName": getpass.getuser()}).content)
                 img = ImageTk.PhotoImage(Image.open(f))
                 self.itemconfigure(o[0], image=img)
                 try:

@@ -72,6 +72,17 @@ public class MapShape {
             p2 = points.get(i+1);
             if (!((p1.y > p.y && p2.y > p.y) || (p1.y < p.y && p2.y < p.y))){
                 int x = (int)Math.round(p1.x + ((p.y-p1.y)/(double)(p2.y-p1.y))*(p2.x-p1.x));
+                if (x == p1.x || x == p2.x){
+                    if (x == p1.x){
+                        if (p2.y > p.y == points.get((i-1 < 0? points.size()-1: i-1)).y > p.y){
+                            x = p.x-1;
+                        }
+                    }else{
+                        if (p1.y > p.y == points.get((i+2) % points.size()).y > p.y){
+                            x = p.x-1;
+                        }
+                    }
+                }
                 if (x > p.x) {
                     crosses.add(x);
                 }

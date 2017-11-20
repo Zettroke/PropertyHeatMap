@@ -13,7 +13,8 @@ public class PathRouter {
     private ShittyHttpHandler handler = null;
     private ShittyHttpHandler error_handler = null;
 
-    public void addPath(String path, ShittyHttpHandler handler){
+    public void addPath(ShittyHttpHandler handler){
+        String path = handler.getPath();
         if (path.length() > 0 && path.charAt(0) == '/'){
             path = path.substring(1);
         }
@@ -39,6 +40,9 @@ public class PathRouter {
 
     public void setErrorHandler(ShittyHttpHandler handler){
         error_handler = handler;
+        for (PathRouter pt: routes.values()){
+            pt.setErrorHandler(handler);
+        }
     }
 
     public ShittyHttpHandler getHandler(String path){

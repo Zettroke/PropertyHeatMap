@@ -22,13 +22,15 @@ public class PropertyMapServer {
     public void start() throws Exception{
         PropertyMap propertyMap = new PropertyMap();
         PropertyMapLoaderOSM.load(propertyMap, new File("map_small.osm"));
+        //PropertyMapLoaderOSM.load(propertyMap, new File("C:/PropertyHeatMap/map.osm"));
         long start = System.nanoTime();
         propertyMap.initParallel();
+        //propertyMap.init();
 
         System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
-        EventLoopGroup workerGroup = new NioEventLoopGroup(8);
+        EventLoopGroup workerGroup = new NioEventLoopGroup(1);
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -52,9 +54,9 @@ class ServerInitializer extends ChannelInitializer<SocketChannel> {
 
     PathRouter getPathRouter(){
         PathRouter pathRouter = new PathRouter();
-
-        pathRouter.addPath("search", new MapSearchHandler(propertyMap));
-        pathRouter.addPath("draw", new DrawerHandler());
+        pathRouter.addPath(new MapPointSearchHandler(propertyMap));
+        pathRouter.addPath(new DrawerHandler());
+        pathRouter.addPath(new MapCircleSearchHandler(propertyMap));
         pathRouter.setErrorHandler(new ErrorHandler());
 
         return pathRouter;

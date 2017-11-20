@@ -33,6 +33,14 @@ public class MapPoint implements Serializable{
         return "(" + x + ", " + y + ")";
     }
 
+    public int squaredDistTo(MapPoint p){
+        return (p.x-this.x)*(p.x-this.x)+(p.y-this.y)*(p.y-this.y);
+    }
+
+    public boolean inCircle(MapPoint center, int radius){
+        return (this.x-center.x)*(this.x-center.x) + (this.y-center.y)*(this.y-center.y) <= radius*radius;
+    }
+
     /*@Override
     public int hashCode() {
         return x << 16 | y & 0xFFFF;

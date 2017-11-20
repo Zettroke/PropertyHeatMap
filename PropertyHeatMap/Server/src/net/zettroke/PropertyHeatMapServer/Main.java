@@ -2,10 +2,14 @@ package net.zettroke.PropertyHeatMapServer;
 
 import java.awt.*;
 import java.awt.geom.Path2D;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import com.eclipsesource.json.PrettyPrint;
+import com.eclipsesource.json.WriterConfig;
 import net.zettroke.PropertyHeatMapServer.map.*;
+import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
 
 
 //-XX:+UnlockCommercialFeatures -XX:+FlightRecorder
@@ -25,9 +29,21 @@ public class Main {
 
     public static void main(String[] args) throws Exception{
         //ab -n 5000 -c 8 "http://localhost:24062/draw?text=Zettroke"
-        //ab -n 50000 -c 8 "http://localhost:24062/search/?x=946&y=205&z=16"
+        //ab -n 50000 -c 8 "http://localhost:24062/search/?x=2341&y=3512&z=16"
         PropertyMapServer server = new PropertyMapServer();
         server.start();
+
+
+        /*PropertyMap propertyMap = new PropertyMap();
+        PropertyMapLoaderOSM.load(propertyMap, new File("map_small.osm"));
+        propertyMap.initParallel();
+        ArrayList<Way> wayList = propertyMap.findShapesByCircle(new MapPoint(11608, 2912), 240);
+        for (Way w: wayList){
+            System.out.println(Jsonizer.toJson(w, false).toString(WriterConfig.PRETTY_PRINT));
+        }
+
+        System.out.println(wayList.size());*/
+
         /*Scanner scanner = new Scanner(System.in);
 
         propertyMap = new PropertyMap();
