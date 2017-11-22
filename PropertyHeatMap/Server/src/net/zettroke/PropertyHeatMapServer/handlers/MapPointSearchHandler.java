@@ -35,15 +35,29 @@ public class MapPointSearchHandler implements ShittyHttpHandler {
 
 
 
+
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         if (!(decoder.parameters().containsKey("x")&&decoder.parameters().containsKey("y")&&decoder.parameters().containsKey("z"))){
             ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST)).addListener(ChannelFutureListener.CLOSE);
             return;
         }
-        int z = Integer.decode(decoder.parameters().get("z").get(0));
-        int mult = (int)Math.pow(2, PropertyMap.default_zoom - z);
-        int x = mult*Integer.decode(decoder.parameters().get("x").get(0));
-        int y = mult*Integer.decode(decoder.parameters().get("y").get(0));
+        int z=0, x=0, y=0, mult=0;
+        try {
+            z = Integer.decode(decoder.parameters().get("z").get(0));
+            mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
+            x = mult * Integer.decode(decoder.parameters().get("x").get(0));
+            y = mult * Integer.decode(decoder.parameters().get("y").get(0));
+        }catch (NumberFormatException e){
+            JsonObject answer = new JsonObject();
+            ByteBuf buf = ctx.alloc().buffer();
+            answer.add("status", "incorrect numbers");
+            buf.writeBytes(answer.toString().getBytes(Charset.forName("utf-8")));
+            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
+            response.headers().set("Content-Type", "text/json; charset=UTF-8");
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+
+            return;
+        }
         JsonObject answer = new JsonObject();
         Way w = propertyMap.findShapeByPoint(new MapPoint(x, y));
         if (w != null) {

@@ -19,6 +19,11 @@ public class SimpleNode extends MapPoint implements Serializable{
         this.y = n.y;
         this.id = n.id;
     }
+
+    public SimpleNode(int x, int y) {
+        super(x, y);
+    }
+
     public SimpleNode(){}
 
 }

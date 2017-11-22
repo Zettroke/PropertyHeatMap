@@ -13,7 +13,7 @@ public class Node extends SimpleNode{
 
     public ArrayList<Way> ways = new ArrayList<>();
 
-    public ArrayList<Relation> relations = new ArrayList<>();
+    //public ArrayList<Relation> relations = new ArrayList<>();
 
     public HashMap<String, String> data = new HashMap<>();
 

@@ -29,12 +29,16 @@ public class PathRouter {
         if (l.size() == 0){
             this.handler = handler;
         }else{
+            PathRouter pr;
             if (!routes.containsKey(l.get(0))){
-                PathRouter pr = new PathRouter();
+                pr = new PathRouter();
                 pr.setErrorHandler(error_handler);
                 routes.put(l.get(0), pr);
-                pr.addPath0(l.subList(1, l.size()), handler);
+
+            }else{
+                pr = routes.get(l.get(0));
             }
+            pr.addPath0(l.subList(1, l.size()), handler);
         }
     }
 

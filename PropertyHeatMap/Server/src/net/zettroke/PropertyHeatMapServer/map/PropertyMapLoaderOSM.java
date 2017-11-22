@@ -100,7 +100,7 @@ public class PropertyMapLoaderOSM{
                                     Node n1 = nodes.get(id);
                                     if (n1 != null) {
                                         tempRelation.nodes.add(n1);
-                                        n1.relations.add(tempRelation);
+                                        //n1.relations.add(tempRelation);
                                     }
                                     break;
                                 case "way":
@@ -154,7 +154,7 @@ public class PropertyMapLoaderOSM{
                     break;
                 }
             }
-            if (n.relations.size() == 0 && !have_highway){
+            /*if (n.relations.size() == 0 && !have_highway){
                 if (n.data == null){
                     simpleNodes.add(new SimpleNode(n));
                 }else{
@@ -162,7 +162,7 @@ public class PropertyMapLoaderOSM{
                     n.relations = null;
                 }
 
-            }
+            }*/
         }
         for (SimpleNode n: simpleNodes){
             Node n2 = nodes.get(n.id);

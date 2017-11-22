@@ -2,14 +2,18 @@ package net.zettroke.PropertyHeatMapServer;
 
 import java.awt.*;
 import java.awt.geom.Path2D;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Scanner;
 
 import com.eclipsesource.json.PrettyPrint;
 import com.eclipsesource.json.WriterConfig;
 import net.zettroke.PropertyHeatMapServer.map.*;
 import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
+
+import javax.imageio.ImageIO;
 
 
 //-XX:+UnlockCommercialFeatures -XX:+FlightRecorder
@@ -30,79 +34,33 @@ public class Main {
     public static void main(String[] args) throws Exception{
         //ab -n 5000 -c 8 "http://localhost:24062/draw?text=Zettroke"
         //ab -n 50000 -c 8 "http://localhost:24062/search/?x=2341&y=3512&z=16"
-        PropertyMapServer server = new PropertyMapServer();
-        server.start();
+        //ab -n 50000 -c 8 "http://192.168.1.150:24062/search/circle/?x=300&y=300&r=200&z=16"
+        //ab -n 50000 -c 8 "http://178.140.109.241:24062/search/circle/?x=1769&y=203&z=16&r=280"
 
 
-        /*PropertyMap propertyMap = new PropertyMap();
+        //PropertyMapServer server = new PropertyMapServer();
+        //server.start();
+
+
+
+
+        TestPolygonClipping.test();
+
+        long start = System.nanoTime();
+
+        PropertyMap propertyMap = new PropertyMap();
         PropertyMapLoaderOSM.load(propertyMap, new File("map_small.osm"));
         propertyMap.initParallel();
-        ArrayList<Way> wayList = propertyMap.findShapesByCircle(new MapPoint(11608, 2912), 240);
-        for (Way w: wayList){
-            System.out.println(Jsonizer.toJson(w, false).toString(WriterConfig.PRETTY_PRINT));
-        }
-
-        System.out.println(wayList.size());*/
-
-        /*Scanner scanner = new Scanner(System.in);
-
-        propertyMap = new PropertyMap();
-        PropertyMapLoaderOSM.load(propertyMap, "map_small.osm");
-        long start = System.nanoTime();
-        propertyMap.initParallel();
-
-        System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");*/
-        /*String s = scanner.nextLine();
-        JSONParser parser = new JSONParser();
-        while (!s.equals("stop")){
-            JSONObject jsonObject = (JSONObject) parser.parse(s);
-            JSONObject answer = new JSONObject();
-
-            int z = ((Long) jsonObject.get("z")).intValue();
-
-            int mult = (int)Math.pow(2, PropertyMap.default_zoom - z);
-
-            int x = mult*((Long)jsonObject.get("x")).intValue();
-            int y = mult*((Long)jsonObject.get("y")).intValue();
-
-            Way w = propertyMap.findShapeByPoint(new MapPoint(x, y));
-            if (w != null){
-                answer.put("status", "success");
-                answer.put("data", w.data);
-                answer.put("id", w.id);
-                answer.put("zoom_level", PropertyMap.default_zoom);
-                JSONArray points = new JSONArray();
-                for (MapPoint p: w.nodes){
-                    JSONArray point = new JSONArray(); point.add(p.x); point.add(p.y);
-                    points.add(point);
-                }
-                answer.put("points", points);
-            }else{
-                answer.put("status", "not found");
-            }
-            System.out.println(answer.toString());
-            s = scanner.nextLine();
-        }*/
+        System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
 
 
         //scanner.nextLine();
 
 
-        //double size = 30000;
-        //int x_size = (int) size;
-        //coefficent = size/(propertyMap.x_end-propertyMap.x_begin);
-        //int y_size = coef(propertyMap.y_end-propertyMap.y_begin);
-
-        //{"x": 929, "y": 819, "z": 16}
-        //
-
-        /*int z = 16;
-        int mult = (int)Math.pow(2, PropertyMap.default_zoom - z);
-        int x = mult*929;
-        int y = mult*819;
-
-        int x_size = propertyMap.x_end-propertyMap.x_begin;
-        int y_size = propertyMap.y_end-propertyMap.y_begin;
+        double size = 20000;
+        int x_size = (int) size;
+        coefficent = size/(propertyMap.x_end-propertyMap.x_begin);
+        int y_size = coef(propertyMap.y_end-propertyMap.y_begin);
 
         BufferedImage image = new BufferedImage(x_size, y_size, BufferedImage.TYPE_INT_RGB);
 
@@ -112,18 +70,16 @@ public class Main {
         g.setColor(new Color(0, 0, 0));
         draw(g, propertyMap.tree.root);
 
-        g.setColor(new Color(255, 0, 0));
-        g.fillRect(x-100, y-100, 200, 200);
-        ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));*/
+        ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));
 
 
         //TestPolyContain.test();
 
     }
 
-    /*static void draw(Graphics2D g, QuadTreeNode t){
+    static void draw(Graphics2D g, QuadTreeNode t){
         if (!t.isEndNode){
-            for (QuadTree.TreeNode tn: t){
+            for (QuadTreeNode tn: t){
                 draw(g, tn);
             }
         }else{
@@ -164,7 +120,7 @@ public class Main {
         }
     }
 
-    static int recursive_count(QuadTree.TreeNode t){
+    /*static int recursive_count(QuadTree.TreeNode t){
         if (t.isEndNode){
             int points = 0;
             for (MapShape m: t.shapes){

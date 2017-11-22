@@ -11,6 +11,7 @@ public class MapPoint implements Serializable{
     public int x;
     public int y;
 
+
     public MapPoint(){}
 
     public MapPoint(int x, int y) {
@@ -19,9 +20,15 @@ public class MapPoint implements Serializable{
     }
 
 
+
+
     public boolean equals(MapPoint p) {
         return x == p.x && y == p.y;
 
+    }
+
+    public boolean equalsShitty(MapPoint p){
+        return Math.abs(x - p.x) + Math.abs(y - p.y) <= 2;
     }
 
     public MapPoint clone(){

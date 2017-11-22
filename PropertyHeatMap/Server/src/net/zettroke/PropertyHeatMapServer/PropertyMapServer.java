@@ -30,7 +30,7 @@ public class PropertyMapServer {
         System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
-        EventLoopGroup workerGroup = new NioEventLoopGroup(1);
+        EventLoopGroup workerGroup = new NioEventLoopGroup(8);
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)

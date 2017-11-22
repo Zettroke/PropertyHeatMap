@@ -22,6 +22,7 @@ class MapApp(Canvas):
         #self.map_data_server = "http://192.168.1.34:24062/search/point/?x={x}&y={y}&z={z}"
         self.map_server = "http://178.140.109.241:25565/"
         self.map_data_server = "http://178.140.109.241:24062/search/point/?x={x}&y={y}&z={z}"
+        self.map_data_server_circle_search = "http://178.140.109.241:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
         try:
             requests.get(self.map_server, timeout=2)
         except Exception:
@@ -60,6 +61,9 @@ class MapApp(Canvas):
 
         self.mouse_pos_x = 0
         self.mouse_pos_y = 0
+        self.r_click_x = 0
+        self.r_click_y = 0
+        self.radius = 0
 
         self.shapes = []
         self.shapes_images = []
@@ -79,6 +83,9 @@ class MapApp(Canvas):
         self.bind("<B1-Motion>", self.mouse_move)
         self.bind("<ButtonRelease-1>", self.mouse_release)
         self.bind("<MouseWheel>", self.zoom_map)
+        self.bind("<Button-3>", self.right_click)
+        self.bind("<B3-Motion>", self.right_click_motion)
+        self.bind("<ButtonRelease-3>", self.right_click_end)
 
         # root.bind("<Delete>", self.clear_image_dict)
         self.clear_image_dict()
@@ -296,12 +303,55 @@ class MapApp(Canvas):
                 self.render_shape(self.shapes[-1])
             self.root.after(1, self.update_shapes)
 
-    '''def init_server_process(self):
-        # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
-        self.server_process = subprocess.Popen(("java", "-Dfile.encoding=UTF-8", "-jar", "Server.jar"), cwd=os.getcwd()+"/jv", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                               universal_newlines=True, encoding="utf-8")
-        print("Server:", self.server_process.stdout.readline())
-        self.server_started = True'''
+    def request_circle_location(self, x, y, radius):
+        print(self.map_data_server_circle_search.format(x=x, y=y, z=self.zoom, r=radius))
+        response = requests.get(self.map_data_server_circle_search.format(x=x, y=y, z=self.zoom, r=radius))
+        answer_main = json.loads(response.text)
+
+        if answer_main["status"] == "success":
+            for answer in answer_main["objects"]:
+                flag = True
+                for i in range(len(self.shapes)):
+                    if self.shapes[i]["id"] == answer["id"]:
+                        flag = False
+                        del self.shapes[i]
+                        for z in range(len(self.shapes_images)):
+                            if self.shapes_images[z]["id"] == answer["id"]:
+                                del self.shapes_images[z]
+                                break
+                        break
+
+                if flag:
+                    print(json.dumps(answer["data"], indent=4, sort_keys=True, ensure_ascii=False))
+                    # self.shapes.clear()
+                    bounds = [2 ** 20, 2 ** 20, 0, 0]
+                    for i in answer["points"]:
+                        if i[0] < bounds[0]:
+                            bounds[0] = i[0]
+                        if i[1] < bounds[1]:
+                            bounds[1] = i[1]
+                        if i[0] > bounds[2]:
+                            bounds[2] = i[0]
+                        if i[1] > bounds[3]:
+                            bounds[3] = i[1]
+
+                    self.shapes.append({"points": answer["points"], "bounds": bounds, "id": answer["id"]})
+                    self.render_shape(self.shapes[-1])
+            self.root.after(1, self.update_shapes)
+
+    def right_click(self, event):
+        self.r_click_x, self.r_click_y = event.x, event.y
+
+    def right_click_motion(self, event):
+        self.delete("rmotion")
+
+        radius = round(math.sqrt((event.x-self.r_click_x)**2 + (event.y-self.r_click_y)**2))
+        self.create_oval(256+self.map_x%256+self.r_click_x-radius, 256+self.map_y%256+self.r_click_y-radius, 256+self.map_x%256+self.r_click_x+radius, 256+self.map_y%256+self.r_click_y+radius, tags="rmotion")
+        self.radius = radius
+
+    def right_click_end(self, event):
+        self.delete("rmotion")
+        Thread(target=self.request_circle_location, args=(self.map_x + self.r_click_x, self.map_y + self.r_click_y, self.radius), daemon=True).start()
 
     def update_shapes(self):
         self.delete("shape")
