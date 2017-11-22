@@ -38,13 +38,13 @@ public class Main {
         //ab -n 50000 -c 8 "http://178.140.109.241:24062/search/circle/?x=1769&y=203&z=16&r=280"
 
 
-        //PropertyMapServer server = new PropertyMapServer();
-        //server.start();
+        PropertyMapServer server = new PropertyMapServer();
+        server.start();
 
 
 
 
-        TestPolygonClipping.test();
+        /*TestPolygonClipping.test();
 
         long start = System.nanoTime();
 
@@ -70,7 +70,7 @@ public class Main {
         g.setColor(new Color(0, 0, 0));
         draw(g, propertyMap.tree.root);
 
-        ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));
+        ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));*/
 
 
         //TestPolyContain.test();

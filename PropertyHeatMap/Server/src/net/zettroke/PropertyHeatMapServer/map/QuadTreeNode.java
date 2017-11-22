@@ -4,9 +4,12 @@ import java.util.*;
 
 public class QuadTreeNode implements Iterable<QuadTreeNode>{
 
+    public static ArrayList<MapPoint> intersec_debug = new ArrayList<>();
+
     static class SuperSampledMapPoint extends MapPoint{
         static int n = 4;
         MapPoint p;
+        boolean intersec = false;
 
         SuperSampledMapPoint(MapPoint p){
             this(p, false);
@@ -48,7 +51,9 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         }else{
             int x = (int)Math.round(p1.x + ((horz-p1.y)/(double)(p2.y-p1.y))*(p2.x-p1.x));
             if (x >= Math.min(x1, x2) && x <= Math.max(x1, x2)) {
-                return new SuperSampledMapPoint(x, horz, true);
+                SuperSampledMapPoint p = new SuperSampledMapPoint(x, horz, true);
+                p.intersec = true;
+                return p;
             }else {
                 return null;
             }
@@ -62,7 +67,9 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         }else{
             int y = (int)Math.round(p1.y + ((vert-p1.x)/(double)(p2.x-p1.x))*(p2.y-p1.y));
             if (y >= Math.min(y1, y2) && y <= Math.max(y1, y2)) {
-                return new SuperSampledMapPoint(vert, y, true);
+                 SuperSampledMapPoint p = new SuperSampledMapPoint(vert, y, true);
+                 p.intersec = true;
+                 return p;
             }else {
                 return null;
             }
@@ -327,11 +334,11 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     }
 
     private void addPoly(final MapShape m_input){
-        //th_temp.count_calls_addPoly++;
-        boolean containShape = true;
+        // super sampling
         int[] bounds = new int[]{this.bounds[0]*SuperSampledMapPoint.n,this.bounds[1]*SuperSampledMapPoint.n, this.bounds[2]*SuperSampledMapPoint.n, this.bounds[3]*SuperSampledMapPoint.n};
 
-        // super sampling
+
+        boolean containShape = true;
         MapShape m = new MapShape();
         m.copyParams(m_input);
         for (MapPoint p : m_input.points){
@@ -361,7 +368,6 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
 
             SuperSampledMapPoint[] lul = new SuperSampledMapPoint[]{h1, h2, v1, v2};
             int intersections = 0;
-            boolean flag_another_one = false;
             for (int z=0; z<4; z++){
                 if (lul[z] != null) {
                     if (lul[z].equals(p1) || lul[z].equals(p2)) {
@@ -373,9 +379,6 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
                             pp = m.points.get((i + 1) % m.points.size());
                             pc = p1;
                         }
-                        /*if (inBounds(pp, true) == inBounds(pc, true)){
-                            lul[z] = null;
-                        }*/
                         switch (z) {
                             case 0:
                                 if (pc.y >= bounds[1] && pp.y >= bounds[1] || pc.y <= bounds[1] && pp.y <= bounds[1]) {
@@ -425,6 +428,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
 
 
                     square.add(lul[z]);
+                    intersec_debug.add(lul[z].p);
                 }
             }
 
@@ -582,7 +586,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
 
     private int _findFineStartIndex(final List<SuperSampledMapPoint> m, final ArrayList<Boolean> avail){
         for (int i=0; i<m.size()-1; i++){
-            if (avail.get(i) && avail.get((i+1)%avail.size())){
+            if (avail.get(i) && m.get((i+1)%m.size()).intersec){
                 return i;
                 /*MapPoint p = m.get(i+1);
                 if (p.intersec && inBounds(m.get((i+2)%m.size()))){//if (inBounds(m.get(i+1)))

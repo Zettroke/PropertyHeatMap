@@ -61,7 +61,7 @@ public class QuadTree {
         int count = 0;
         Way res = null;
         for (MapShape mh: treeNode.shapes){
-            if (mh.way.id == 29544251){
+            /*if (mh.way.id == 32276118){
                 Way suka = new Way();
                 suka.id = mh.way.id;
                 for(MapPoint psuka: mh.way.nodes){
@@ -69,7 +69,7 @@ public class QuadTree {
                 }
 
                 new ObjectOutputStream(new FileOutputStream("fuck.obj")).writeObject(suka);
-            }
+            }*/
             if (mh.isPoly && mh.contain(p)){
                 count++;
                 res = mh.way;

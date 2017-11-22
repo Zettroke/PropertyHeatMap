@@ -15,7 +15,7 @@ import java.util.Collection;
  */
 public class TestPolygonClipping {
     public static void test() throws Exception{
-        int[] bounds = new int[]{9230, 2880, 9806, 3456};
+        int[] bounds = new int[]{4615, 17856, 5191, 18432};
         //int[] bounds = new int[]{0, 0, 750, 750};
         //BufferedImage image = new BufferedImage(600, 600, BufferedImage.TYPE_INT_RGB);
         BufferedImage image = new BufferedImage(bounds[2]-bounds[0]+500, bounds[3]-bounds[1]+500, BufferedImage.TYPE_INT_RGB);
@@ -118,6 +118,11 @@ public class TestPolygonClipping {
             g.fill(poly);
             g.setColor(new Color(0, 0, 0));
             g.draw(poly);
+        }
+
+        g.setColor(new Color(255, 0, 0));
+        for (MapPoint point: QuadTreeNode.intersec_debug){
+            g.fillRect(point.x-2, point.y-2, 4, 4);
         }
 
         /*g.setStroke(new BasicStroke(2));
