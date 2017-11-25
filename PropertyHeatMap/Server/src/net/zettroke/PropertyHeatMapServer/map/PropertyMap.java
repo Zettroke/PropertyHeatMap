@@ -1,8 +1,14 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonArray;
+import com.eclipsesource.json.JsonObject;
+import net.zettroke.PropertyHeatMapServer.utils.Apartment;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+
 
 /**
  * Created by Olleggerr on 15.10.2017.
@@ -11,6 +17,8 @@ public class PropertyMap {
 
     public static int default_zoom = 19;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
+    public int max_price_per_metr = Integer.MIN_VALUE;
+    public int min_price_per_metr = Integer.MAX_VALUE;
     double minlat, minlon;
     double maxlat, maxlon;
 
@@ -92,11 +100,54 @@ public class PropertyMap {
                 pit.join();
             }catch (InterruptedException e){}
         }
+        load_prices();
 
         System.gc();
 
         //System.out.println("addPoly calls - " + count_addPoly);
         //System.out.println("contain calls - " + count_contain);
+    }
+
+    public void load_prices(){
+        try{
+            System.out.println("Loading prices...");
+            BufferedReader reader = new BufferedReader(new FileReader("data_json"));
+            String line = reader.readLine();
+            while (line != null) {
+                JsonObject jsonObject = Json.parse(line).asObject();
+                JsonArray coords = jsonObject.get("coords").asArray();
+                int[] t = mercator(coords.get(0).asDouble(), coords.get(1).asDouble());
+                int x = t[0];
+                int y = t[1];
+                Way way = findShapeByPoint(new MapPoint(x, y));
+
+                if (way != null) {
+                    if (way.apartments == null){
+                        way.apartments = new ArrayList<>();
+                    }
+                    double area = Double.valueOf(jsonObject.get("Общая площадь").asString().replace("м2", "").replace(',', '.'));
+                    String[] floors_string = jsonObject.get("Этаж").asString().split("/");
+                    if (floors_string.length < 2){
+                        floors_string = new String[]{floors_string[0], "-1"};
+                    }
+                    int price = jsonObject.get("Цена").asInt();
+
+                    way.apartments.add(new Apartment(price, area, Integer.parseInt(floors_string[0]), Integer.parseInt(floors_string[1])));
+
+                    if ((int)Math.round(price/area) < 1000000){
+
+                        max_price_per_metr = Math.max(max_price_per_metr, (int)Math.round(price/area));
+                        min_price_per_metr = Math.min(min_price_per_metr, (int)Math.round(price/area));
+                    }
+
+                }
+                line = reader.readLine();
+            }
+        }catch (Exception e){
+            System.err.println("LoadPrices Exception");
+            e.printStackTrace();
+        }
+
     }
 
     public Collection<Way> findShapesByCircle(MapPoint center, int radius) throws Exception{
@@ -105,6 +156,10 @@ public class PropertyMap {
 
     public Way findShapeByPoint(MapPoint p) throws Exception{
         return tree.findShapeByPoint(p);
+    }
+
+    public void fillTreeNode(QuadTreeNode n){
+        tree.fillTreeNode(n);
     }
 
 

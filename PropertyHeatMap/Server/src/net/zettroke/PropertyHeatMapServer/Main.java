@@ -36,17 +36,18 @@ public class Main {
         //ab -n 50000 -c 8 "http://localhost:24062/search/?x=2341&y=3512&z=16"
         //ab -n 50000 -c 8 "http://192.168.1.150:24062/search/circle/?x=300&y=300&r=200&z=16"
         //ab -n 50000 -c 8 "http://178.140.109.241:24062/search/circle/?x=1769&y=203&z=16&r=280"
+        //ab -n 5000 -c 8 "http://178.140.109.241:24062/tile?x=6&y=0&z=16"
 
-
+        ImageIO.setUseCache(false);
         PropertyMapServer server = new PropertyMapServer();
         server.start();
 
 
 
 
-        /*TestPolygonClipping.test();
+        //TestPolygonClipping.test();
 
-        long start = System.nanoTime();
+        /*long start = System.nanoTime();
 
         PropertyMap propertyMap = new PropertyMap();
         PropertyMapLoaderOSM.load(propertyMap, new File("map_small.osm"));

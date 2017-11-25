@@ -1,5 +1,5 @@
 from tkinter import Tk, Canvas, NW, ALL, Button, Label
-from PIL import Image, ImageTk, ImageDraw
+from PIL import Image, ImageTk, ImageDraw, ImageMode
 import time
 from threading import Thread, Lock
 import math
@@ -18,9 +18,13 @@ class MapApp(Canvas):
         self.root = root
         self.miss_photo = ImageTk.PhotoImage(Image.new("RGB", (256, 256), 0xC3C3C3))
 
-        #self.map_server = "http://192.168.1.34:25565/z{z}/{x}.{y}.png"
-        #self.map_data_server = "http://192.168.1.34:24062/search/point/?x={x}&y={y}&z={z}"
         self.map_server = "http://178.140.109.241:25565/"
+        self.image_server = "http://178.140.109.241:25565/z{z}/{x}.{y}.png"
+        self.image_layer_server = "http://178.140.109.241:24062/tile?x={x}&y={y}&z={z}"
+        try:
+            self.image_server = open("config", "r").readline()
+        except Exception:
+            pass
         self.map_data_server = "http://178.140.109.241:24062/search/point/?x={x}&y={y}&z={z}"
         self.map_data_server_circle_search = "http://178.140.109.241:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
         try:
@@ -38,7 +42,6 @@ class MapApp(Canvas):
 
         self.min_zoom, self.max_zoom = map(int, requests.get(self.map_server + "zoom_levels").text.split())
         self.zoom = self.min_zoom
-
         self.server_zoom = 19  # TODO: request server zoom
 
         self.map_x = 0
@@ -49,6 +52,7 @@ class MapApp(Canvas):
         self.image_load_queue = queue.PriorityQueue()
         self.loaded_image_offset = (0, 0)
         self.tiles_updating = False
+        self.layer_turned_on = False
 
         self.kinetic_thread_running = True
         self.kinetic_slow = 1  # px per 0.001sec
@@ -86,6 +90,7 @@ class MapApp(Canvas):
         self.bind("<Button-3>", self.right_click)
         self.bind("<B3-Motion>", self.right_click_motion)
         self.bind("<ButtonRelease-3>", self.right_click_end)
+        root.bind("<Shift_L>", self.turn_layer)
 
         # root.bind("<Delete>", self.clear_image_dict)
         self.clear_image_dict()
@@ -94,6 +99,12 @@ class MapApp(Canvas):
         root.bind("<Return>", self.load_tiles)
 
         Thread(target=self.tile_loader, daemon=True).start()
+
+    def turn_layer(self, event=None):
+        self.layer_turned_on = not self.layer_turned_on
+
+        self.load_tiles()
+        self.update_shapes()
 
     def load_tiles(self, event=None):
         # print(len(self.image_dict))
@@ -142,8 +153,16 @@ class MapApp(Canvas):
             o = self.image_load_queue.get()[1]
 
             if (o[1], o[2]) in self.image_dict.keys():
-                f = io.BytesIO(requests.get(self.map_server + "z{z}/{x}.{y}.png".format(z=self.zoom, x=o[1], y=o[2]), headers={"UserName": getpass.getuser()}).content)
-                img = ImageTk.PhotoImage(Image.open(f))
+                f = io.BytesIO(requests.get(self.image_server.format(z=self.zoom, x=o[1], y=o[2]), headers={"UserName": getpass.getuser()}).content)
+                img = Image.open(f).convert("RGBA")
+
+                if self.layer_turned_on:
+                    f2 = io.BytesIO(requests.get(self.image_layer_server.format(z=self.zoom, x=o[1], y=o[2]),
+                                                headers={"UserName": getpass.getuser()}).content)
+                    img2 = Image.open(f2)
+                    img = Image.alpha_composite(img, img2)
+                img = ImageTk.PhotoImage(img)
+
                 self.itemconfigure(o[0], image=img)
                 try:
                     self.image_dict[(o[1], o[2])][2] = img
@@ -271,36 +290,38 @@ class MapApp(Canvas):
 
     def request_location(self, x, y):
         response = requests.get(self.map_data_server.format(x=x, y=y, z=self.zoom))
-        answer = json.loads(response.text)
+        answer_main = json.loads(response.text)
         print(self.map_data_server.format(x=x, y=y, z=self.zoom))
-        if answer["status"] == "success":
+        if answer_main["status"] == "success":
             flag = True
-            for i in range(len(self.shapes)):
-                if self.shapes[i]["id"] == answer["id"]:
-                    flag = False
-                    del self.shapes[i]
-                    for z in range(len(self.shapes_images)):
-                        if self.shapes_images[z]["id"] == answer["id"]:
-                            del self.shapes_images[z]
-                            break
-                    break
+            for answer in answer_main["objects"]:
+                flag = True
+                for i in range(len(self.shapes)):
+                    if self.shapes[i]["id"] == answer["id"]:
+                        flag = False
+                        del self.shapes[i]
+                        for z in range(len(self.shapes_images)):
+                            if self.shapes_images[z]["id"] == answer["id"]:
+                                del self.shapes_images[z]
+                                break
+                        break
 
-            if flag:
-                print(json.dumps(answer["data"], indent=4, sort_keys=True, ensure_ascii=False))
-                # self.shapes.clear()
-                bounds = [2**20, 2**20, 0, 0]
-                for i in answer["points"]:
-                    if i[0] < bounds[0]:
-                        bounds[0] = i[0]
-                    if i[1] < bounds[1]:
-                        bounds[1] = i[1]
-                    if i[0] > bounds[2]:
-                        bounds[2] = i[0]
-                    if i[1] > bounds[3]:
-                        bounds[3] = i[1]
+                if flag:
+                    print(json.dumps(answer["data"], indent=4, sort_keys=True, ensure_ascii=False))
+                    # self.shapes.clear()
+                    bounds = [2**20, 2**20, 0, 0]
+                    for i in answer["points"]:
+                        if i[0] < bounds[0]:
+                            bounds[0] = i[0]
+                        if i[1] < bounds[1]:
+                            bounds[1] = i[1]
+                        if i[0] > bounds[2]:
+                            bounds[2] = i[0]
+                        if i[1] > bounds[3]:
+                            bounds[3] = i[1]
 
-                self.shapes.append({"points": answer["points"], "bounds": bounds, "id": answer["id"]})
-                self.render_shape(self.shapes[-1])
+                    self.shapes.append({"points": answer["points"], "bounds": bounds, "id": answer["id"]})
+                    self.render_shape(self.shapes[-1])
             self.root.after(1, self.update_shapes)
 
     def request_circle_location(self, x, y, radius):
@@ -323,6 +344,7 @@ class MapApp(Canvas):
 
                 if flag:
                     print(json.dumps(answer["data"], indent=4, sort_keys=True, ensure_ascii=False))
+
                     # self.shapes.clear()
                     bounds = [2 ** 20, 2 ** 20, 0, 0]
                     for i in answer["points"]:

@@ -3,7 +3,6 @@ package net.zettroke.PropertyHeatMapServer.utils;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import net.zettroke.PropertyHeatMapServer.map.MapPoint;
-import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.Way;
 
 import java.util.Map;
@@ -15,7 +14,7 @@ public class Jsonizer {
         for (Map.Entry<String, String> p : way.data.entrySet()) {
             data.add(p.getKey(), p.getValue());
         }
-        answer.add("data", data);
+
         answer.add("id", way.id);
         if (points) {
             JsonArray pointsArr = new JsonArray();
@@ -27,6 +26,20 @@ public class Jsonizer {
             }
             answer.add("points", pointsArr);
         }
+        if (way.apartments != null) {
+            JsonArray apartments = new JsonArray();
+            for (Apartment apartment : way.apartments){
+                JsonObject apartObj = new JsonObject();
+                apartObj.add("price", apartment.price);
+                apartObj.add("area", apartment.area);
+                apartObj.add("floor", apartment.floor);
+                apartObj.add("max_floor", apartment.max_floor);
+                apartments.add(apartObj);
+            }
+            data.add("apartments", apartments);
+        }
+        answer.add("data", data);
+
         return answer;
     }
 }

@@ -1,5 +1,6 @@
 package net.zettroke.PropertyHeatMapServer.handlers;
 
+import com.eclipsesource.json.Json;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -11,6 +12,7 @@ import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.Way;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonArray;
+import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
 
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -63,24 +65,12 @@ public class MapPointSearchHandler implements ShittyHttpHandler {
         if (w != null) {
             answer.add("status", "success");
 
-            JsonObject data = new JsonObject();
-            for (Map.Entry<String, String> p: w.data.entrySet()){
-                data.add(p.getKey(), p.getValue());
-            }
-            answer.add("data", data);
-
-            answer.add("id", w.id);
-            answer.add("zoom_level", PropertyMap.default_zoom);
-            JsonArray points = new JsonArray();
-            for (MapPoint p: w.nodes){
-                JsonArray point = new JsonArray(); point.add(p.x); point.add(p.y);
-                points.add(point);
-            }
-            answer.add("points", points);
+            JsonArray arr = new JsonArray();
+            arr.add(Jsonizer.toJson(w, true));
+            answer.add("objects", arr);
         }else{
             answer.add("status", "not found");
         }
-
         ByteBuf buf = ctx.alloc().buffer();
         buf.writeBytes(answer.toString().getBytes(Charset.forName("utf-8")));
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);

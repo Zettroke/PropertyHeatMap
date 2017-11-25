@@ -57,6 +57,7 @@ class ServerInitializer extends ChannelInitializer<SocketChannel> {
         pathRouter.addPath(new MapPointSearchHandler(propertyMap));
         pathRouter.addPath(new DrawerHandler());
         pathRouter.addPath(new MapCircleSearchHandler(propertyMap));
+        pathRouter.addPath(new TileHandler(propertyMap));
         pathRouter.setErrorHandler(new ErrorHandler());
 
         return pathRouter;

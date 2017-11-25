@@ -1,5 +1,7 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
+import net.zettroke.PropertyHeatMapServer.utils.Apartment;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,4 +14,5 @@ public class Way implements Serializable{
     public ArrayList<SimpleNode> nodes = new ArrayList<>();
     public HashMap<String, String> data = new HashMap<>();
     public int[] legth;
+    public ArrayList<Apartment> apartments;
 }

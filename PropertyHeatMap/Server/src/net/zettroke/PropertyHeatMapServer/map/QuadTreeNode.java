@@ -183,7 +183,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     public ArrayList<MapShape> shapes = new ArrayList<>();
     ArrayList<Node> nodes = new ArrayList<>();
 
-    QuadTreeNode(int[] bounds){
+    public QuadTreeNode(int[] bounds){
         this.bounds = bounds;
     }
 
@@ -428,7 +428,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
 
 
                     square.add(lul[z]);
-                    intersec_debug.add(lul[z].p);
+                    //intersec_debug.add(lul[z].p);
                 }
             }
 
