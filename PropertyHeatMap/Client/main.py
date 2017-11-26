@@ -16,6 +16,7 @@ class MapApp(Canvas):
 
     def __init__(self, root, **kwargs):
         # git test!!1
+        # git answer !!1
         self.root = root
         self.miss_photo = ImageTk.PhotoImage(Image.new("RGB", (256, 256), 0xC3C3C3))
         self.is_local_network = True
