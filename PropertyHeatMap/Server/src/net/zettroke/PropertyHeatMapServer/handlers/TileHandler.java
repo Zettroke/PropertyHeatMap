@@ -82,7 +82,7 @@ public class TileHandler implements ShittyHttpHandler{
                         float color = (float) (((av_price - propertyMap.min_price_per_metr) / dist)*(24.0/36.0));
                         Color clr = Color.getHSBColor(color, 1.0f, 1.0f);
 
-                        g.setColor(new Color(clr.getRed(), clr.getGreen(), clr.getBlue(), 100));
+                        g.setColor(new Color(clr.getRed(), clr.getGreen(), clr.getBlue(), 128));
                     }else{
                         g.setColor(new Color(255,255, 255, 0));
                     }

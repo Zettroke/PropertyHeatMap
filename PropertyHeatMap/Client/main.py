@@ -17,16 +17,24 @@ class MapApp(Canvas):
     def __init__(self, root, **kwargs):
         self.root = root
         self.miss_photo = ImageTk.PhotoImage(Image.new("RGB", (256, 256), 0xC3C3C3))
-
-        self.map_server = "http://178.140.109.241:25565/"
-        self.image_server = "http://178.140.109.241:25565/z{z}/{x}.{y}.png"
-        self.image_layer_server = "http://178.140.109.241:24062/tile?x={x}&y={y}&z={z}"
+        self.is_local_network = True
+        if not self.is_local_network:
+            self.map_server = "http://178.140.109.241:25565/"
+            self.image_server = "http://178.140.109.241:25565/z{z}/{x}.{y}.png"
+            self.image_layer_server = "http://178.140.109.241:24062/tile?x={x}&y={y}&z={z}"
+            self.map_data_server = "http://178.140.109.241:24062/search/point/?x={x}&y={y}&z={z}"
+            self.map_data_server_circle_search = "http://178.140.109.241:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
+        else:
+            self.map_server = "http://127.0.0.1:25565/"
+            self.image_server = "http://127.0.0.1:25565/z{z}/{x}.{y}.png"
+            self.image_layer_server = "http://127.0.0.1:24062/tile?x={x}&y={y}&z={z}"
+            self.map_data_server = "http://127.0.0.1:24062/search/point/?x={x}&y={y}&z={z}"
+            self.map_data_server_circle_search = "http://127.0.0.1:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
         try:
             self.image_server = open("config", "r").readline()
         except Exception:
             pass
-        self.map_data_server = "http://178.140.109.241:24062/search/point/?x={x}&y={y}&z={z}"
-        self.map_data_server_circle_search = "http://178.140.109.241:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
+
         try:
             requests.get(self.map_server, timeout=2)
         except Exception:
