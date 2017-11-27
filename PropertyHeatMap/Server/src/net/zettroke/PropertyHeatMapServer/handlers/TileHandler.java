@@ -22,7 +22,7 @@ public class TileHandler implements ShittyHttpHandler{
     PropertyMap propertyMap;
     double coefficent = 1;
 
-    static String path = "tile";
+    static String path = "tile/price";
 
     @Override
     public String getPath() {
@@ -36,6 +36,10 @@ public class TileHandler implements ShittyHttpHandler{
         int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
         int x = Integer.decode(decoder.parameters().get("x").get(0));
         int y = Integer.decode(decoder.parameters().get("y").get(0));
+        int price = Integer.decode(decoder.parameters().get("price").get(0));
+        double range = Double.parseDouble(decoder.parameters().get("range").get(0));
+
+
         coefficent = 1.0/mult;
 
         BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
@@ -49,7 +53,7 @@ public class TileHandler implements ShittyHttpHandler{
 
         propertyMap.fillTreeNode(treeNode);
 
-        drawTreeNode(g, treeNode, 256*x, 256*y);
+        drawTreeNode(g, treeNode, 256*x, 256*y, price, range);
 
         ByteBuf buf = ctx.alloc().buffer();
         ByteBufOutputStream outputStream = new ByteBufOutputStream(buf);
@@ -63,8 +67,8 @@ public class TileHandler implements ShittyHttpHandler{
         return (int)Math.round(coefficent*n);
     }
 
-    void drawTreeNode(Graphics2D g, QuadTreeNode treeNode, int x_offset, int y_offset){
-        double dist = propertyMap.max_price_per_metr - propertyMap.min_price_per_metr;
+    void drawTreeNode(Graphics2D g, QuadTreeNode treeNode, int x_offset, int y_offset, int price, double range){
+        double dist = price*range*2;
         for (MapShape mh: treeNode.shapes){
             if (mh.isPoly && mh.way.data.containsKey("building")) {
                     g.setStroke(new BasicStroke(1f));
@@ -73,16 +77,21 @@ public class TileHandler implements ShittyHttpHandler{
                         poly.addPoint(coef(p.x)-x_offset, coef(p.y)-y_offset);
                     }
                     if (mh.way.apartments != null) {
-                        double av_price = Double.MAX_VALUE;
-                        for (Apartment a: mh.way.apartments){
-                            av_price = Math.min(a.price/a.area, av_price);
+                        double ap_price = -1000000000000000000000.0;
+                        for (Apartment ap: mh.way.apartments){
+                            if (Math.abs(price-ap_price) > Math.abs(price-ap.price/ap.area)){
+                                ap_price = ap.price/ap.area;
+                            }
                         }
-                        //av_price = av_price / mh.way.apartments.size();
+                        if (ap_price > price - price*range && ap_price < price+price*range) {
+                            float color = (float) ((((price + price * range)-ap_price) / dist) * (24.0 / 36.0));
+                            Color clr = Color.getHSBColor(color, 1.0f, 1.0f);
 
-                        float color = (float) (((av_price - propertyMap.min_price_per_metr) / dist)*(24.0/36.0));
-                        Color clr = Color.getHSBColor(color, 1.0f, 1.0f);
+                            g.setColor(new Color(clr.getRed(), clr.getGreen(), clr.getBlue(), 128));
+                        }else{
 
-                        g.setColor(new Color(clr.getRed(), clr.getGreen(), clr.getBlue(), 128));
+                            g.setColor(new Color(255,255, 255, 0));
+                        }
                     }else{
                         g.setColor(new Color(255,255, 255, 0));
                     }

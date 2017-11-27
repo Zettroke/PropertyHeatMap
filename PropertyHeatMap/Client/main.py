@@ -1,5 +1,5 @@
-from tkinter import Tk, Canvas, NW, ALL, Button, Label
-from PIL import Image, ImageTk, ImageDraw, ImageMode
+from tkinter import Tk, Canvas, NW, ALL, Button, Label, Toplevel, Entry
+from PIL import Image, ImageTk, ImageDraw
 import time
 from threading import Thread, Lock
 import math
@@ -23,13 +23,13 @@ class MapApp(Canvas):
         if not self.is_local_network:
             self.map_server = "http://178.140.109.241:25565/"
             self.image_server = "http://178.140.109.241:25565/z{z}/{x}.{y}.png"
-            self.image_layer_server = "http://178.140.109.241:24062/tile?x={x}&y={y}&z={z}"
+            self.image_layer_server = "http://178.140.109.241:24062/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
             self.map_data_server = "http://178.140.109.241:24062/search/point/?x={x}&y={y}&z={z}"
             self.map_data_server_circle_search = "http://178.140.109.241:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
         else:
             self.map_server = "http://127.0.0.1:25565/"
             self.image_server = "http://127.0.0.1:25565/z{z}/{x}.{y}.png"
-            self.image_layer_server = "http://127.0.0.1:24062/tile?x={x}&y={y}&z={z}"
+            self.image_layer_server = "http://127.0.0.1:24062/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
             self.map_data_server = "http://127.0.0.1:24062/search/point/?x={x}&y={y}&z={z}"
             self.map_data_server_circle_search = "http://127.0.0.1:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
         try:
@@ -79,6 +79,12 @@ class MapApp(Canvas):
         self.r_click_y = 0
         self.radius = 0
 
+        self.target_price = 100000
+        self.target_price_range = 0.5
+        self.target_price_entry = None
+        self.target_price_range_entry = None
+        self.target_price_toplevel = None
+
         self.shapes = []
         self.shapes_images = []
 
@@ -112,9 +118,26 @@ class MapApp(Canvas):
 
     def turn_layer(self, event=None):
         self.layer_turned_on = not self.layer_turned_on
+        if self.layer_turned_on:
+            self.target_price_toplevel = Toplevel(self.root)
+            self.target_price_entry = Entry(self.target_price_toplevel, width=8)
+            self.target_price_range_entry = Entry(self.target_price_toplevel, width=6)
+            self.target_price_entry.insert(0, str(self.target_price))
+            self.target_price_range_entry.insert(0, str(self.target_price_range))
+            self.target_price_entry.pack()
+            self.target_price_range_entry.pack()
+            Button(self.target_price_toplevel, text="Ok", command=self.setup_and_turn_layer).pack()
+        else:
+            self.load_tiles()
+            self.update_shapes()
 
+    def setup_and_turn_layer(self):
+        self.target_price = int(self.target_price_entry.get())
+        self.target_price_range = float(self.target_price_range_entry.get())
+        self.target_price_toplevel.destroy()
         self.load_tiles()
         self.update_shapes()
+
 
     def load_tiles(self, event=None):
         # print(len(self.image_dict))
@@ -167,7 +190,7 @@ class MapApp(Canvas):
                 img = Image.open(f).convert("RGBA")
 
                 if self.layer_turned_on:
-                    f2 = io.BytesIO(requests.get(self.image_layer_server.format(z=self.zoom, x=o[1], y=o[2]),
+                    f2 = io.BytesIO(requests.get(self.image_layer_server.format(z=self.zoom, x=o[1], y=o[2], price=self.target_price, range=self.target_price_range),
                                                 headers={"UserName": getpass.getuser()}).content)
                     img2 = Image.open(f2)
                     img = Image.alpha_composite(img, img2)
