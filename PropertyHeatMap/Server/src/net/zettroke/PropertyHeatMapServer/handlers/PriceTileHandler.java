@@ -17,7 +17,7 @@ import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
 
-public class TileHandler implements ShittyHttpHandler{
+public class PriceTileHandler implements ShittyHttpHandler{
 
     PropertyMap propertyMap;
     double coefficent = 1;
@@ -104,7 +104,7 @@ public class TileHandler implements ShittyHttpHandler{
         }
     }
 
-    public TileHandler(PropertyMap propertyMap){
+    public PriceTileHandler(PropertyMap propertyMap){
         this.propertyMap = propertyMap;
     }
 

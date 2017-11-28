@@ -373,10 +373,10 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
                     if (lul[z].equals(p1) || lul[z].equals(p2)) {
                         MapPoint pp, pc;
                         if (lul[z].equals(p1)) {
-                            pp = m.points.get(i - 2 >= 0 ? i - 2 : m.points.size() - 1);
+                            pp = m.points.get(i - 2 >= 0 ? i - 2 : m.points.size() - 2);
                             pc = p2;
                         } else {
-                            pp = m.points.get((i + 1) % m.points.size());
+                            pp = m.points.get(i + 1 == m.points.size() ? 1: i+1);
                             pc = p1;
                         }
                         switch (z) {

@@ -9,7 +9,7 @@ import java.util.*;
  * Created by Zettroke on 19.10.2017.
  */
 public class QuadTree {
-    static int THRESHOLD = 100;
+    static int THRESHOLD = 1000;
 
 
     public QuadTreeNode root;
@@ -60,8 +60,11 @@ public class QuadTree {
         QuadTreeNode treeNode = getEndNode(p);
         int count = 0;
         Way res = null;
+        if (!root.inBounds(p)){
+            return null;
+        }
         for (MapShape mh: treeNode.shapes){
-            if (mh.way.id == 29544240){
+            if (mh.way.id == 198560029){
                 Way suka = new Way();
                 suka.id = mh.way.id;
                 for(MapPoint psuka: mh.way.nodes){
@@ -79,7 +82,7 @@ public class QuadTree {
 
     }
 
-    Collection<Way> findShapesByCircle(MapPoint center, int radius) throws Exception{
+    List<Way> findShapesByCircle(MapPoint center, int radius) throws Exception{
         QuadTreeNode treeNode = getEndNode(center);
         while (true){
             if (center.x - treeNode.bounds[0] > radius && treeNode.bounds[2] - center.x > radius &&
@@ -120,7 +123,7 @@ public class QuadTree {
             }
         }
 
-        return result.values();
+        return new ArrayList<>(result.values());
     }
 
     private boolean circle_contain_node_or_cross(QuadTreeNode node, MapPoint center, int radius){

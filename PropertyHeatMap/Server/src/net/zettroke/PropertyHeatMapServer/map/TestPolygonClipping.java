@@ -15,7 +15,7 @@ import java.util.Collection;
  */
 public class TestPolygonClipping {
     public static void test() throws Exception{
-        int[] bounds = new int[]{2048, 14336, 4096, 16384};
+        int[] bounds = new int[]{20736, 23040, 23040, 25344};
         //int[] bounds = new int[]{0, 0, 750, 750};
         //BufferedImage image = new BufferedImage(600, 600, BufferedImage.TYPE_INT_RGB);
         BufferedImage image = new BufferedImage(bounds[2]-bounds[0]+500, bounds[3]-bounds[1]+500, BufferedImage.TYPE_INT_RGB);

@@ -32,14 +32,17 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception{
+        String map_name = new Scanner(new FileInputStream("current_map_file.conf")).nextLine();
         //ab -n 5000 -c 8 "http://localhost:24062/draw?text=Zettroke"
-        //ab -n 50000 -c 8 "http://localhost:24062/search/?x=2341&y=3512&z=16"
+        //ab -n 5000 -c 4 "http://127.0.0.1:24062/search/circle/?x=730&y=1432&z=14&r=551"
         //ab -n 50000 -c 8 "http://192.168.1.150:24062/search/circle/?x=300&y=300&r=200&z=16"
         //ab -n 50000 -c 8 "http://178.140.109.241:24062/search/circle/?x=1769&y=203&z=16&r=280"
         //ab -n 5000 -c 8 "http://178.140.109.241:24062/tile?x=6&y=0&z=16"
+        /*Scanner scanner = new Scanner(System.in);
+        scanner.nextLine();*/
 
         ImageIO.setUseCache(false);
-        PropertyMapServer server = new PropertyMapServer();
+        PropertyMapServer server = new PropertyMapServer(map_name);
         server.start();
 
 
@@ -50,7 +53,7 @@ public class Main {
         /*long start = System.nanoTime();
 
         PropertyMap propertyMap = new PropertyMap();
-        PropertyMapLoaderOSM.load(propertyMap, new File("map_small.osm"));
+        PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
         propertyMap.initParallel();
         System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
 
@@ -63,6 +66,8 @@ public class Main {
         coefficent = size/(propertyMap.x_end-propertyMap.x_begin);
         int y_size = coef(propertyMap.y_end-propertyMap.y_begin);
 
+        System.out.println(coefficent);
+
         BufferedImage image = new BufferedImage(x_size, y_size, BufferedImage.TYPE_INT_RGB);
 
         Graphics2D g = (Graphics2D) image.getGraphics();
@@ -70,6 +75,12 @@ public class Main {
         g.fillRect(0, 0, x_size, y_size);
         g.setColor(new Color(0, 0, 0));
         draw(g, propertyMap.tree.root);
+
+        g.setColor(new Color(255, 0, 0));
+        for (MapPoint p: propertyMap.lost_price){
+            g.fillRect(coef(p.x)-4, coef(p.y)-4, 8, 8);
+            g.drawRect(coef(p.x)-16, coef(p.y)-16, 32, 32);
+        }
 
         ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));*/
 

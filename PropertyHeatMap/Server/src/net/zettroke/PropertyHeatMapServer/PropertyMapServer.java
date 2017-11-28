@@ -15,13 +15,14 @@ import net.zettroke.PropertyHeatMapServer.handlers.*;
 import java.io.File;
 
 public class PropertyMapServer {
-
-    PropertyMapServer(){
+    String map_name;
+    PropertyMapServer(String map){
+        map_name = map;
     }
 
     public void start() throws Exception{
         PropertyMap propertyMap = new PropertyMap();
-        PropertyMapLoaderOSM.load(propertyMap, new File("map_small.osm"));
+        PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
         //PropertyMapLoaderOSM.load(propertyMap, new File("C:/PropertyHeatMap/map.osm"));
         long start = System.nanoTime();
         propertyMap.initParallel();
@@ -57,7 +58,7 @@ class ServerInitializer extends ChannelInitializer<SocketChannel> {
         pathRouter.addPath(new MapPointSearchHandler(propertyMap));
         pathRouter.addPath(new DrawerHandler());
         pathRouter.addPath(new MapCircleSearchHandler(propertyMap));
-        pathRouter.addPath(new TileHandler(propertyMap));
+        pathRouter.addPath(new PriceTileHandler(propertyMap));
         pathRouter.setErrorHandler(new ErrorHandler());
 
         return pathRouter;

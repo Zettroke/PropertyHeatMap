@@ -8,6 +8,7 @@ import net.zettroke.PropertyHeatMapServer.utils.Apartment;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 
 /**
@@ -29,6 +30,8 @@ public class PropertyMap {
     ArrayList<Node> nodes = new ArrayList<>();
     ArrayList<Way> ways = new ArrayList<>();
     ArrayList<Relation> relations = new ArrayList<>();
+
+    public ArrayList<MapPoint> lost_price = new ArrayList<>();
 
     public QuadTree tree;
 
@@ -109,6 +112,7 @@ public class PropertyMap {
     }
 
     public void load_prices(){
+        int counter = 0;
         try{
             System.out.println("Loading prices...");
             BufferedReader reader = new BufferedReader(new FileReader("data_json"));
@@ -119,8 +123,19 @@ public class PropertyMap {
                 int[] t = mercator(coords.get(0).asDouble(), coords.get(1).asDouble());
                 int x = t[0];
                 int y = t[1];
-                Way way = findShapeByPoint(new MapPoint(x, y));
-
+                MapPoint p = new MapPoint(x, y);
+                Way way = findShapeByPoint(p);
+                if (tree.root.inBounds(p) && way == null){
+                    /*counter++;
+                    lost_price.add(p);*/
+                    List<Way> wayList = findShapesByCircle(p, 100);
+                    if (wayList.size() == 1){
+                        way = wayList.get(0);
+                    }else{
+                        counter++;
+                        lost_price.add(p);
+                    }
+                }
                 if (way != null) {
                     if (way.apartments == null){
                         way.apartments = new ArrayList<>();
@@ -143,6 +158,7 @@ public class PropertyMap {
                 }
                 line = reader.readLine();
             }
+            System.out.println("lost_prices: " + counter);
         }catch (Exception e){
             System.err.println("LoadPrices Exception");
             e.printStackTrace();
@@ -150,7 +166,7 @@ public class PropertyMap {
 
     }
 
-    public Collection<Way> findShapesByCircle(MapPoint center, int radius) throws Exception{
+    public List<Way> findShapesByCircle(MapPoint center, int radius) throws Exception{
         return tree.findShapesByCircle(center, radius);
     }
 

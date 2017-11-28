@@ -55,7 +55,6 @@ public class MapCircleSearchHandler implements ShittyHttpHandler{
         response.headers().set("Content-Type", "text/json; charset=UTF-8");
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 
-        ctx.close();
     }
 
     public MapCircleSearchHandler(PropertyMap propertyMap){
