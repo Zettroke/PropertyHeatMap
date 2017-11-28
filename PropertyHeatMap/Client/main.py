@@ -138,7 +138,6 @@ class MapApp(Canvas):
         self.load_tiles()
         self.update_shapes()
 
-
     def load_tiles(self, event=None):
         # print(len(self.image_dict))
         while not self.image_load_queue.empty():
@@ -303,7 +302,8 @@ class MapApp(Canvas):
             pos_y = 256 + self.map_y % 256
             self.xview_moveto(pos_x / self.total_canv_size[0])
             self.yview_moveto(pos_y / self.total_canv_size[1])
-            self.res = tuple(map(int, requests.get(self.map_server + "z{}/config".format(self.zoom), "r").text.split()))
+            self.res = tuple(map(int, requests.get(self.map_server + "z{}/config".format(self.zoom)).text.split()))
+            self.min_zoom, self.max_zoom = map(int, requests.get(self.map_server + "zoom_levels").text.split())
             self.load_tiles()
             self.re_render_shapes()
             self.update_shapes()

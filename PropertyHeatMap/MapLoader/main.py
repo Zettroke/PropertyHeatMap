@@ -8,7 +8,7 @@ PROC_NUM = 2
 
 map_folder = "C:/PropertyHeatMap/osm_map/"
 
-zoom_start = 16
+zoom_start = 14
 zoom_end = 17
 
 
@@ -48,7 +48,13 @@ def tiles_loader(ind, server, bounds, exclude):
                 y = i % m_tiles_y
                 while True:
                     try:
-                        r = requests.get(url.format(x=m_offset_tile_x+x, y=m_offset_tile_y+y, z=z))
+                        r = requests.get(url.format(x=m_offset_tile_x+x, y=m_offset_tile_y+y, z=z), headers={
+                            "Connection": "keep-alive",
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.59 Safari/537.36",
+                            "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+                            "DNT": "1",
+                            "Referer": "http://www.openstreetmap.org/",
+                            "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"})
                         open(map_folder + zoom_folder +"{}.{}.png".format(x, y), "wb").write(r.content)
                         break
                     except Exception:
@@ -66,10 +72,10 @@ if __name__ == '__main__':
     start_y = 55.9737
     end_x = 38.322
     end_y = 55.379'''
-    start_x = 37.6996
-    start_y = 55.7828
-    end_x = 37.7491
-    end_y = 55.7550
+    start_x = 37.6611335
+    start_y = 55.825973
+    end_x = 37.8588868
+    end_y = 55.7147345
     bounds = [start_x, start_y, end_x, end_y]
 
     # servers = ["vec01", "vec02", "vec03", "vec04"]*max((PROC_NUM//4), 1)
