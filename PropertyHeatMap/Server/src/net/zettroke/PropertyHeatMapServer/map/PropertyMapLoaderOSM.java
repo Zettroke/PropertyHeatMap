@@ -62,6 +62,7 @@ public class PropertyMapLoaderOSM{
         m.x_end = coords[0]; m.y_begin = coords[1];
         m.x_begin = coords1[0]; m.y_end = coords1[1];
 
+        ArrayList<Node> tempNodeList = new ArrayList<>();
 
         while (streamReader.hasNext()) {
             if (streamReader.hasName()) {
@@ -86,8 +87,8 @@ public class PropertyMapLoaderOSM{
                             break;
                         case "nd":
                             Node n =  nodes.get(Long.decode(streamReader.getAttributeValue(0)));
+                            tempNodeList.add(n);
                             tempWay.nodes.add(n);
-                            n.ways.add(tempWay);
                             break;
                         case "relation":
                             tempRelation = new Relation();
@@ -126,7 +127,44 @@ public class PropertyMapLoaderOSM{
                             break;
                         case "way":
                             ways.put(tempWay.id, tempWay);
+                            if (tempWay.data.containsKey("highway")){
+                                Node n1 = tempNodeList.get(0);
+                                int prev_index;
+                                if (!m.roadGraphIndexes.containsKey(n1.id)){
+                                    prev_index = m.roadGraphNodes.size();
+                                    m.roadGraphIndexes.put(n1.id, m.roadGraphNodes.size());
+                                    RoadGraphNode rgn = new RoadGraphNode(n1);
+                                    rgn.addWay(tempWay);
+                                    m.roadGraphNodes.add(rgn);
+                                    m.roadGraphConnections.add(new ArrayList<>());
+                                    m.roadGraphDistances.add(new ArrayList<>());
+                                }else{
+                                    prev_index = m.roadGraphIndexes.get(n1.id);
+                                }
+
+                                for (int i = 1; i < tempNodeList.size(); i++){
+                                    int index;
+                                    if (m.roadGraphIndexes.containsKey(tempNodeList.get(i).id)){
+                                        index = m.roadGraphIndexes.get(tempNodeList.get(i).id);
+                                    }else{
+                                        RoadGraphNode rgn = new RoadGraphNode(tempNodeList.get(i));
+                                        index = m.roadGraphNodes.size();
+                                        m.roadGraphIndexes.put(rgn.n.id, m.roadGraphNodes.size());
+                                        m.roadGraphNodes.add(rgn);
+                                        m.roadGraphConnections.add(new ArrayList<>());
+                                        m.roadGraphDistances.add(new ArrayList<>());
+                                    }
+                                    m.roadGraphNodes.get(index).addWay(tempWay);
+                                    int dist = PropertyMap.calculateDistance(m.roadGraphNodes.get(index).n, m.roadGraphNodes.get(prev_index).n);
+                                    m.roadGraphConnections.get(index).add(prev_index);
+                                    m.roadGraphDistances.get(index).add(dist);
+                                    m.roadGraphConnections.get(prev_index).add(index);
+                                    m.roadGraphDistances.get(prev_index).add(dist);
+                                    prev_index = index;
+                                }
+                            }
                             tempWay = null;
+                            tempNodeList.clear();
                             break;
                         case "relation":
                             relations.put(tempRelation.id, tempRelation);
@@ -137,41 +175,13 @@ public class PropertyMapLoaderOSM{
             }
             streamReader.next();
         }
+        streamReader.close();
 
-        dedup = null;
         System.gc();
         System.out.println("Loaded osm in " + (System.nanoTime()-start)/1000000.0 + " millis.");
         System.out.println("Nodes: "+nodes.size());
         System.out.println("Ways: "+ways.size());
         System.out.println("Relations: "+relations.size());
-        streamReader.close();
-        ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
-        for (Node n: nodes.values()){
-            boolean have_highway = false;
-            for (Way w: n.ways){
-                if (w.data.containsKey("highway")){
-                    have_highway = true;
-                    break;
-                }
-            }
-            /*if (n.relations.size() == 0 && !have_highway){
-                if (n.data == null){
-                    simpleNodes.add(new SimpleNode(n));
-                }else{
-                    n.ways = null;
-                    n.relations = null;
-                }
-
-            }*/
-        }
-        for (SimpleNode n: simpleNodes){
-            Node n2 = nodes.get(n.id);
-            for (Way w: n2.ways){
-                w.nodes.set(w.nodes.indexOf((SimpleNode) n2), n);
-            }
-            nodes.remove(n.id);
-        }
-        m.simpleNodes = simpleNodes;
         m.nodes = new ArrayList<>(nodes.values());
         m.ways = new ArrayList<>(ways.values());
         m.relations = new ArrayList<>(relations.values());

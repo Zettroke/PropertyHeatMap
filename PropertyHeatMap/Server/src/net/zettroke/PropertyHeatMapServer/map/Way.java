@@ -11,7 +11,7 @@ import java.util.HashMap;
  */
 public class Way implements Serializable{
     public long id;
-    public ArrayList<SimpleNode> nodes = new ArrayList<>();
+    public ArrayList<Node> nodes = new ArrayList<>();
     public HashMap<String, String> data = new HashMap<>();
     public int[] legth;
     public ArrayList<Apartment> apartments;

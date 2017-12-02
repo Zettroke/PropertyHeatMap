@@ -11,8 +11,6 @@ import java.util.HashMap;
 // Only node whose related to roads(highways) or relations(public transport)
 public class Node extends SimpleNode{
 
-    public ArrayList<Way> ways = new ArrayList<>();
-
     //public ArrayList<Relation> relations = new ArrayList<>();
 
     public HashMap<String, String> data = new HashMap<>();

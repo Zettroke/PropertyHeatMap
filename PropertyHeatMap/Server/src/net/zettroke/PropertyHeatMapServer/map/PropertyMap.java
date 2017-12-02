@@ -8,6 +8,7 @@ import net.zettroke.PropertyHeatMapServer.utils.Apartment;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -15,6 +16,8 @@ import java.util.List;
  * Created by Olleggerr on 15.10.2017.
  */
 public class PropertyMap {
+
+    static final int earthRadius = 6371000;
 
     public static int default_zoom = 19;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
@@ -31,7 +34,10 @@ public class PropertyMap {
     ArrayList<Way> ways = new ArrayList<>();
     ArrayList<Relation> relations = new ArrayList<>();
 
-    public ArrayList<MapPoint> lost_price = new ArrayList<>();
+    HashMap<Long, Integer> roadGraphIndexes = new HashMap<>();
+    ArrayList<RoadGraphNode> roadGraphNodes = new ArrayList<>();
+    ArrayList<ArrayList<Integer>> roadGraphConnections = new ArrayList<>();
+    ArrayList<ArrayList<Integer>> roadGraphDistances = new ArrayList<>();
 
     public QuadTree tree;
 
@@ -42,6 +48,7 @@ public class PropertyMap {
     }
 
     public PropertyMap() {}
+
     public void init(){
         tree = new QuadTree(new int[]{0, 0, x_end-x_begin, y_end-y_begin});
         //t.split();
@@ -58,9 +65,6 @@ public class PropertyMap {
     }
 
     class ParallelInitThread extends Thread{
-
-        int count_calls_addPoly = 0;
-        int count_calls_contain = 0;
 
         QuadTreeNode t;
         PropertyMap m;
@@ -111,7 +115,7 @@ public class PropertyMap {
         //System.out.println("contain calls - " + count_contain);
     }
 
-    public void load_prices(){
+    void load_prices(){
         int counter = 0;
         try{
             System.out.println("Loading prices...");
@@ -133,7 +137,6 @@ public class PropertyMap {
                         way = wayList.get(0);
                     }else{
                         counter++;
-                        lost_price.add(p);
                     }
                 }
                 if (way != null) {
@@ -176,6 +179,53 @@ public class PropertyMap {
 
     public void fillTreeNode(QuadTreeNode n){
         tree.fillTreeNode(n);
+    }
+
+    public static int calculateDistance(Node n1, Node n2){
+        double lat1 = Math.toRadians(n1.lat);
+        double lat2 = Math.toRadians(n2.lat);
+        double dlat = Math.toRadians(n2.lat-n1.lat);
+        double dlon = Math.toRadians(n2.lon-n1.lon);
+
+        double a = Math.sin(dlat/2) * Math.sin(dlat/2) + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon/2) * Math.sin(dlon/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+        return (int)Math.round(earthRadius*c);
+
+    }
+
+    public HashMap<Long, RoadGraphNode> getCalculatedRoadGraph(long id){
+        HashMap<Long, RoadGraphNode> res = new HashMap<>();
+        for (RoadGraphNode rgn: roadGraphNodes){
+            res.put(rgn.n.id, rgn.clone());
+        }
+
+        for (int i=0; i<roadGraphNodes.size(); i++){
+            RoadGraphNode curr_node = res.get(roadGraphNodes.get(i).n.id);
+            for (int j=0; j<roadGraphConnections.get(i).size(); j++){
+                int ind = roadGraphConnections.get(i).get(j);
+                curr_node.ref_to.add(res.get(roadGraphNodes.get(ind).n.id));
+                curr_node.distances.add(roadGraphDistances.get(i).get(j));
+            }
+        }
+
+        RoadGraphNode start = res.get(id);
+        start.dist = 0;
+        recCalculateDistance(start);
+
+        return res;
+    }
+
+    void recCalculateDistance(RoadGraphNode rgn){
+        for (int i=0; i<rgn.ref_to.size(); i++){
+            RoadGraphNode to = rgn.ref_to.get(i);
+            int dist = rgn.distances.get(i);
+            if (rgn.dist + dist < to.dist){
+                to.dist = rgn.dist + dist;
+                recCalculateDistance(to);
+                //System.out.println(depth);
+            }
+        }
     }
 
 

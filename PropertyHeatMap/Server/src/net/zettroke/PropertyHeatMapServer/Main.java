@@ -41,10 +41,11 @@ public class Main {
         /*Scanner scanner = new Scanner(System.in);
         scanner.nextLine();*/
 
-        ImageIO.setUseCache(false);
+        /*ImageIO.setUseCache(false);
         PropertyMapServer server = new PropertyMapServer(map_name);
-        server.start();
+        server.start();*/
 
+        TestRoadGraph.test();
 
 
 
