@@ -11,6 +11,7 @@ import java.util.Scanner;
 
 public class TestRoadGraph {
     static double coefficent = 1;
+    static Graphics2D g;
 
     static int coef(int n){
         return (int)Math.round(n*coefficent);
@@ -21,37 +22,38 @@ public class TestRoadGraph {
         PropertyMap propertyMap = new PropertyMap();
         PropertyMapLoaderOSM.load(propertyMap, "map_small.osm");
 
-        double size = 10000;
+        double size = 5000;
         int x_size = (int) size;
         coefficent = size/(propertyMap.x_end-propertyMap.x_begin);
         int y_size = coef(propertyMap.y_end-propertyMap.y_begin);
 
-        System.out.println(coefficent);
+        //System.out.println(coefficent);
 
         BufferedImage image = new BufferedImage(x_size, y_size, BufferedImage.TYPE_INT_RGB);
 
-        Graphics2D g = (Graphics2D) image.getGraphics();
+        g = (Graphics2D) image.getGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, x_size, y_size);
 
         g.setColor(Color.BLACK);
-        Scanner scanner = new Scanner(System.in);
+        /*Scanner scanner = new Scanner(System.in);
         scanner.nextLine();
         long start = System.nanoTime();
         bench(propertyMap);
+
         System.out.println((System.nanoTime()-start)/1000000000.0 + "sec.");
-        scanner.nextLine();
-        /*long id = 933754795;
-        Scanner scanner = new Scanner(System.in);
-        scanner.nextLine();
+        scanner.nextLine();*/
+        long id = 933754795;
+        //Scanner scanner = new Scanner(System.in);
+        //scanner.nextLine();
         long start = System.nanoTime();
         HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795);
-        System.out.println((System.nanoTime()-start)/1000000000.0 + "sec.");
-        scanner.nextLine();
+        System.out.println((System.nanoTime()-start)/1000000000.0 + "sec. Recursion");
+        //scanner.nextLine();"933754783" -> "933754783" ->
 
 
-        depth_graph_draw(g, roadGraph.get(id));
+        depth_graph_draw(roadGraph.get(id));
 
         g.setColor(new Color(255, 0, 0));
         g.fillRect(coef(roadGraph.get(id).n.x)-10, coef(roadGraph.get(id).n.y)-10, 20, 20);
@@ -65,7 +67,7 @@ public class TestRoadGraph {
 
 
 
-        ImageIO.write(image, "png", new FileOutputStream("testRoadGraph.png"));*/
+        ImageIO.write(image, "png", new FileOutputStream("testRoadGraph.png"));
     }
     final static int repeats = 20;
     static void bench(PropertyMap propertyMap){
@@ -83,11 +85,17 @@ public class TestRoadGraph {
     }
 
 
-    static void depth_graph_draw(Graphics2D g, RoadGraphNode n){
-        n.dist = -1;
-        for (RoadGraphNode n1 : n.ref_to){
+    static void depth_graph_draw(RoadGraphNode n){
+        n.visited = true;
+        for (int i=0; i<n.ref_to.length; i++){
+            RoadGraphNode n1 = n.ref_to[i];
             boolean flag = true;
-            g.setColor(Color.BLACK);
+            if (n.dist == Integer.MAX_VALUE){
+                g.setColor(Color.RED);
+                g.fillRect(coef(n.n.x)-10, coef(n.n.y)-10, 20, 20);
+            }
+            g.setPaint(new GradientPaint(coef(n.n.x), coef(n.n.y), getNodeColor(n, 2500), coef(n1.n.x), coef(n1.n.y), getNodeColor(n1, 2500)));
+            //g.setColor(Color.BLACK);
             if (n.road_types.contains("secondary") && n1.road_types.contains("secondary")){
                 g.setStroke(new BasicStroke(15, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 //g.setColor(new Color(247, 250, 190));
@@ -107,9 +115,20 @@ public class TestRoadGraph {
             if (flag) {
                 g.drawLine(coef(n.n.x), coef(n.n.y), coef(n1.n.x), coef(n1.n.y));
             }
-            if (n1.dist != -1) {
-                depth_graph_draw(g, n1);
+            if (!n1.visited) {
+                depth_graph_draw(n1);
             }
+        }
+    }
+    static Color getNodeColor(RoadGraphNode n, int max_dist){
+        if (n.dist <= max_dist) {
+
+            int r = (int) (255 * n.dist / (double) max_dist);
+            int g = 255 - (int) (255 * (n.dist / (double) max_dist));
+            return new Color(r, g, 0);
+
+        }else{
+            return new Color(168, 0, 22);
         }
     }
 }

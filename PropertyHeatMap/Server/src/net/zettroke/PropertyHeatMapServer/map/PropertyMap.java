@@ -6,10 +6,7 @@ import com.eclipsesource.json.JsonObject;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -202,28 +199,76 @@ public class PropertyMap {
 
         for (int i=0; i<roadGraphNodes.size(); i++){
             RoadGraphNode curr_node = res.get(roadGraphNodes.get(i).n.id);
+            curr_node.distances = new int[roadGraphConnections.get(i).size()];
+            curr_node.ref_to = new RoadGraphNode[roadGraphConnections.get(i).size()];
             for (int j=0; j<roadGraphConnections.get(i).size(); j++){
                 int ind = roadGraphConnections.get(i).get(j);
-                curr_node.ref_to.add(res.get(roadGraphNodes.get(ind).n.id));
-                curr_node.distances.add(roadGraphDistances.get(i).get(j));
+                curr_node.ref_to[j] = (res.get(roadGraphNodes.get(ind).n.id));
+                curr_node.distances[j] = (roadGraphDistances.get(i).get(j));
             }
         }
 
         RoadGraphNode start = res.get(id);
         start.dist = 0;
-        recCalculateDistance(start);
+        recCalculateDistances(start);
+        /*if (flag) {
+            CalculateDistances(start, roadGraphNodes.size()+1);
+        }else{
+            recCalculateDistances(start);
+        }*/
+
 
         return res;
     }
 
-    void recCalculateDistance(RoadGraphNode rgn){
-        for (int i=0; i<rgn.ref_to.size(); i++){
-            RoadGraphNode to = rgn.ref_to.get(i);
-            int dist = rgn.distances.get(i);
+    void recCalculateDistances(RoadGraphNode rgn){
+        for (int i=0; i<rgn.ref_to.length; i++){
+            RoadGraphNode to = rgn.ref_to[i];
+            int dist = rgn.distances[i];
             if (rgn.dist + dist < to.dist){
                 to.dist = rgn.dist + dist;
-                recCalculateDistance(to);
+                if (to.dist < 10000) {
+                    recCalculateDistances(to);
+                }
                 //System.out.println(depth);
+            }
+        }
+    }
+
+    void CalculateDistances(RoadGraphNode rgn, int max_size){
+        int stack_index = 0;
+        RoadGraphNode[] rgn_stack = new RoadGraphNode[max_size];
+        //Stack<RoadGraphNode> rgn_stack = new Stack<>();
+        //rgn_stack[0] = rgn;
+        //Stack<Integer> ind_stack = new Stack<>();
+        int[] ind_stack = new int[max_size];
+        //ind_stack[0] = 0;
+        int ind = 0, dist;
+        RoadGraphNode node = rgn, to;
+        while (true){
+            if (ind >= node.ref_to.length){
+                stack_index--;
+                if (stack_index == -1){
+                    return;
+                }
+                node = rgn_stack[stack_index];
+                ind = ind_stack[stack_index];
+            }else{
+                to = node.ref_to[ind];
+                dist = node.distances[ind];
+                if (node.dist + dist < to.dist){
+                    to.dist = node.dist + dist;
+                    ind_stack[stack_index] = ind+1;
+                    rgn_stack[stack_index] = node;
+                    node = to;
+                    ind = 0;
+                    stack_index++;
+                    /*rgn_stack.push(to);
+                    ind_stack.push(ind_stack.pop()+1);
+                    ind_stack.push(0);*/
+                }else{
+                    ind++;
+                }
             }
         }
     }

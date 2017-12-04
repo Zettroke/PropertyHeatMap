@@ -6,8 +6,10 @@ import java.util.HashSet;
 public class RoadGraphNode {
     Node n;
     int dist = Integer.MAX_VALUE;
-    ArrayList<RoadGraphNode> ref_to = new ArrayList<>();
-    ArrayList<Integer> distances = new ArrayList<>();
+    //ArrayList<RoadGraphNode> ref_to = new ArrayList<>();
+    RoadGraphNode[] ref_to;
+    //ArrayList<Integer> distances = new ArrayList<>();
+    int[] distances;
     public HashSet<String> road_types = new HashSet<>();
     boolean visited = false;
 
