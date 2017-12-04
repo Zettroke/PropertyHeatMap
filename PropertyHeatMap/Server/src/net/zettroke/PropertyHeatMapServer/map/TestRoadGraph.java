@@ -123,9 +123,10 @@ public class TestRoadGraph {
     static Color getNodeColor(RoadGraphNode n, int max_dist){
         if (n.dist <= max_dist) {
 
-            int r = (int) (255 * n.dist / (double) max_dist);
+            /*int r = (int) (255 * n.dist / (double) max_dist);
             int g = 255 - (int) (255 * (n.dist / (double) max_dist));
-            return new Color(r, g, 0);
+            return new Color(r, g, 0);*/
+            return Color.getHSBColor((float)((1-n.dist/(double)max_dist)*120.0/360.0), 0.9f, 0.8f);
 
         }else{
             return new Color(168, 0, 22);

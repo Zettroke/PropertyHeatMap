@@ -140,6 +140,7 @@ public class PropertyMapLoaderOSM{
                                     m.roadGraphDistances.add(new ArrayList<>());
                                 }else{
                                     prev_index = m.roadGraphIndexes.get(n1.id);
+                                    m.roadGraphNodes.get(prev_index).addWay(tempWay);
                                 }
 
                                 for (int i = 1; i < tempNodeList.size(); i++){

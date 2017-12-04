@@ -15,4 +15,5 @@ public class Way implements Serializable{
     public HashMap<String, String> data = new HashMap<>();
     public int[] legth;
     public ArrayList<Apartment> apartments;
+
 }
