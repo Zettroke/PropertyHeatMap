@@ -9,8 +9,9 @@ public class RoadGraphNode {
     //ArrayList<RoadGraphNode> ref_to = new ArrayList<>();
     RoadGraphNode[] ref_to;
     //ArrayList<Integer> distances = new ArrayList<>();
-    int[] distances;
+    Integer[] distances;
     public HashSet<String> road_types = new HashSet<>();
+    public HashSet<PropertyMap.RoadTypes> types = new HashSet<>();
     boolean visited = false;
 
     RoadGraphNode(Node n){
@@ -18,7 +19,15 @@ public class RoadGraphNode {
     }
 
     public void addWay(Way way){
-        road_types.add(way.data.get("highway"));
+        if (way.data.containsKey("living_street")){
+            types.add(PropertyMap.RoadTypes.LIVING_STREET);
+        }
+        String s = way.data.get("highway");
+        if (s.equals("footway")){
+            types.add(PropertyMap.RoadTypes.FOOTWAY);
+            return;
+        }
+        road_types.add(s);
     }
 
     public RoadGraphNode clone(){

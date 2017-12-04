@@ -9,7 +9,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * Created by Olleggerr on 15.10.2017.
@@ -138,6 +137,7 @@ public class PropertyMapLoaderOSM{
                                     m.roadGraphNodes.add(rgn);
                                     m.roadGraphConnections.add(new ArrayList<>());
                                     m.roadGraphDistances.add(new ArrayList<>());
+                                    m.roadGraphConnectionsTypes.add(new ArrayList<>());
                                 }else{
                                     prev_index = m.roadGraphIndexes.get(n1.id);
                                     m.roadGraphNodes.get(prev_index).addWay(tempWay);
@@ -154,13 +154,22 @@ public class PropertyMapLoaderOSM{
                                         m.roadGraphNodes.add(rgn);
                                         m.roadGraphConnections.add(new ArrayList<>());
                                         m.roadGraphDistances.add(new ArrayList<>());
+                                        m.roadGraphConnectionsTypes.add(new ArrayList<>());
+
                                     }
-                                    m.roadGraphNodes.get(index).addWay(tempWay);
+                                    //m.roadGraphNodes.get(index).addWay(tempWay);
                                     int dist = PropertyMap.calculateDistance(m.roadGraphNodes.get(index).n, m.roadGraphNodes.get(prev_index).n);
+
                                     m.roadGraphConnections.get(index).add(prev_index);
                                     m.roadGraphDistances.get(index).add(dist);
+                                    m.roadGraphNodes.get(index).addWay(tempWay);
+                                    m.roadGraphConnectionsTypes.get(index).add(PropertyMap.getRoadType(tempWay.data));
+
                                     m.roadGraphConnections.get(prev_index).add(index);
                                     m.roadGraphDistances.get(prev_index).add(dist);
+                                    m.roadGraphNodes.get(prev_index).addWay(tempWay);
+                                    m.roadGraphConnectionsTypes.get(prev_index).add(PropertyMap.getRoadType(tempWay.data));
+
                                     prev_index = index;
                                 }
                             }

@@ -12,17 +12,19 @@ import java.util.Scanner;
 public class TestRoadGraph {
     static double coefficent = 1;
     static Graphics2D g;
+    static int max_dist = 12500;
 
     static int coef(int n){
         return (int)Math.round(n*coefficent);
     }
 
 
+
     public static void test() throws Exception{
         PropertyMap propertyMap = new PropertyMap();
-        PropertyMapLoaderOSM.load(propertyMap, "map_small.osm");
+        PropertyMapLoaderOSM.load(propertyMap, "map_medium.osm");
 
-        double size = 5000;
+        double size = 20000;
         int x_size = (int) size;
         coefficent = size/(propertyMap.x_end-propertyMap.x_begin);
         int y_size = coef(propertyMap.y_end-propertyMap.y_begin);
@@ -49,7 +51,7 @@ public class TestRoadGraph {
         //scanner.nextLine();
         long start = System.nanoTime();
         HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795);
-        System.out.println((System.nanoTime()-start)/1000000000.0 + "sec. Recursion");
+        //System.out.println((System.nanoTime()-start)/1000000000.0 + "sec. Recursion");
         //scanner.nextLine();"933754783" -> "933754783" ->
 
 
@@ -94,7 +96,7 @@ public class TestRoadGraph {
                 g.setColor(Color.RED);
                 g.fillRect(coef(n.n.x)-10, coef(n.n.y)-10, 20, 20);
             }
-            g.setPaint(new GradientPaint(coef(n.n.x), coef(n.n.y), getNodeColor(n, 2500), coef(n1.n.x), coef(n1.n.y), getNodeColor(n1, 2500)));
+            g.setPaint(new GradientPaint(coef(n.n.x), coef(n.n.y), getNodeColor(n, max_dist), coef(n1.n.x), coef(n1.n.y), getNodeColor(n1, max_dist)));
             //g.setColor(Color.BLACK);
             if (n.road_types.contains("secondary") && n1.road_types.contains("secondary")){
                 g.setStroke(new BasicStroke(15, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
@@ -126,7 +128,7 @@ public class TestRoadGraph {
             /*int r = (int) (255 * n.dist / (double) max_dist);
             int g = 255 - (int) (255 * (n.dist / (double) max_dist));
             return new Color(r, g, 0);*/
-            return Color.getHSBColor((float)((1-n.dist/(double)max_dist)*120.0/360.0), 0.9f, 0.8f);
+            return Color.getHSBColor((float)((1-n.dist/(double)max_dist)*120.0/360.0), 0.9f, 0.9f);
 
         }else{
             return new Color(168, 0, 22);
