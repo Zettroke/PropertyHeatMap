@@ -18,12 +18,13 @@ public class PropertyMap {
 
     public static int default_zoom = 19;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
-    public static int max_calculation_dist = 15000;
+    public static int max_calculation_dist = 10000;
 
-    enum RoadTypes{
+    public enum RoadTypes{
         FOOTWAY,
         SECONDARY,
         LIVING_STREET,
+        CONSTRUCTION,
         DEFAULT
     }
 
@@ -216,11 +217,11 @@ public class PropertyMap {
 
     }
 
-    public HashMap<Long, RoadGraphNode> getCalculatedRoadGraph(long id){
+    public HashMap<Long, RoadGraphNode> getCalculatedRoadGraph(long id, HashSet<RoadTypes> exclude){
         long start_t = System.nanoTime();
         HashMap<Long, RoadGraphNode> res = new HashMap<>();
         for (RoadGraphNode rgn: roadGraphNodes){
-            if (!(rgn.types.size() + rgn.road_types.size() == 1 && (rgn.types.contains(RoadTypes.FOOTWAY)))){// || rgn.types.contains(RoadTypes.LIVING_STREET)))) {
+            if (!(rgn.types.size() + rgn.road_types.size() == 1 && (rgn.types.iterator().hasNext() && exclude.contains(rgn.types.iterator().next())))){// || rgn.types.contains(RoadTypes.LIVING_STREET)))) {
                 res.put(rgn.n.id, rgn.clone());
             }
         }
@@ -230,7 +231,7 @@ public class PropertyMap {
             RoadGraphNode curr_node = res.get(roadGraphNodes.get(i).n.id);
             if (curr_node != null) {
                 for (int j = 0; j<roadGraphConnections.get(i).size(); j++){
-                    if (roadGraphConnectionsTypes.get(i).get(j) != RoadTypes.FOOTWAY){// && roadGraphConnectionsTypes.get(i).get(j) != RoadTypes.LIVING_STREET){
+                    if (!exclude.contains(roadGraphConnectionsTypes.get(i).get(j))){
                         ref_to.add(res.get(roadGraphNodes.get(roadGraphConnections.get(i).get(j)).n.id));
                         distances.add(roadGraphDistances.get(i).get(j));
                         if (ref_to.get(ref_to.size()-1) == null){

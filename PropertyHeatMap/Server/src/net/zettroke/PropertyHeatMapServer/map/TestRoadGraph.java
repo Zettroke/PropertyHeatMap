@@ -4,15 +4,12 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Queue;
-import java.util.Scanner;
+import java.util.*;
 
 public class TestRoadGraph {
     static double coefficent = 1;
     static Graphics2D g;
-    static int max_dist = 12500;
+    static int max_dist = 2500;
 
     static int coef(int n){
         return (int)Math.round(n*coefficent);
@@ -22,9 +19,9 @@ public class TestRoadGraph {
 
     public static void test() throws Exception{
         PropertyMap propertyMap = new PropertyMap();
-        PropertyMapLoaderOSM.load(propertyMap, "map_medium.osm");
+        PropertyMapLoaderOSM.load(propertyMap, "map_small.osm");
 
-        double size = 20000;
+        double size = 5000;
         int x_size = (int) size;
         coefficent = size/(propertyMap.x_end-propertyMap.x_begin);
         int y_size = coef(propertyMap.y_end-propertyMap.y_begin);
@@ -50,7 +47,9 @@ public class TestRoadGraph {
         //Scanner scanner = new Scanner(System.in);
         //scanner.nextLine();
         long start = System.nanoTime();
-        HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795);
+        HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795, new HashSet<>(Arrays.asList(PropertyMap.RoadTypes.FOOTWAY,
+                PropertyMap.RoadTypes.CONSTRUCTION, PropertyMap.RoadTypes.LIVING_STREET)));
+
         //System.out.println((System.nanoTime()-start)/1000000000.0 + "sec. Recursion");
         //scanner.nextLine();"933754783" -> "933754783" ->
 
@@ -74,13 +73,13 @@ public class TestRoadGraph {
     final static int repeats = 20;
     static void bench(PropertyMap propertyMap){
         for (int i=0; i<repeats; i++) {
-            HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795);
+            HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795, new HashSet<>());
         }
 
         long time = 0;
         for (int i=0; i<repeats; i++) {
             long start = System.nanoTime();
-            HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795);
+            HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795, new HashSet<>());
             time += System.nanoTime()-start;
         }
         System.out.println((time/(double)repeats)/1000000.0 + "millis.");
