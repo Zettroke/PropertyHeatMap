@@ -9,7 +9,7 @@ import java.util.*;
 public class TestRoadGraph {
     static double coefficent = 1;
     static Graphics2D g;
-    static int max_dist = 2500;
+    static int max_dist = 6500;
 
     static int coef(int n){
         return (int)Math.round(n*coefficent);
@@ -91,10 +91,6 @@ public class TestRoadGraph {
         for (int i=0; i<n.ref_to.length; i++){
             RoadGraphNode n1 = n.ref_to[i];
             boolean flag = true;
-            if (n.dist == Integer.MAX_VALUE){
-                g.setColor(Color.RED);
-                g.fillRect(coef(n.n.x)-10, coef(n.n.y)-10, 20, 20);
-            }
             g.setPaint(new GradientPaint(coef(n.n.x), coef(n.n.y), getNodeColor(n, max_dist), coef(n1.n.x), coef(n1.n.y), getNodeColor(n1, max_dist)));
             //g.setColor(Color.BLACK);
             if (n.road_types.contains("secondary") && n1.road_types.contains("secondary")){

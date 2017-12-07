@@ -15,7 +15,7 @@ public class CalculatedGraphCache {
     static int max_cache_size = 100;
 
     public static HashMap<Long, RoadGraphNode> get(long id, int max_dist){
-        access_counter++;
+        /*access_counter++;
 
         if (access_counter > 2000) {
             synchronized (storage) {
@@ -33,7 +33,7 @@ public class CalculatedGraphCache {
                 }
                 access_counter = 0;
             }
-        }
+        }*/
         return storage.get(new CalcutatedGraphKey(id, max_dist));
     }
 
@@ -49,12 +49,20 @@ public class CalculatedGraphCache {
 class CalcutatedGraphKey {
     long id;
     int max_dist;
-    long accessed;
 
     public CalcutatedGraphKey(long id, int max_dist) {
         this.id = id;
         this.max_dist = max_dist;
-        accessed = new Date().getTime();
+    }
+
+    @Override
+    public int hashCode() {
+        return (int)(id % max_dist * id);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return id == ((CalcutatedGraphKey)obj).id && max_dist == ((CalcutatedGraphKey)obj).max_dist;
     }
 }
 

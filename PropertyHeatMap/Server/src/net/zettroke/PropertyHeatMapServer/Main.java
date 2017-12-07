@@ -41,9 +41,9 @@ public class Main {
         /*Scanner scanner = new Scanner(System.in);
         scanner.nextLine();*/
 
-        //ImageIO.setUseCache(false);
-        //PropertyMapServer server = new PropertyMapServer(map_name);
-        //server.start();
+        ImageIO.setUseCache(false);
+        PropertyMapServer server = new PropertyMapServer(map_name);
+        server.start();
 
         TestRoadGraph.test();
 

@@ -5,8 +5,10 @@ import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
 
+import java.awt.*;
 import java.io.*;
 import java.util.*;
+import java.util.List;
 
 
 /**
@@ -18,7 +20,7 @@ public class PropertyMap {
 
     public static int default_zoom = 19;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
-    public static int max_calculation_dist = 10000;
+    public static int max_calculation_dist = 16000;
 
     public enum RoadTypes{
         FOOTWAY,
@@ -53,7 +55,7 @@ public class PropertyMap {
     ArrayList<Node> nodes = new ArrayList<>();
     ArrayList<Way> ways = new ArrayList<>();
     ArrayList<Relation> relations = new ArrayList<>();
-    ArrayList<Node> road_graph = new ArrayList<>();
+
 
     HashMap<Long, Integer> roadGraphIndexes = new HashMap<>();
     ArrayList<RoadGraphNode> roadGraphNodes = new ArrayList<>();
@@ -218,7 +220,7 @@ public class PropertyMap {
     }
 
     public HashMap<Long, RoadGraphNode> getCalculatedRoadGraph(long id, HashSet<RoadTypes> exclude){
-        long start_t = System.nanoTime();
+        //long start_t = System.nanoTime();
         HashMap<Long, RoadGraphNode> res = new HashMap<>();
         for (RoadGraphNode rgn: roadGraphNodes){
             if (!(rgn.types.size() + rgn.road_types.size() == 1 && (rgn.types.iterator().hasNext() && exclude.contains(rgn.types.iterator().next())))){// || rgn.types.contains(RoadTypes.LIVING_STREET)))) {
@@ -245,13 +247,13 @@ public class PropertyMap {
                 ref_to.clear();
             }
         }
-        System.out.println((System.nanoTime()-start_t)/1000000.0 + "millis. Graph Copy");
+        //System.out.println((System.nanoTime()-start_t)/1000000.0 + "millis. Graph Copy");
 
-        start_t = System.nanoTime();
+        //start_t = System.nanoTime();
         RoadGraphNode start = res.get(id);
         start.dist = 0;
         recCalculateDistances(start);
-        System.out.println((System.nanoTime()-start_t)/1000000.0 + "millis. Graph Calculations");
+        //System.out.println((System.nanoTime()-start_t)/1000000.0 + "millis. Graph Calculations");
         /*if (flag) {
             CalculateDistances(start, roadGraphNodes.size()+1);
         }else{
@@ -276,44 +278,18 @@ public class PropertyMap {
         }
     }
 
-    void CalculateDistances(RoadGraphNode rgn, int max_size){
-        int stack_index = 0;
-        RoadGraphNode[] rgn_stack = new RoadGraphNode[max_size];
-        //Stack<RoadGraphNode> rgn_stack = new Stack<>();
-        //rgn_stack[0] = rgn;
-        //Stack<Integer> ind_stack = new Stack<>();
-        int[] ind_stack = new int[max_size];
-        //ind_stack[0] = 0;
-        int ind = 0, dist;
-        RoadGraphNode node = rgn, to;
-        while (true){
-            if (ind >= node.ref_to.length){
-                stack_index--;
-                if (stack_index == -1){
-                    return;
-                }
-                node = rgn_stack[stack_index];
-                ind = ind_stack[stack_index];
-            }else{
-                to = node.ref_to[ind];
-                dist = node.distances[ind];
-                if (node.dist + dist < to.dist){
-                    to.dist = node.dist + dist;
-                    ind_stack[stack_index] = ind+1;
-                    rgn_stack[stack_index] = node;
-                    node = to;
-                    ind = 0;
-                    stack_index++;
-                    /*rgn_stack.push(to);
-                    ind_stack.push(ind_stack.pop()+1);
-                    ind_stack.push(0);*/
-                }else{
-                    ind++;
-                }
-            }
+    static Color getNodeColor(RoadGraphNode n, int max_dist){
+        if (n.dist <= max_dist) {
+
+            /*int r = (int) (255 * n.dist / (double) max_dist);
+            int g = 255 - (int) (255 * (n.dist / (double) max_dist));
+            return new Color(r, g, 0);*/
+            return Color.getHSBColor((float)((1-n.dist/(double)max_dist)*120.0/360.0), 0.9f, 0.9f);
+
+        }else{
+            return new Color(168, 0, 22);
         }
     }
-
 
 }
 

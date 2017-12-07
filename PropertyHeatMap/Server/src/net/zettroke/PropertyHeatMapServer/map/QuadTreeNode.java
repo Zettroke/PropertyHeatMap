@@ -187,7 +187,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         this.bounds = bounds;
     }
 
-    boolean inBounds(MapPoint p){
+    public boolean inBounds(MapPoint p){
         return inBounds(p, false);
     }
 

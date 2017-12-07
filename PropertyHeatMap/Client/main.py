@@ -19,17 +19,19 @@ class MapApp(Canvas):
         # git answer !!1
         self.root = root
         self.miss_photo = ImageTk.PhotoImage(Image.new("RGB", (256, 256), 0xC3C3C3))
-        self.is_local_network = True
+        self.is_local_network = False
         if not self.is_local_network:
             self.map_server = "http://178.140.109.241:25565/"
             self.image_server = "http://178.140.109.241:25565/z{z}/{x}.{y}.png"
             self.image_layer_server = "http://178.140.109.241:24062/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
+            self.image_roads_server = "http://127.0.0.1:24062/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist=3500"
             self.map_data_server = "http://178.140.109.241:24062/search/point/?x={x}&y={y}&z={z}"
             self.map_data_server_circle_search = "http://178.140.109.241:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
         else:
             self.map_server = "http://127.0.0.1:25565/"
             self.image_server = "http://127.0.0.1:25565/z{z}/{x}.{y}.png"
             self.image_layer_server = "http://127.0.0.1:24062/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
+            self.image_roads_server = "http://127.0.0.1:24062/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist=3500"
             self.map_data_server = "http://127.0.0.1:24062/search/point/?x={x}&y={y}&z={z}"
             self.map_data_server_circle_search = "http://127.0.0.1:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
         try:
@@ -62,7 +64,8 @@ class MapApp(Canvas):
         self.image_load_queue = queue.PriorityQueue()
         self.loaded_image_offset = (0, 0)
         self.tiles_updating = False
-        self.layer_turned_on = False
+        self.price_layer_turned_on = False
+        self.road_layer_turned_on = True
 
         self.kinetic_thread_running = True
         self.kinetic_slow = 1  # px per 0.001sec
@@ -117,8 +120,8 @@ class MapApp(Canvas):
         Thread(target=self.tile_loader, daemon=True).start()
 
     def turn_layer(self, event=None):
-        self.layer_turned_on = not self.layer_turned_on
-        if self.layer_turned_on:
+        self.price_layer_turned_on = not self.price_layer_turned_on
+        if self.price_layer_turned_on:
             self.target_price_toplevel = Toplevel(self.root)
             self.target_price_entry = Entry(self.target_price_toplevel, width=8)
             self.target_price_range_entry = Entry(self.target_price_toplevel, width=6)
@@ -188,9 +191,15 @@ class MapApp(Canvas):
                 f = io.BytesIO(requests.get(self.image_server.format(z=self.zoom, x=o[1], y=o[2]), headers={"UserName": getpass.getuser()}).content)
                 img = Image.open(f).convert("RGBA")
 
-                if self.layer_turned_on:
+                if self.price_layer_turned_on:
                     f2 = io.BytesIO(requests.get(self.image_layer_server.format(z=self.zoom, x=o[1], y=o[2], price=self.target_price, range=self.target_price_range),
                                                 headers={"UserName": getpass.getuser()}).content)
+                    img2 = Image.open(f2)
+                    img = Image.alpha_composite(img, img2)
+                if self.road_layer_turned_on:
+                    f2 = io.BytesIO(requests.get(
+                        self.image_roads_server.format(z=self.zoom, x=o[1], y=o[2]),
+                        headers={"UserName": getpass.getuser()}).content)
                     img2 = Image.open(f2)
                     img = Image.alpha_composite(img, img2)
                 img = ImageTk.PhotoImage(img)
@@ -209,7 +218,7 @@ class MapApp(Canvas):
 
     def c_on_resize(self, event):
         if root.winfo_width() != self.prev_win_x_size or root.winfo_height() != self.prev_win_y_size:
-            print("resize!")
+            # print("resize!")
             self.prev_win_x_size = self.root.winfo_width()
             self.prev_win_y_size = self.root.winfo_height()
             canv.configure(width=self.root.winfo_width(), height=self.root.winfo_height())
@@ -291,7 +300,7 @@ class MapApp(Canvas):
         if not (self.zoom == self.max_zoom and event.delta > 0) and not (self.zoom == self.min_zoom and event.delta < 0):
             self.kinetic_thread_running = False
             self.zoom += event.delta//abs(event.delta)
-            print(self.zoom)
+            # print(self.zoom)
             if event.delta // abs(event.delta) > 0:
                 self.map_x = self.map_x*2+event.x
                 self.map_y = self.map_y*2+event.y
@@ -426,7 +435,7 @@ class MapApp(Canvas):
             l.append(round((p[0] - i["bounds"][0]) / 2 ** (self.server_zoom - self.zoom)))
             l.append(round((p[1] - i["bounds"][1]) / 2 ** (self.server_zoom - self.zoom)))
         draw.polygon(l, (255, 0, 0, 120), (255, 0, 0, 255))
-        image.save("lel.png")
+        # image.save("lel.png")
         self.shapes_images.append({"image": ImageTk.PhotoImage(image),
                                    "xy": (round(i["bounds"][0] / 2 ** (self.server_zoom - self.zoom)),
                                           round(i["bounds"][1] / 2 ** (self.server_zoom - self.zoom))),

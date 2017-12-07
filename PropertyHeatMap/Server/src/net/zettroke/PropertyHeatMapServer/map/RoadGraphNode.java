@@ -1,5 +1,6 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
+import java.awt.*;
 import java.util.HashSet;
 
 public class RoadGraphNode {
@@ -33,5 +34,16 @@ public class RoadGraphNode {
         RoadGraphNode res = new RoadGraphNode(n);
         res.road_types = road_types;
         return res;
+    }
+
+    public Color getNodeColor(int max_dist){
+        if (this.dist <= max_dist) {
+
+            Color cl = Color.getHSBColor((float)((1-this.dist/(double)max_dist)*120.0/360.0), 0.9f, 0.9f);
+            return new Color(cl.getRed(), cl.getGreen(), cl.getBlue());
+
+        }else{
+            return new Color(168, 0, 22);
+        }
     }
 }
