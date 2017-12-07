@@ -77,8 +77,24 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         for (RoadGraphNode rgn : graph.values()){
             if (rgn.dist != Integer.MAX_VALUE){
                 to_clear.add(rgn);
-                for (RoadGraphNode ref: rgn.ref_to){
+                rgn.visited = true;
+                for (int i=0; i<rgn.ref_to.length; i++){
+                    RoadGraphNode ref = rgn.ref_to[i];
                     if (!ref.visited){
+                        switch (rgn.ref_types.get(i)){
+                            case SECONDARY:
+                                g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                break;
+                            case RESIDENTIAL:
+                                g.setStroke(new BasicStroke(50f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                break;
+                            case SERVICE:
+                                g.setStroke(new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                break;
+                            case DEFAULT:
+                                g.setStroke(new BasicStroke(20f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                break;
+                        }
                         g.setPaint(new GradientPaint(coef(rgn.n.x-offx), coef(rgn.n.y-offy), rgn.getNodeColor(max_dist), coef(ref.n.x-offx), coef(ref.n.y-offy), ref.getNodeColor(max_dist)));
                         g.drawLine(coef(rgn.n.x-offx), coef(rgn.n.y-offy), coef(ref.n.x-offx), coef(ref.n.y-offy));
                     }
