@@ -26,20 +26,40 @@ public class PropertyMap {
         FOOTWAY,
         SECONDARY,
         LIVING_STREET,
+        RESIDENTIAL,
+        SERVICE,
         CONSTRUCTION,
         DEFAULT
     }
-
+    
+    
+    //TODO: Объединить метод с RoadGraphNode.addWay(Way way)
     static RoadTypes getRoadType(HashMap<String, String> data){
         if (data.containsKey("living_street")){
-            return RoadTypes.LIVING_STREET;
+            return PropertyMap.RoadTypes.LIVING_STREET;
         }
-        String type = data.get("highway");
-        switch (type){
+        String s = data.get("highway");
+        if (s.equals("residential")){
+            System.out.println();
+        }
+        switch (s) {
             case "footway":
-                return RoadTypes.FOOTWAY;
+                return PropertyMap.RoadTypes.FOOTWAY;
+
+            case "construction":
+                return PropertyMap.RoadTypes.CONSTRUCTION;
+
+            case "residential":
+                return PropertyMap.RoadTypes.RESIDENTIAL;
+
+            case "service":
+                return PropertyMap.RoadTypes.SERVICE;
+
+            case "secondary":
+                return PropertyMap.RoadTypes.SECONDARY;
+
             default:
-                return RoadTypes.DEFAULT;
+                    return RoadTypes.DEFAULT;
         }
     }
 
@@ -234,11 +254,9 @@ public class PropertyMap {
             if (curr_node != null) {
                 for (int j = 0; j<roadGraphConnections.get(i).size(); j++){
                     if (!exclude.contains(roadGraphConnectionsTypes.get(i).get(j))){
+                        curr_node.ref_types.add(roadGraphConnectionsTypes.get(i).get(j));
                         ref_to.add(res.get(roadGraphNodes.get(roadGraphConnections.get(i).get(j)).n.id));
                         distances.add(roadGraphDistances.get(i).get(j));
-                        if (ref_to.get(ref_to.size()-1) == null){
-                            System.out.println("AHTUNG");
-                        }
                     }
                 }
                 curr_node.distances = distances.toArray(new Integer[distances.size()]);
@@ -275,19 +293,6 @@ public class PropertyMap {
                 }
                 //System.out.println(depth);
             }
-        }
-    }
-
-    static Color getNodeColor(RoadGraphNode n, int max_dist){
-        if (n.dist <= max_dist) {
-
-            /*int r = (int) (255 * n.dist / (double) max_dist);
-            int g = 255 - (int) (255 * (n.dist / (double) max_dist));
-            return new Color(r, g, 0);*/
-            return Color.getHSBColor((float)((1-n.dist/(double)max_dist)*120.0/360.0), 0.9f, 0.9f);
-
-        }else{
-            return new Color(168, 0, 22);
         }
     }
 

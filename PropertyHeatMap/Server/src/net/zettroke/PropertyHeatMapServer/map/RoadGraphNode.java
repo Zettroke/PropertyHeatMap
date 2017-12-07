@@ -1,6 +1,7 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.HashSet;
 
 public class RoadGraphNode {
@@ -10,6 +11,7 @@ public class RoadGraphNode {
     public Integer[] distances;
     public HashSet<String> road_types = new HashSet<>();
     public HashSet<PropertyMap.RoadTypes> types = new HashSet<>();
+    public ArrayList<PropertyMap.RoadTypes> ref_types = new ArrayList<>();
     public boolean visited = false;
 
     RoadGraphNode(Node n){
@@ -21,11 +23,22 @@ public class RoadGraphNode {
             types.add(PropertyMap.RoadTypes.LIVING_STREET);
         }
         String s = way.data.get("highway");
-        if (s.equals("footway")){
-            types.add(PropertyMap.RoadTypes.FOOTWAY);
-            return;
-        }else if(s.equals("construction")){
-            types.add(PropertyMap.RoadTypes.CONSTRUCTION);
+        switch (s) {
+            case "footway":
+                types.add(PropertyMap.RoadTypes.FOOTWAY);
+                break;
+            case "construction":
+                types.add(PropertyMap.RoadTypes.CONSTRUCTION);
+                break;
+            case "residential":
+                types.add(PropertyMap.RoadTypes.RESIDENTIAL);
+                break;
+            case "service":
+                types.add(PropertyMap.RoadTypes.SERVICE);
+                break;
+            case "secondary":
+                types.add(PropertyMap.RoadTypes.SECONDARY);
+                break;
         }
         road_types.add(s);
     }
@@ -33,6 +46,7 @@ public class RoadGraphNode {
     public RoadGraphNode clone(){
         RoadGraphNode res = new RoadGraphNode(n);
         res.road_types = road_types;
+        res.types = types;
         return res;
     }
 
