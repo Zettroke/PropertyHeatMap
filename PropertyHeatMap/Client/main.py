@@ -19,19 +19,19 @@ class MapApp(Canvas):
         # git answer !!1
         self.root = root
         self.miss_photo = ImageTk.PhotoImage(Image.new("RGB", (256, 256), 0xC3C3C3))
-        self.is_local_network = False
+        self.is_local_network = True
         if not self.is_local_network:
             self.map_server = "http://178.140.109.241:25565/"
             self.image_server = "http://178.140.109.241:25565/z{z}/{x}.{y}.png"
             self.image_layer_server = "http://178.140.109.241:24062/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
-            self.image_roads_server = "http://127.0.0.1:24062/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist=3500"
+            self.image_roads_server = "http://127.0.0.1:24062/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist={max_dist}"
             self.map_data_server = "http://178.140.109.241:24062/search/point/?x={x}&y={y}&z={z}"
             self.map_data_server_circle_search = "http://178.140.109.241:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
         else:
             self.map_server = "http://127.0.0.1:25565/"
             self.image_server = "http://127.0.0.1:25565/z{z}/{x}.{y}.png"
             self.image_layer_server = "http://127.0.0.1:24062/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
-            self.image_roads_server = "http://127.0.0.1:24062/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist=3500"
+            self.image_roads_server = "http://127.0.0.1:24062/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist={max_dist}"
             self.map_data_server = "http://127.0.0.1:24062/search/point/?x={x}&y={y}&z={z}"
             self.map_data_server_circle_search = "http://127.0.0.1:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
         try:
@@ -65,7 +65,7 @@ class MapApp(Canvas):
         self.loaded_image_offset = (0, 0)
         self.tiles_updating = False
         self.price_layer_turned_on = False
-        self.road_layer_turned_on = True
+        self.road_layer_turned_on = False
 
         self.kinetic_thread_running = True
         self.kinetic_slow = 1  # px per 0.001sec
@@ -87,6 +87,10 @@ class MapApp(Canvas):
         self.target_price_entry = None
         self.target_price_range_entry = None
         self.target_price_toplevel = None
+
+        self.max_dist = 2500
+        self.roads_toplevel = None
+        self.max_dist_entry = None
 
         self.shapes = []
         self.shapes_images = []
@@ -110,6 +114,7 @@ class MapApp(Canvas):
         self.bind("<B3-Motion>", self.right_click_motion)
         self.bind("<ButtonRelease-3>", self.right_click_end)
         root.bind("<Shift_L>", self.turn_layer)
+        root.bind("<Control_L>", self.turn_road_layer)
 
         # root.bind("<Delete>", self.clear_image_dict)
         self.clear_image_dict()
@@ -118,6 +123,24 @@ class MapApp(Canvas):
         root.bind("<Return>", self.load_tiles)
 
         Thread(target=self.tile_loader, daemon=True).start()
+
+    def turn_road_layer(self, event=None):
+        self.road_layer_turned_on = not self.road_layer_turned_on
+        if self.road_layer_turned_on:
+            self.roads_toplevel = Toplevel(self.root)
+            self.max_dist_entry = Entry(self.roads_toplevel, width=5)
+            self.max_dist_entry.insert(0, str(self.max_dist))
+            self.max_dist_entry.pack()
+            Button(self.roads_toplevel, text="Ok", command=self.setup_and_turn_road_layer).pack()
+        else:
+            self.load_tiles()
+            self.update_shapes()
+
+    def setup_and_turn_road_layer(self):
+        self.max_dist = int(self.max_dist_entry.get())
+        self.roads_toplevel.destroy()
+        self.load_tiles()
+        self.update_shapes()
 
     def turn_layer(self, event=None):
         self.price_layer_turned_on = not self.price_layer_turned_on
@@ -198,7 +221,7 @@ class MapApp(Canvas):
                     img = Image.alpha_composite(img, img2)
                 if self.road_layer_turned_on:
                     f2 = io.BytesIO(requests.get(
-                        self.image_roads_server.format(z=self.zoom, x=o[1], y=o[2]),
+                        self.image_roads_server.format(z=self.zoom, x=o[1], y=o[2], max_dist=self.max_dist),
                         headers={"UserName": getpass.getuser()}).content)
                     img2 = Image.open(f2)
                     img = Image.alpha_composite(img, img2)
