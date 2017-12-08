@@ -4,6 +4,7 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
+import net.zettroke.PropertyHeatMapServer.utils.RoadTypes;
 
 import java.awt.*;
 import java.io.*;
@@ -22,46 +23,9 @@ public class PropertyMap {
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
     public static int max_calculation_dist = 16000;
 
-    public enum RoadTypes{
-        FOOTWAY,
-        SECONDARY,
-        LIVING_STREET,
-        RESIDENTIAL,
-        SERVICE,
-        CONSTRUCTION,
-        DEFAULT
-    }
     
     
-    //TODO: Объединить метод с RoadGraphNode.addWay(Way way)
-    static RoadTypes getRoadType(HashMap<String, String> data){
-        if (data.containsKey("living_street")){
-            return PropertyMap.RoadTypes.LIVING_STREET;
-        }
-        String s = data.get("highway");
-        if (s.equals("residential")){
-            System.out.println();
-        }
-        switch (s) {
-            case "footway":
-                return PropertyMap.RoadTypes.FOOTWAY;
 
-            case "construction":
-                return PropertyMap.RoadTypes.CONSTRUCTION;
-
-            case "residential":
-                return PropertyMap.RoadTypes.RESIDENTIAL;
-
-            case "service":
-                return PropertyMap.RoadTypes.SERVICE;
-
-            case "secondary":
-                return PropertyMap.RoadTypes.SECONDARY;
-
-            default:
-                    return RoadTypes.DEFAULT;
-        }
-    }
 
     public int max_price_per_metr = Integer.MIN_VALUE;
     public int min_price_per_metr = Integer.MAX_VALUE;

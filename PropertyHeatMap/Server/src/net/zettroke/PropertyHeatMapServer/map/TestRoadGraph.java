@@ -1,5 +1,7 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
+import net.zettroke.PropertyHeatMapServer.utils.RoadTypes;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -47,8 +49,8 @@ public class TestRoadGraph {
         //Scanner scanner = new Scanner(System.in);
         //scanner.nextLine();
         long start = System.nanoTime();
-        HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795, new HashSet<>(Arrays.asList(PropertyMap.RoadTypes.FOOTWAY,
-                PropertyMap.RoadTypes.CONSTRUCTION, PropertyMap.RoadTypes.LIVING_STREET)));
+        HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795, new HashSet<>(Arrays.asList(RoadTypes.FOOTWAY,
+                RoadTypes.CONSTRUCTION, RoadTypes.LIVING_STREET)));
 
         //System.out.println((System.nanoTime()-start)/1000000000.0 + "sec. Recursion");
         //scanner.nextLine();"933754783" -> "933754783" ->
@@ -123,7 +125,8 @@ public class TestRoadGraph {
             /*int r = (int) (255 * n.dist / (double) max_dist);
             int g = 255 - (int) (255 * (n.dist / (double) max_dist));
             return new Color(r, g, 0);*/
-            return Color.getHSBColor((float)((1-n.dist/(double)max_dist)*120.0/360.0), 0.9f, 0.9f);
+            double c = 1-n.dist/(double)max_dist;
+            return Color.getHSBColor((float)((1-c)*120.0/360.0), 0.9f, 0.9f);
 
         }else{
             return new Color(168, 0, 22);

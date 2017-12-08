@@ -1,6 +1,8 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
 
+import net.zettroke.PropertyHeatMapServer.utils.RoadTypes;
+
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -163,12 +165,12 @@ public class PropertyMapLoaderOSM{
                                     m.roadGraphConnections.get(index).add(prev_index);
                                     m.roadGraphDistances.get(index).add(dist);
                                     m.roadGraphNodes.get(index).addWay(tempWay);
-                                    m.roadGraphConnectionsTypes.get(index).add(PropertyMap.getRoadType(tempWay.data));
+                                    m.roadGraphConnectionsTypes.get(index).add(RoadTypes.getType(tempWay.data));
 
                                     m.roadGraphConnections.get(prev_index).add(index);
                                     m.roadGraphDistances.get(prev_index).add(dist);
                                     m.roadGraphNodes.get(prev_index).addWay(tempWay);
-                                    m.roadGraphConnectionsTypes.get(prev_index).add(PropertyMap.getRoadType(tempWay.data));
+                                    m.roadGraphConnectionsTypes.get(prev_index).add(RoadTypes.getType(tempWay.data));
 
                                     prev_index = index;
                                 }

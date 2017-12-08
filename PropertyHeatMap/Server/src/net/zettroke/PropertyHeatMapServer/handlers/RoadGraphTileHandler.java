@@ -9,6 +9,7 @@ import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.QuadTreeNode;
 import net.zettroke.PropertyHeatMapServer.map.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphCache;
+import net.zettroke.PropertyHeatMapServer.utils.RoadTypes;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -65,8 +66,8 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
             graph = CalculatedGraphCache.get(933754795, max_dist);
             //System.out.println("get form cache");
         }else {
-            graph = propertyMap.getCalculatedRoadGraph(933754795, new HashSet<>(Arrays.asList(PropertyMap.RoadTypes.FOOTWAY,
-                    PropertyMap.RoadTypes.CONSTRUCTION, PropertyMap.RoadTypes.LIVING_STREET)));
+            graph = propertyMap.getCalculatedRoadGraph(933754795, new HashSet<>(Arrays.asList(RoadTypes.FOOTWAY,
+                    RoadTypes.CONSTRUCTION, RoadTypes.LIVING_STREET)));
             CalculatedGraphCache.store(933754795, max_dist, graph);
             //System.out.println("stored");
         }
