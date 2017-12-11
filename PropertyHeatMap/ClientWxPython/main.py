@@ -1,13 +1,21 @@
 import wx
 from PIL import Image
+import queue
+import io
+import requests
+from threading import Thread
 
 
 class Map(wx.Panel):
+
+
+
     def __init__(self, *args, **kwargs):
         super(Map, self).__init__(*args, **kwargs)
         self.map_folder = "C:/PropertyHeatMap/osm_map_medium"
+        self.map_tiles_url = "http://127.0.0.1:25565/z{z}/{x}.{y}.png"
+        self.tiles_dict = {}
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
-        #self.Bind(wx.EVT_SIZE, self.on_size)
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_CHAR_HOOK, self.key)
         self.Bind(wx.EVT_LEFT_DOWN, self.left_down)
@@ -24,7 +32,8 @@ class Map(wx.Panel):
         self.zoom = 16
         self.available_zoom_levels = tuple(map(int, open(self.map_folder+"/zoom_levels", "r").read().split()))
         self.bounds = (18, 18)
-        #self.on_paint(None)
+        self.tile_queue = queue.PriorityQueue()
+        Thread(target=self.tile_loader_process, daemon=True).start()
 
     def left_down(self, event):
         print("CLICK")
@@ -74,7 +83,6 @@ class Map(wx.Panel):
             self.bitmaps.clear()
             self.Refresh()
 
-
     def on_size(self, event):
         # event.Skip()
         # self.Refresh()
@@ -82,32 +90,32 @@ class Map(wx.Panel):
 
     def on_paint(self, event):
         w, h = self.GetClientSize()
-        # w = round(w/256+0.5)*256
-        # h = round(h/256+0.5)*256
         dc = wx.AutoBufferedPaintDC(self)
         dc.Clear()
         dc.DestroyClippingRegion()
-        #dc.DrawLine(0, 0, w, h)
-        #dc.SetPen(wx.Pen(wx.BLACK, 5))
-        #dc.DrawCircle(w / 2, h / 2, 100)
-        # self.sx, self.sy = 0, 0
 
         for x in range(self.sx//256*256, ((self.sx+w)//256+1)*256, 256):
             for y in range(self.sy//256*256, ((self.sy+h)//256+1)*256, 256):
 
-                if (x//256, y//256) not in self.bitmaps.keys():
-                    if 0 <= x//256 < self.bounds[0] and 0 <= y//256 < self.bounds[1]:
-                        self.bitmaps[(x//256, y//256)] = wx.Bitmap(self.map_folder+"/z{z}/{x}.{y}.png".format(x=x//256, y=y//256, z=self.zoom), wx.BITMAP_TYPE_ANY)
+                if 0 <= x // 256 < self.bounds[0] and 0 <= y // 256 < self.bounds[1]:
+                    if (x//256, y//256) in self.tiles_dict.keys():
+
+                        self.bitmaps[(x//256, y//256)] = wx.Bitmap.FromBuffer(256, 256, self.tiles_dict[(x//256, y//256)].tobytes())
                     else:
                         self.bitmaps[(x // 256, y // 256)] = self.missing_image
+                        self.tile_queue.put((x//256, y//256, self.zoom))
                 dc.DrawBitmap(self.bitmaps[(x//256, y//256)], x-self.sx, y-self.sy)
-        # print("Painted")
+
+    def tile_loader_process(self):
+        while True:
+            to_load = self.tile_queue.get()
+            image = Image.open(io.BytesIO(requests.get(self.map_tiles_url.format(x=to_load[0], y=to_load[1], z=to_load[2])).content))
+            self.tiles_dict[(to_load[0], to_load[1])] = image
 
 
 class DataView(wx.ScrolledWindow):
     def __init__(self, parent):
         super().__init__(parent)
-
 
     def view_info(self, json_string):
         pass
@@ -148,6 +156,7 @@ class PropertyHeatMap(wx.Frame):
 
     def size(self, event):
         print("sizing")
+
 
 def main():
     app = wx.App(False)

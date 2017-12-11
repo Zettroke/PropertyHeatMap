@@ -1,4 +1,4 @@
-from tkinter import Tk, Canvas, NW, ALL, Button, Label, Toplevel, Entry
+from tkinter import Tk, Canvas, NW, ALL, Button, Label, Toplevel, Entry, EventType
 from PIL import Image, ImageTk, ImageDraw
 import time
 from threading import Thread, Lock
@@ -115,6 +115,8 @@ class MapApp(Canvas):
         self.bind("<ButtonRelease-3>", self.right_click_end)
         root.bind("<Shift_L>", self.turn_layer)
         root.bind("<Control_L>", self.turn_road_layer)
+        root.bind("+", self.zoom_map)
+        root.bind("-", self.zoom_map)
 
         # root.bind("<Delete>", self.clear_image_dict)
         self.clear_image_dict()
@@ -320,10 +322,14 @@ class MapApp(Canvas):
             self.update_shapes()
 
     def zoom_map(self, event):
+        if event.type == EventType.KeyPress:
+            event.delta = (1 if event.char == "+" else -1)
         if not (self.zoom == self.max_zoom and event.delta > 0) and not (self.zoom == self.min_zoom and event.delta < 0):
             self.kinetic_thread_running = False
+
             self.zoom += event.delta//abs(event.delta)
             # print(self.zoom)
+
             if event.delta // abs(event.delta) > 0:
                 self.map_x = self.map_x*2+event.x
                 self.map_y = self.map_y*2+event.y
