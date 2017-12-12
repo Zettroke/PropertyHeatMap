@@ -10,7 +10,9 @@ public class RouteHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     PathRouter pathRouter;
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, FullHttpRequest request) throws Exception {
-        pathRouter.getHandler(request.uri()).handle(channelHandlerContext, request);
+        //System.out.println("request " + request.uri());
+        String uri = request.uri().replace("/api", "");
+        pathRouter.getHandler(uri).handle(channelHandlerContext, request);
 
     }
 

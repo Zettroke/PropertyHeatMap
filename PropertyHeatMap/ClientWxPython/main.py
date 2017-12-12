@@ -8,13 +8,12 @@ from threading import Thread
 
 class Map(wx.Panel):
 
-
-
     def __init__(self, *args, **kwargs):
         super(Map, self).__init__(*args, **kwargs)
-        self.map_folder = "C:/PropertyHeatMap/osm_map_medium"
-        self.map_tiles_url = "http://127.0.0.1:25565/z{z}/{x}.{y}.png"
+        self.map_folder = "C:/PropertyHeatMap/osm_map_small"
+        self.map_tiles_url = "http://178.140.109.241:25565/image/z{z}/{x}.{y}.png"
         self.tiles_dict = {}
+        self.loaded_tiles_set = set()
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_CHAR_HOOK, self.key)
@@ -31,17 +30,17 @@ class Map(wx.Panel):
         self.missing_image = wx.Bitmap.FromBuffer(256, 256, Image.new("RGB", (256, 256), 0xCCCCCC).tobytes())
         self.zoom = 16
         self.available_zoom_levels = tuple(map(int, open(self.map_folder+"/zoom_levels", "r").read().split()))
-        self.bounds = (18, 18)
+        self.bounds = (9, 9)
         self.tile_queue = queue.PriorityQueue()
         Thread(target=self.tile_loader_process, daemon=True).start()
 
     def left_down(self, event):
-        print("CLICK")
+        # print("CLICK")
         self.pressed = True
         self.last_pos = event.GetPosition()
 
     def left_up(self, event):
-        print("UNCLICK")
+        # print("UNCLICK")
         self.pressed = False
 
     def on_move(self, event):
@@ -49,8 +48,8 @@ class Map(wx.Panel):
             self.sx -= event.GetPosition()[0]-self.last_pos[0]
             self.sy -= event.GetPosition()[1]-self.last_pos[1]
             self.last_pos = event.GetPosition()
-            self.Refresh()
-            print(self.sx, self.sy)
+            self.Refresh(False)
+            # print(self.sx, self.sy)
 
     def key(self, event):
         speed = 25
@@ -80,7 +79,12 @@ class Map(wx.Panel):
                 self.sx = self.sx // 2 - event.GetPosition()[0] // 2
                 self.sy = self.sy // 2 - event.GetPosition()[1] // 2
             self.bounds = tuple(map(int, open(self.map_folder+"/z" + str(self.zoom) + "/config", "r").read().split()))
+
             self.bitmaps.clear()
+            while not self.tile_queue.empty():
+                self.tile_queue.get()
+            self.tiles_dict.clear()
+            self.loaded_tiles_set.clear()
             self.Refresh()
 
     def on_size(self, event):
@@ -99,18 +103,27 @@ class Map(wx.Panel):
 
                 if 0 <= x // 256 < self.bounds[0] and 0 <= y // 256 < self.bounds[1]:
                     if (x//256, y//256) in self.tiles_dict.keys():
-
                         self.bitmaps[(x//256, y//256)] = wx.Bitmap.FromBuffer(256, 256, self.tiles_dict[(x//256, y//256)].tobytes())
                     else:
                         self.bitmaps[(x // 256, y // 256)] = self.missing_image
-                        self.tile_queue.put((x//256, y//256, self.zoom))
+                        self.tile_queue.put(((self.sx+self.GetSize()[0]//2-x)**2+(self.sy+self.GetSize()[1]//2-y)**2, (x//256, y//256, self.zoom)))
+                else:
+                    self.bitmaps[(x // 256, y // 256)] = self.missing_image
                 dc.DrawBitmap(self.bitmaps[(x//256, y//256)], x-self.sx, y-self.sy)
 
     def tile_loader_process(self):
         while True:
-            to_load = self.tile_queue.get()
-            image = Image.open(io.BytesIO(requests.get(self.map_tiles_url.format(x=to_load[0], y=to_load[1], z=to_load[2])).content))
-            self.tiles_dict[(to_load[0], to_load[1])] = image
+            to_load = self.tile_queue.get()[1]
+            if to_load not in self.loaded_tiles_set:
+                try:
+                    image = Image.open(io.BytesIO(requests.get(self.map_tiles_url.format(x=to_load[0], y=to_load[1], z=to_load[2])).content))
+                except Exception:
+                    print("PLEASE FUCKING DEBUG")
+                image = image.convert("RGB")
+
+                self.tiles_dict[(to_load[0], to_load[1])] = image
+                self.loaded_tiles_set.add(to_load)
+                self.Refresh(False)
 
 
 class DataView(wx.ScrolledWindow):

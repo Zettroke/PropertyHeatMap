@@ -21,19 +21,19 @@ class MapApp(Canvas):
         self.miss_photo = ImageTk.PhotoImage(Image.new("RGB", (256, 256), 0xC3C3C3))
         self.is_local_network = True
         if not self.is_local_network:
-            self.map_server = "http://178.140.109.241:25565/"
-            self.image_server = "http://178.140.109.241:25565/z{z}/{x}.{y}.png"
-            self.image_layer_server = "http://178.140.109.241:24062/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
-            self.image_roads_server = "http://127.0.0.1:24062/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist={max_dist}"
-            self.map_data_server = "http://178.140.109.241:24062/search/point/?x={x}&y={y}&z={z}"
-            self.map_data_server_circle_search = "http://178.140.109.241:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
+            self.map_server = "http://178.140.109.241:25565/image/"
+            self.image_server = "http://178.140.109.241:25565/image/z{z}/{x}.{y}.png"
+            self.image_layer_server = "http://178.140.109.241:24062/api/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
+            self.image_roads_server = "http://127.0.0.1:24062/api/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist={max_dist}"
+            self.map_data_server = "http://178.140.109.241:24062/api/search/point/?x={x}&y={y}&z={z}"
+            self.map_data_server_circle_search = "http://178.140.109.241:24062/api/search/circle/?x={x}&y={y}&z={z}&r={r}"
         else:
-            self.map_server = "http://127.0.0.1:25565/"
-            self.image_server = "http://127.0.0.1:25565/z{z}/{x}.{y}.png"
-            self.image_layer_server = "http://127.0.0.1:24062/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
-            self.image_roads_server = "http://127.0.0.1:24062/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist={max_dist}"
-            self.map_data_server = "http://127.0.0.1:24062/search/point/?x={x}&y={y}&z={z}"
-            self.map_data_server_circle_search = "http://127.0.0.1:24062/search/circle/?x={x}&y={y}&z={z}&r={r}"
+            self.map_server = "http://127.0.0.1:25565/image/"
+            self.image_server = "http://127.0.0.1:25565/image/z{z}/{x}.{y}.png"
+            self.image_layer_server = "http://127.0.0.1:24062/api/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
+            self.image_roads_server = "http://127.0.0.1:24062/api/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist={max_dist}"
+            self.map_data_server = "http://127.0.0.1:24062/api/search/point/?x={x}&y={y}&z={z}"
+            self.map_data_server_circle_search = "http://127.0.0.1:24062/api/search/circle/?x={x}&y={y}&z={z}&r={r}"
         try:
             self.image_server = open("config", "r").readline()
         except Exception:
@@ -308,7 +308,7 @@ class MapApp(Canvas):
         self.x_speed = (pos_end[0] - pos_start[0]) / min(100, len(self.movement))  # px per sec
         self.y_speed = (pos_end[1] - pos_start[1]) / min(100, len(self.movement))
 
-        Thread(target=self.kinetic_move, daemon=True).start()
+        # Thread(target=self.kinetic_move, daemon=True).start()
 
     def move_viewport(self, x, y):
         pos_x = 256+(self.map_x+x) % 256

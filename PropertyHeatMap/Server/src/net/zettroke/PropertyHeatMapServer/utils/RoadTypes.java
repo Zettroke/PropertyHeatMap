@@ -9,6 +9,7 @@ public enum RoadTypes{
     RESIDENTIAL,
     SERVICE,
     CONSTRUCTION,
+    TERTIARY,
     DEFAULT;
 
 
@@ -17,27 +18,27 @@ public enum RoadTypes{
             return RoadTypes.LIVING_STREET;
         }
         String s = data.get("highway");
-        if (s.equals("residential")){
-            System.out.println();
-        }
         switch (s) {
             case "footway":
-                return RoadTypes.FOOTWAY;
+                return FOOTWAY;
 
             case "construction":
-                return RoadTypes.CONSTRUCTION;
+                return CONSTRUCTION;
 
             case "residential":
-                return RoadTypes.RESIDENTIAL;
+                return RESIDENTIAL;
 
             case "service":
-                return RoadTypes.SERVICE;
+                return SERVICE;
 
             case "secondary":
-                return RoadTypes.SECONDARY;
+                return SECONDARY;
+
+            case "tertiary":
+                return TERTIARY;
 
             default:
-                return RoadTypes.DEFAULT;
+                return DEFAULT;
         }
     }
 }

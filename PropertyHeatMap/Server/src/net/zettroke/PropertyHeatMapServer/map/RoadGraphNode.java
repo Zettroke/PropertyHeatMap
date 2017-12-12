@@ -34,8 +34,10 @@ public class RoadGraphNode {
 
     public Color getNodeColor(int max_dist){
         if (this.dist <= max_dist) {
-
-            Color cl = Color.getHSBColor((float)((1-this.dist/(double)max_dist)*120.0/360.0), 0.9f, 0.9f);
+            double c = Math.pow(this.dist/(double)max_dist, 2);
+            //double hue = (240-Math.pow(c-0.5, 5)*480*7.3333333+10*c+120)/360.0;
+            Color cl = Color.getHSBColor((float)((1-c)*120.0/360.0), 0.9f, 0.9f);
+            //Color cl = Color.getHSBColor((float)hue, 0.9f, 0.9f);
             return new Color(cl.getRed(), cl.getGreen(), cl.getBlue());
 
         }else{

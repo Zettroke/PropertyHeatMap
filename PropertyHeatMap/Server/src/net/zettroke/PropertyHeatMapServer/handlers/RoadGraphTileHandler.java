@@ -53,7 +53,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         coefficent = 1.0/mult;
         max_dist = max_dist;
 
-        QuadTreeNode treeNode = new QuadTreeNode(new int[]{x*mult*256, y*mult*256, (x+1)*mult*256, (y+1)*mult*256});
+        QuadTreeNode treeNode = new QuadTreeNode(new int[]{x*mult*256-256, y*mult*256-256, (x+1)*mult*256+256, (y+1)*mult*256+256});
         BufferedImage imageTemp = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
 
 
@@ -67,7 +67,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
             //System.out.println("get form cache");
         }else {
             graph = propertyMap.getCalculatedRoadGraph(933754795, new HashSet<>(Arrays.asList(RoadTypes.FOOTWAY,
-                    RoadTypes.CONSTRUCTION, RoadTypes.LIVING_STREET)));
+                    RoadTypes.CONSTRUCTION, RoadTypes.SERVICE)), max_dist);
             CalculatedGraphCache.store(933754795, max_dist, graph);
             //System.out.println("stored");
         }
@@ -76,7 +76,8 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         int offy = y*mult*256;
         g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         for (RoadGraphNode rgn : graph.values()){
-            if (rgn.dist != Integer.MAX_VALUE){
+            //if (rgn.dist != Integer.MAX_VALUE){
+            //if (treeNode.inBounds(rgn.n)){
                 to_clear.add(rgn);
                 rgn.visited = true;
                 for (int i=0; i<rgn.ref_to.length; i++){
@@ -92,6 +93,9 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                             case SERVICE:
                                 g.setStroke(new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;
+                            case TERTIARY:
+                                g.setStroke(new BasicStroke(60f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                break;
                             case DEFAULT:
                                 g.setStroke(new BasicStroke(20f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;
@@ -100,7 +104,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                         g.drawLine(coef(rgn.n.x-offx), coef(rgn.n.y-offy), coef(ref.n.x-offx), coef(ref.n.y-offy));
                     }
                 }
-            }
+            //}
         }
         for (RoadGraphNode rgn: to_clear) {
             rgn.visited = false;
