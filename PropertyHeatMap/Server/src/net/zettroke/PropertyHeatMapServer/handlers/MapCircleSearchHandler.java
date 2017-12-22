@@ -17,7 +17,6 @@ import java.util.ArrayList;
 public class MapCircleSearchHandler implements ShittyHttpHandler{
 
     static String path = "search/circle";
-
     private PropertyMap propertyMap;
     @Override
     public String getPath() {

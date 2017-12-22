@@ -53,17 +53,7 @@ public class PropertyMapServer {
 class ServerInitializer extends ChannelInitializer<SocketChannel> {
     private PropertyMap propertyMap;
 
-    PathRouter getPathRouter(){
-        PathRouter pathRouter = new PathRouter();
-        pathRouter.addPath(new MapPointSearchHandler(propertyMap));
-        pathRouter.addPath(new DrawerHandler());
-        pathRouter.addPath(new MapCircleSearchHandler(propertyMap));
-        pathRouter.addPath(new PriceTileHandler(propertyMap));
-        pathRouter.addPath(new RoadGraphTileHandler(propertyMap));
-        pathRouter.setErrorHandler(new ErrorHandler());
 
-        return pathRouter;
-    }
 
     @Override
     protected void initChannel(SocketChannel socketChannel) throws Exception {
@@ -75,7 +65,7 @@ class ServerInitializer extends ChannelInitializer<SocketChannel> {
         p.addLast(new HttpResponseEncoder());
         // Remove the following line if you don't want automatic content compression.
         //p.addLast(new HttpContentCompressor());
-        p.addLast(new RouteHandler(getPathRouter()));
+        p.addLast(new RouteHandler(PathRouter.getPathRouter(propertyMap)));
 
     }
 

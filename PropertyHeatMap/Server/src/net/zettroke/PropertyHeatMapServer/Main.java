@@ -45,7 +45,7 @@ public class Main {
         PropertyMapServer server = new PropertyMapServer(map_name);
         server.start();
 
-        TestRoadGraph.test();
+        //TestPolygonClipping.test();
 
 
 
@@ -62,7 +62,7 @@ public class Main {
         //scanner.nextLine();
 
 
-        double size = 20000;
+        double size = 10000;
         int x_size = (int) size;
         coefficent = size/(propertyMap.x_end-propertyMap.x_begin);
         int y_size = coef(propertyMap.y_end-propertyMap.y_begin);
@@ -72,16 +72,17 @@ public class Main {
         BufferedImage image = new BufferedImage(x_size, y_size, BufferedImage.TYPE_INT_RGB);
 
         Graphics2D g = (Graphics2D) image.getGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setColor(new Color(255, 255, 255));
         g.fillRect(0, 0, x_size, y_size);
         g.setColor(new Color(0, 0, 0));
         draw(g, propertyMap.tree.root);
 
         g.setColor(new Color(255, 0, 0));
-        for (MapPoint p: propertyMap.lost_price){
-            g.fillRect(coef(p.x)-4, coef(p.y)-4, 8, 8);
-            g.drawRect(coef(p.x)-16, coef(p.y)-16, 32, 32);
-        }
+        //for (MapPoint p: propertyMap.lost_price){
+        //    g.fillRect(coef(p.x)-4, coef(p.y)-4, 8, 8);
+        //    g.drawRect(coef(p.x)-16, coef(p.y)-16, 32, 32);
+        //}
 
         ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));*/
 
@@ -103,7 +104,7 @@ public class Main {
             g.setColor(new Color(0, 0, 0));
             for (MapShape mh: t.shapes){
                 if (mh.isPoly && mh.way.data.containsKey("building")) {
-                    g.setStroke(new BasicStroke(3f));
+                    g.setStroke(new BasicStroke(1.5f));
                     Polygon poly = new Polygon();
                     for (MapPoint p : mh.points) {
                         poly.addPoint(coef(p.x), coef(p.y));

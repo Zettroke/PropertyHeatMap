@@ -237,7 +237,7 @@ public class QuadTree {
             }
         }else{
             for (MapShape shape: source.shapes){
-                if (!alreadyAdd.contains(shape.way.id)) {
+                if (!alreadyAdd.contains(shape.way.id) && shape.way.apartments != null && shape.way.apartments.size() != 0) {
                     res.add(new MapShape(shape.way));
                     alreadyAdd.add(shape.way.id);
                 }

@@ -9,14 +9,15 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Scanner;
 
 /**
  * Created by Zettroke on 29.10.2017.
  */
 public class TestPolygonClipping {
     public static void test() throws Exception{
-        int[] bounds = new int[]{20736, 23040, 23040, 25344};
-        //int[] bounds = new int[]{0, 0, 750, 750};
+        //int[] bounds = new int[]{20736, 23040, 23040, 25344};
+        int[] bounds = new int[]{0, 0, 750, 750};
         //BufferedImage image = new BufferedImage(600, 600, BufferedImage.TYPE_INT_RGB);
         BufferedImage image = new BufferedImage(bounds[2]-bounds[0]+500, bounds[3]-bounds[1]+500, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = (Graphics2D) image.getGraphics();
@@ -24,13 +25,13 @@ public class TestPolygonClipping {
         g.setColor(new Color(255, 255, 255));
         g.fillRect(0, 0, image.getWidth(), image.getHeight());
         QuadTreeNode t = new QuadTreeNode(new int[]{250, 250, 250+bounds[2]-bounds[0], 250+bounds[3]-bounds[1]});
-        MapShape m =  new MapShape((Way)(new ObjectInputStream(new FileInputStream("fuck.obj"))).readObject());
+        MapShape m = new MapShape();// new MapShape((Way)(new ObjectInputStream(new FileInputStream("fuck.obj"))).readObject());
         m.isPoly = true;
 
-        for (int i=0; i<m.points.size(); i++){
+        /*for (int i=0; i<m.points.size(); i++){
             m.points.get(i).x += (250-bounds[0]); m.points.get(i).y += (250-bounds[1]);
-        }
-        /*m.points.add(new MapPoint(200, 300));
+        }*/
+        m.points.add(new MapPoint(200, 300));
         m.points.add(new MapPoint(300, 200));
         m.points.add(new MapPoint(550, 300));
         m.points.add(new MapPoint(350, 260));
@@ -40,7 +41,7 @@ public class TestPolygonClipping {
         m.points.add(new MapPoint(480, 600));
         m.points.add(new MapPoint(100, 570));
         m.points.add(new MapPoint(200, 300));
-        m.isPoly =true;*/
+        m.isPoly =true;
 
         /*m.points.add(new MapPoint(10, 30));
         m.points.add(new MapPoint(250, 50));
@@ -99,14 +100,14 @@ public class TestPolygonClipping {
 
         t.add(m);
 
-        /*QuadTree tree = new QuadTree(new int[]{0, 0, 0, 0});
-        tree.root = t;
-        Collection<Way> ways = tree.findShapesByCircle(new MapPoint(circle_x, circle_y), radius);
-        if (ways.size()!=0){
-            System.out.println("FOUND");
-        }
-        g.setColor(new Color(255,0, 0));
-        g.fillRect(circle_x-2, circle_y-radius-2, 4, 4);*/
+        //QuadTree tree = new QuadTree(new int[]{0, 0, 0, 0});
+        //tree.root = t;
+        //Collection<Way> ways = tree.findShapesByCircle(new MapPoint(circle_x, circle_y), radius);
+        //if (ways.size()!=0){
+        //    System.out.println("FOUND");
+        //}
+        //g.setColor(new Color(255,0, 0));
+        //g.fillRect(circle_x-2, circle_y-radius-2, 4, 4);
 
         for (MapShape shp: t.shapes){
             Polygon poly = new Polygon();
@@ -125,14 +126,16 @@ public class TestPolygonClipping {
             g.fillRect(point.x-2, point.y-2, 4, 4);
         }
 
-        /*g.setStroke(new BasicStroke(2));
-        g.setColor(new Color(255, 0, 0));
-
-        g.drawOval(circle_x-radius, circle_y-radius, 2*radius, 2*radius);*/
+        //g.setStroke(new BasicStroke(2));
+        //g.setColor(new Color(255, 0, 0));
+//
+        //g.drawOval(circle_x-radius, circle_y-radius, 2*radius, 2*radius);
 
         ImageIO.write(image, "png", new File("testPolygonClip.png"));
-
-        //bench(m, t);
+        /*Scanner scanner = new Scanner(System.in);
+        scanner.nextLine();
+        bench(m, t);
+        scanner.nextLine();*/
 
     }
 
@@ -143,7 +146,7 @@ public class TestPolygonClipping {
             t.shapes.clear();
         }*/
 
-        int test_iter = 1000000;
+        int test_iter = 10000000;
         for (int i=0; i<test_iter; i++) {
             t.add(m);
             t.shapes.clear();

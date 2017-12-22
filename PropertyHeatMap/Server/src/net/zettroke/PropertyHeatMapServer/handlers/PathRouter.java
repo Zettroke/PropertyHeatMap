@@ -3,17 +3,23 @@ package net.zettroke.PropertyHeatMapServer.handlers;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
+import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
+import sun.reflect.Reflection;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 public class PathRouter {
+    private static ArrayList<Class<? extends ShittyHttpHandler>> handlers = new ArrayList<>();
     private HashMap<String, PathRouter> routes = new HashMap<>();
     private ShittyHttpHandler handler = null;
-    private ShittyHttpHandler error_handler = null;
+    private static ShittyHttpHandler error_handler = null;
 
-    public void addPath(ShittyHttpHandler handler){
+    public static PropertyMap propertyMap;
+
+    private void addPath(ShittyHttpHandler handler){
         String path = handler.getPath();
         if (path.length() > 0 && path.charAt(0) == '/'){
             path = path.substring(1);
@@ -32,7 +38,6 @@ public class PathRouter {
             PathRouter pr;
             if (!routes.containsKey(l.get(0))){
                 pr = new PathRouter();
-                pr.setErrorHandler(error_handler);
                 routes.put(l.get(0), pr);
 
             }else{
@@ -42,11 +47,8 @@ public class PathRouter {
         }
     }
 
-    public void setErrorHandler(ShittyHttpHandler handler){
-        error_handler = handler;
-        for (PathRouter pt: routes.values()){
-            pt.setErrorHandler(handler);
-        }
+    public static void setErrorHandler(ErrorHandler handler){
+       error_handler = handler;
     }
 
     public ShittyHttpHandler getHandler(String path){
@@ -76,6 +78,20 @@ public class PathRouter {
                 return error_handler;
             }
         }
+    }
+
+    public static PathRouter getPathRouter(PropertyMap propertyMap){
+        propertyMap = propertyMap;
+        PathRouter pr = new PathRouter();
+        pr.addPath(new MapPointSearchHandler(propertyMap));
+        pr.addPath(new DrawerHandler());
+        pr.addPath(new MapCircleSearchHandler(propertyMap));
+        pr.addPath(new PriceTileHandler(propertyMap));
+        pr.addPath(new RoadGraphTileHandler(propertyMap));
+        setErrorHandler(new ErrorHandler());
+
+        return pr;
+
     }
 
 

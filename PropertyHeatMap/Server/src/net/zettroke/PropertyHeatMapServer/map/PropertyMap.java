@@ -230,18 +230,10 @@ public class PropertyMap {
                 ref_to.clear();
             }
         }
-        //System.out.println((System.nanoTime()-start_t)/1000000.0 + "millis. Graph Copy");
 
-        //start_t = System.nanoTime();
         RoadGraphNode start = res.get(id);
         start.dist = 0;
         recCalculateDistances(start);
-        //System.out.println((System.nanoTime()-start_t)/1000000.0 + "millis. Graph Calculations");
-        /*if (flag) {
-            CalculateDistances(start, roadGraphNodes.size()+1);
-        }else{
-            recCalculateDistances(start);
-        }*/
 
 
         return res;
