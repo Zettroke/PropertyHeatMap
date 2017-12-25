@@ -3,3 +3,4 @@ alaCarte build/
 *.7z
 /osm_map_medium/
 /osm_map_small/
+build/
