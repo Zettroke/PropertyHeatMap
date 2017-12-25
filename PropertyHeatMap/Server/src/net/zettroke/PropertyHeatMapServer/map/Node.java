@@ -8,16 +8,21 @@ import java.util.HashMap;
  * Created by Olleggerr on 15.10.2017.
  */
 
-// Only node whose related to roads(highways) or relations(public transport)
-public class Node extends SimpleNode{
+public class Node extends MapPoint{
 
-    //public ArrayList<Relation> relations = new ArrayList<>();
+    long id;
+    double lon;
+    double lat;
 
     public HashMap<String, String> data = new HashMap<>();
+
+    boolean isRoadNode = false;
 
     public Node(double lon, double lat){
         this.lon = lon;
         this.lat = lat;
     }
+
+    public Node(){}
 
 }

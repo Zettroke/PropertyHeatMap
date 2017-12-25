@@ -6,7 +6,6 @@ import com.eclipsesource.json.JsonObject;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
 import net.zettroke.PropertyHeatMapServer.utils.RoadTypes;
 
-import java.awt.*;
 import java.io.*;
 import java.util.*;
 import java.util.List;
@@ -35,9 +34,8 @@ public class PropertyMap {
     public int x_begin=0, y_begin=0;
     public int x_end=0, y_end=0;
 
-    ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
-    ArrayList<Node> nodes = new ArrayList<>();
-    ArrayList<Way> ways = new ArrayList<>();
+    HashMap<Long, Node> nodes = new HashMap<>();
+    HashMap<Long, Way> ways = new HashMap<>();
     ArrayList<Relation> relations = new ArrayList<>();
 
 
@@ -61,7 +59,7 @@ public class PropertyMap {
     public void init(){
         tree = new QuadTree(new int[]{0, 0, x_end-x_begin, y_end-y_begin});
         //t.split();
-        for (Node n: nodes){
+        for (Node n: nodes.values()){
             tree.add(n);
         }
         System.out.println("Done with nodes!");
@@ -86,15 +84,15 @@ public class PropertyMap {
 
         @Override
         public void run() {
-            for (Node n: m.nodes){
+            for (Node n: m.nodes.values()){
                 if (t.inBounds(n)){
                     t.add(n);
                 }
             }
             //System.out.println(getName() + " Done with nodes!");
-            for (int i=0; i<m.ways.size(); i++){
-                if (ways.get(i).data.containsKey("building") || ways.get(i).data.containsKey("highway")){// || ways.get(i).data.containsKey("railway")) {
-                    t.add(new MapShape(ways.get(i)));
+            for (Way w: ways.values()){
+                if (w.data.containsKey("building") || w.data.containsKey("highway")){// || ways.get(i).data.containsKey("railway")) {
+                    t.add(new MapShape(w));
                 }
 
             }
@@ -178,8 +176,12 @@ public class PropertyMap {
 
     }
 
-    public List<Way> findShapesByCircle(MapPoint center, int radius) throws Exception{
+    public List<Way> findShapesByCircle(MapPoint center, int radius){
         return tree.findShapesByCircle(center, radius);
+    }
+
+    public List<Node> findNodesInCircle(MapPoint center, int radius){
+        return tree.findNodesInCircle(center, radius);
     }
 
     public Way findShapeByPoint(MapPoint p) throws Exception{
@@ -231,9 +233,34 @@ public class PropertyMap {
             }
         }
 
-        RoadGraphNode start = res.get(id);
-        start.dist = 0;
-        recCalculateDistances(start);
+        boolean found = false;
+        MapPoint center = ways.get(id).getCenter();
+        Node start = new Node();
+        start.x = Integer.MAX_VALUE; start.y = Integer.MAX_VALUE;
+
+        for (int radius=100; radius<20000; radius+=100){
+            List<Node> nds = findNodesInCircle(center, radius);
+            for (Node n: nds){
+                if (n.isRoadNode){
+
+                    if (res.keySet().contains(n.id)){
+                        start = n;
+                        found = true;
+                    }
+                }
+            }
+            if (found) {
+                break;
+            }
+        }
+
+        if (!found){
+            System.err.println("Doesnt found close road to building");
+        }
+
+        RoadGraphNode start_rgn = res.get(start.id);
+        start_rgn.dist = 0;
+        recCalculateDistances(start_rgn);
 
 
         return res;
@@ -248,7 +275,6 @@ public class PropertyMap {
                 if (to.dist <= max_calculation_dist) {
                     recCalculateDistances(to);
                 }
-                //System.out.println(depth);
             }
         }
     }

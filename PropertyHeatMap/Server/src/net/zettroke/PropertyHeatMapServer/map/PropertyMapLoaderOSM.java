@@ -87,7 +87,7 @@ public class PropertyMapLoaderOSM{
                             }
                             break;
                         case "nd":
-                            Node n =  nodes.get(Long.decode(streamReader.getAttributeValue(0)));
+                            Node n = nodes.get(Long.decode(streamReader.getAttributeValue(0)));
                             tempNodeList.add(n);
                             tempWay.nodes.add(n);
                             break;
@@ -194,8 +194,8 @@ public class PropertyMapLoaderOSM{
         System.out.println("Nodes: "+nodes.size());
         System.out.println("Ways: "+ways.size());
         System.out.println("Relations: "+relations.size());
-        m.nodes = new ArrayList<>(nodes.values());
-        m.ways = new ArrayList<>(ways.values());
+        m.nodes = nodes;
+        m.ways = ways;
         m.relations = new ArrayList<>(relations.values());
 
         //System.gc();

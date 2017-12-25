@@ -89,7 +89,6 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         }
     }
 
-    
     static SuperSampledMapPoint VertCross(int vert, int y1, int y2, MapPoint p1, MapPoint p2){
         if ((p1.x > vert && p2.x > vert) || (p1.x < vert && p2.x < vert)){
             return null;
@@ -104,35 +103,6 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }
         }
     }
-
-    
-    static MapPoint RoadHorzCross(int horz, int x1, int x2, MapPoint p1, MapPoint p2){
-        if ((p1.y >= horz && p2.y >= horz) || (p1.y <= horz && p2.y <= horz)){
-            return null;
-        }else{
-            int x = (int)Math.round(p1.x + ((horz-p1.y)/(double)(p2.y-p1.y))*(p2.x-p1.x));
-            if (x >= Math.min(x1, x2) && x <= Math.max(x1, x2)) {
-                return new MapPoint(x, horz);
-            }else {
-                return null;
-            }
-        }
-    }
-
-    
-    static MapPoint RoadVertCross(int vert, int y1, int y2, MapPoint p1, MapPoint p2){
-        if ((p1.x >= vert && p2.x >= vert) || (p1.x <= vert && p2.x <= vert)){
-            return null;
-        }else{
-            int y = (int)Math.round(p1.y + ((vert-p1.x)/(double)(p2.x-p1.x))*(p2.y-p1.y));
-            if (y >= Math.min(y1, y2) && y <= Math.max(y1, y2)) {
-                return new MapPoint(vert, y);
-            }else {
-                return null;
-            }
-        }
-    }
-
 
     class SquareComparator implements Comparator<MapPoint> {
 
@@ -260,8 +230,6 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         -------------------
          */
 
-    //PropertyMap.ParallelInitThread th_temp;
-
     int depth = 0;
 
     int items = 0;
@@ -373,31 +341,36 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     private void addRoad(final MapShape m){
         MapShape shape = new MapShape();
         shape.copyParams(m);
-        MapPoint p1 = m.points.get(0);
+        DMapPoint p1 = new DMapPoint(m.points.get(0));
         boolean inTreeNode = inBounds(p1);
-        if (inTreeNode){shape.points.add(p1);}
+        if (inTreeNode){shape.points.add(p1.p);}
 
         for (int i=1; i < m.points.size(); i++){
-            MapPoint p2 = m.points.get(i);
-            MapPoint h1 = RoadHorzCross(bounds[1], bounds[0], bounds[2], p1, p2);
-            MapPoint h2 = RoadHorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
-            MapPoint v1 = RoadVertCross(bounds[0], bounds[1], bounds[3], p1, p2);
-            MapPoint v2 = RoadVertCross(bounds[2], bounds[1], bounds[3], p1, p2);
-            MapPoint temp[] = new MapPoint[]{h1, h2, v1, v2};
-            for (int z1=0; z1<4; z1++){
-                for (int z2=0; z2<4; z2++){
-                    if (z1 != z2 && temp[z1] != null && temp[z2] != null){
-                        if (temp[z1].equals(temp[z2])){
-                            temp[z2] = null;
+            DMapPoint p2 = new DMapPoint(m.points.get(i));
+            DMapPoint h1 = DHorzCross(bounds[1], bounds[0], bounds[2], p1, p2);
+            DMapPoint h2 = DHorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
+            DMapPoint v1 = DVertCross(bounds[0], bounds[1], bounds[3], p1, p2);
+            DMapPoint v2 = DVertCross(bounds[2], bounds[1], bounds[3], p1, p2);
+
+            DMapPoint temp[] = new DMapPoint[]{h1, h2, v1, v2};
+            int intersections = 0;
+            for (int z=0; z<4; z++){
+                if (temp[z] != null){
+                    for (int z1=z+1; z1<4; z1++){
+                        if (temp[z1] != null && temp[z].equals(temp[z1])){
+                            temp[z1] = null;
                         }
                     }
-
+                    if (temp[z].equals(p1) || temp[z].equals(p2)){
+                        temp[z] = null;
+                    }
                 }
+
+                intersections += (temp[z] != null ? 1 : 0);
             }
 
-            int intersections = (temp[0] != null ? 1: 0) + (temp[1] != null ? 1: 0) + (temp[2] != null ? 1: 0) + (temp[3] != null ? 1: 0);
             if (inTreeNode && intersections == 0){
-                shape.points.add(p2);
+                shape.points.add(p2.p);
             }else if (intersections == 1){
                 inTreeNode = !inTreeNode;
                 if (inTreeNode){
@@ -405,15 +378,16 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
                     shape.copyParams(m);
                 }else{
                     shapes.add(shape);
+                    items++;
                 }
-                shape.points.add((temp[0] != null ? temp[0]:(temp[1] != null? temp[1]: (temp[2] != null ? temp[2]: temp[3]))));
+                shape.points.add((temp[0] != null ? temp[0]:(temp[1] != null? temp[1]: (temp[2] != null ? temp[2]: temp[3]))).p);
                 if (inTreeNode) {
-                    shape.points.add(p2);
+                    shape.points.add(p2.p);
                 }
             }else if (intersections == 2){
-                for (MapPoint point: temp){
+                for (DMapPoint point: temp){
                     if (point != null){
-                        shape.points.add(point);
+                        shape.points.add(point.p);
                     }
                 }
                 shapes.add(shape);

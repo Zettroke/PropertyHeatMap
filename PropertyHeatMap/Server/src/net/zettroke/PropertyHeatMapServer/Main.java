@@ -115,7 +115,7 @@ public class Main {
                     }
                     g.setColor(new Color(0, 0, 0));
                     g.draw(poly);
-                } else if (!(mh.way.data.get("highway").equals("footway") || mh.way.data.get("highway").equals("path"))){
+                } else{// if (!(mh.way.data.get("highway").equals("footway") || mh.way.data.get("highway").equals("path"))){
                     g.setColor(new Color(0, 0, 0));
 
                     g.setStroke(new BasicStroke(6f));

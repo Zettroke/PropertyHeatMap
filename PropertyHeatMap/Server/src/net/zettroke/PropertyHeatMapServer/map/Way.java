@@ -16,4 +16,14 @@ public class Way implements Serializable{
     public int[] legth;
     public ArrayList<Apartment> apartments;
 
+    public MapPoint getCenter(){
+        long x = 0;
+        long y = 0;
+        for (Node n: nodes){
+            x += n.x;
+            y += n.y;
+        }
+        return new MapPoint(Math.round(x/(float)nodes.size()), Math.round(y/(float)nodes.size()));
+    }
+
 }

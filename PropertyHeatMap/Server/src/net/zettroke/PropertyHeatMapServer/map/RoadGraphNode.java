@@ -18,6 +18,7 @@ public class RoadGraphNode {
 
     RoadGraphNode(Node n){
         this.n = n;
+        n.isRoadNode = true;
     }
 
     public void addWay(Way way){

@@ -24,14 +24,14 @@ class MapApp(Canvas):
             self.map_server = "http://178.140.109.241:25565/image/"
             self.image_server = "http://178.140.109.241:25565/image/z{z}/{x}.{y}.png"
             self.image_layer_server = "http://178.140.109.241:24062/api/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
-            self.image_roads_server = "http://127.0.0.1:24062/api/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist={max_dist}"
+            self.image_roads_server = "http://127.0.0.1:24062/api/tile/road?x={x}&y={y}&z={z}&start_id=933754795&max_dist={max_dist}"
             self.map_data_server = "http://178.140.109.241:24062/api/search/point/?x={x}&y={y}&z={z}"
             self.map_data_server_circle_search = "http://178.140.109.241:24062/api/search/circle/?x={x}&y={y}&z={z}&r={r}"
         else:
             self.map_server = "http://127.0.0.1:25565/image/"
             self.image_server = "http://127.0.0.1:25565/image/z{z}/{x}.{y}.png"
             self.image_layer_server = "http://127.0.0.1:24062/api/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
-            self.image_roads_server = "http://127.0.0.1:24062/api/tile/road_graph?x={x}&y={y}&z={z}&start_id=933754795&max_dist={max_dist}"
+            self.image_roads_server = "http://127.0.0.1:24062/api/tile/road?x={x}&y={y}&z={z}&start_id=933754795&max_dist={max_dist}"
             self.map_data_server = "http://127.0.0.1:24062/api/search/point/?x={x}&y={y}&z={z}"
             self.map_data_server_circle_search = "http://127.0.0.1:24062/api/search/circle/?x={x}&y={y}&z={z}&r={r}"
         try:
@@ -378,7 +378,7 @@ class MapApp(Canvas):
                         break
 
                 if flag:
-                    print(json.dumps(answer["data"], indent=4, sort_keys=True, ensure_ascii=False))
+
                     # self.shapes.clear()
                     bounds = [2**20, 2**20, 0, 0]
                     for i in answer["points"]:
@@ -393,6 +393,8 @@ class MapApp(Canvas):
 
                     self.shapes.append({"points": answer["points"], "bounds": bounds, "id": answer["id"]})
                     self.render_shape(self.shapes[-1])
+                    del answer["points"]
+                    print(json.dumps(answer, indent=4, sort_keys=True, ensure_ascii=False))
             self.root.after(1, self.update_shapes)
 
     def request_circle_location(self, x, y, radius):

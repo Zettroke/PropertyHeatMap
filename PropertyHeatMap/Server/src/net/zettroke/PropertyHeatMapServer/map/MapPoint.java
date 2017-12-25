@@ -40,12 +40,16 @@ public class MapPoint implements Serializable{
         return "(" + x + ", " + y + ")";
     }
 
-    public int squaredDistTo(MapPoint p){
+    public long squaredDistTo(MapPoint p){
         return (p.x-this.x)*(p.x-this.x)+(p.y-this.y)*(p.y-this.y);
     }
 
     public boolean inCircle(MapPoint center, int radius){
         return (this.x-center.x)*(this.x-center.x) + (this.y-center.y)*(this.y-center.y) <= radius*radius;
+    }
+
+    public int distTo(MapPoint p){
+        return (int)Math.round(Math.sqrt(squaredDistTo(p)));
     }
 
     /*@Override

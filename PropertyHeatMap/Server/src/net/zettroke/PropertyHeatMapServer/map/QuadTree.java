@@ -9,7 +9,7 @@ import java.util.*;
  * Created by Zettroke on 19.10.2017.
  */
 public class QuadTree {
-    static int THRESHOLD = 1000;
+    static int THRESHOLD = 2000;
 
 
     public QuadTreeNode root;
@@ -25,13 +25,10 @@ public class QuadTree {
 
     }
 
-
-
     public QuadTree(int[] bounds){
         root = new QuadTreeNode(bounds);
     }
 
-    
     public QuadTreeNode getEndNode(MapPoint p){
         QuadTreeNode curr = root;
         while (true) {
@@ -82,7 +79,7 @@ public class QuadTree {
 
     }
 
-    List<Way> findShapesByCircle(MapPoint center, int radius) throws Exception{
+    List<Way> findShapesByCircle(MapPoint center, int radius){
         QuadTreeNode treeNode = getEndNode(center);
         while (true){
             if (center.x - treeNode.bounds[0] > radius && treeNode.bounds[2] - center.x > radius &&
@@ -126,7 +123,44 @@ public class QuadTree {
         return new ArrayList<>(result.values());
     }
 
-    private boolean circle_contain_node_or_cross(QuadTreeNode node, MapPoint center, int radius){
+    List<Node> findNodesInCircle(MapPoint center, int radius){
+        QuadTreeNode treeNode = getEndNode(center);
+        while (true){
+            if (center.x - treeNode.bounds[0] > radius && treeNode.bounds[2] - center.x > radius &&
+                    center.y - treeNode.bounds[1] > radius && treeNode.bounds[3] - center.y > radius){
+                break;
+            }else {
+                if (treeNode.parent != null){
+                    treeNode = treeNode.parent;
+                }else{
+                    break;
+                }
+            }
+        }
+        
+        ArrayList<Node> res = new ArrayList<>();
+        
+        rec_circle_nodes_search(treeNode, res, center, radius);
+
+        return res;
+        
+    }
+    
+    private void rec_circle_nodes_search(QuadTreeNode treeNode, ArrayList<Node> res, MapPoint center, int radius){
+        if (treeNode.isEndNode){
+            for (Node n: treeNode.nodes){
+                if ((n.x-center.x)*(n.x-center.x) + (n.y-center.y)*(n.y-center.y) <= radius*radius){
+                    res.add(n);
+                }
+            }
+        }else{
+            for (QuadTreeNode tr1: treeNode) {
+                rec_circle_nodes_search(tr1, res, center, radius);
+            }
+        }
+    }
+
+    private boolean circle_contain_treeNode_or_cross(QuadTreeNode node, MapPoint center, int radius){
         MapPoint p1 = new MapPoint(node.bounds[0], node.bounds[1]);
         MapPoint p2 = new MapPoint(node.bounds[2], node.bounds[1]);
         MapPoint p3 = new MapPoint(node.bounds[2], node.bounds[3]);
@@ -151,7 +185,7 @@ public class QuadTree {
 
     private void rec_circle_tree_node_search(QuadTreeNode node, ArrayList<QuadTreeNode> list, MapPoint p, int radius){
         if (node.isEndNode){
-            if (circle_contain_node_or_cross(node, p, radius)){
+            if (circle_contain_treeNode_or_cross(node, p, radius)){
                 list.add(node);
             }
         }else{
