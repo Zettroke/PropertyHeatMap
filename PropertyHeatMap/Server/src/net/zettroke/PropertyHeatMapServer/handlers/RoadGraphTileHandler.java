@@ -96,6 +96,9 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                             case TERTIARY:
                                 g.setStroke(new BasicStroke(60f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;
+                            case PRIMARY:
+                                g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                break;
                             case DEFAULT:
                                 g.setStroke(new BasicStroke(20f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;

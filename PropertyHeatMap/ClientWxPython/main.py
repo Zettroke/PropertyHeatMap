@@ -4,6 +4,7 @@ import queue
 import io
 import requests
 from threading import Thread
+import json
 
 
 class LoadTask:
@@ -29,11 +30,14 @@ class Map(wx.Panel):
 
     def __init__(self, *args, **kwargs):
         super(Map, self).__init__(*args, **kwargs)
-        self.map_folder = "C:/PropertyHeatMap/osm_map_medium/image"
-        self.map_tiles_url = "http://178.140.109.241:25565/image/z{z}/{x}.{y}.png"
-        self.price_tiles_url = "http://178.140.109.241:25565/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
-        self.road_tiles_url = "http://178.140.109.241:25565/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}"
+        self.map_folder = "C:/PropertyHeatMap/osm_map_small/image"
+        self.map_tiles_url = "http://127.0.0.1:25565/image/z{z}/{x}.{y}.png"
+        self.price_tiles_url = "http://127.0.0.1:25565/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
+        self.road_tiles_url = "http://127.0.0.1:25565/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}"
+        self.point_search_url = "http://127.0.0.1:25565/api/search/point?z={z}&x={x}&y={y}"
         self.tiles_dict = {}
+        self.shapes_dict = {}
+        self.server_zoom = 19
 
         # price stuff
         self.price_tiles_dict = {}
@@ -52,6 +56,7 @@ class Map(wx.Panel):
         self.Bind(wx.EVT_MOTION, self.on_move)
         self.Bind(wx.EVT_LEAVE_WINDOW, self.left_up)
         self.Bind(wx.EVT_MOUSEWHEEL, self.zoom)
+        self.moved = False
         self.Show()
         self.map_x, self.map_y = 0, 0
         self.last_pos = (0, 0)
@@ -66,17 +71,32 @@ class Map(wx.Panel):
         Thread(target=self.tile_loader, daemon=True, name="loader 1").start()
         Thread(target=self.tile_loader, daemon=True, name="loader 2").start()
 
+    def request_location(self, x, y):
+        ans = json.loads(requests.get(self.point_search_url.format(x=x, y=y, z=self.zoom)).text, encoding="utf-8")
+        if ans["status"] == "success":
+
+            print(json.dumps(ans, ensure_ascii=False, indent=2))
+            self.shapes_dict[ans["objects"][0]["id"]] = ans["objects"][0]["points"]
+
+            self.Refresh(False)
+
     def left_down(self, event):
         # print("CLICK")
         self.pressed = True
+        self.moved = False
+
         self.last_pos = event.GetPosition()
 
     def left_up(self, event):
         # print("UNCLICK")
         self.pressed = False
+        if not self.moved:
+            Thread(target=self.request_location, args=(self.map_x+event.Position[0], self.map_y+event.Position[1]),
+                   daemon=True).start()
 
     def on_move(self, event):
         if self.pressed:
+            self.moved = True
             self.map_x -= event.GetPosition()[0] - self.last_pos[0]
             self.map_y -= event.GetPosition()[1] - self.last_pos[1]
             self.last_pos = event.GetPosition()
@@ -164,6 +184,13 @@ class Map(wx.Panel):
                         self.bitmaps[(x // 256, y // 256)] = self.missing_image
                 dc.DrawBitmap(self.bitmaps[(x2, y2)], x - self.map_x, y - self.map_y)
 
+        for v in self.shapes_dict.values():
+            l = []
+            for i in v:
+                l.append((round(i[0]/2**(self.server_zoom-self.zoom))-self.map_x, round(i[1]/2**(self.server_zoom-self.zoom))-self.map_y))
+            dc.DrawPolygon(l)
+
+
     def tile_loader(self):
         while True:
             to_load = self.tile_queue.get()
@@ -232,8 +259,8 @@ def main():
     frame = PropertyHeatMap()
     frame.Show()
 
-
     app.MainLoop()
+
 
 if __name__ == '__main__':
     main()

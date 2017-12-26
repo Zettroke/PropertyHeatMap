@@ -10,6 +10,7 @@ public enum RoadTypes{
     SERVICE,
     CONSTRUCTION,
     TERTIARY,
+    PRIMARY,
     DEFAULT;
 
 
@@ -36,6 +37,9 @@ public enum RoadTypes{
 
             case "tertiary":
                 return TERTIARY;
+
+            case "primary":
+                return PRIMARY;
 
             default:
                 return DEFAULT;
