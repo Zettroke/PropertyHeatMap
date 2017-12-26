@@ -44,7 +44,9 @@ class Map(wx.Panel):
         self.price_turn_on = False
 
         self.road_tiles_dict = {}
-        self.road_turn_on = True
+        self.road_turn_on = False
+
+        self.current_id = 0
 
         self.loaded_tiles_set = set()
         self.already_updated_bitmaps = set()
@@ -54,7 +56,7 @@ class Map(wx.Panel):
         self.Bind(wx.EVT_LEFT_DOWN, self.left_down)
         self.Bind(wx.EVT_LEFT_UP, self.left_up)
         self.Bind(wx.EVT_MOTION, self.on_move)
-        self.Bind(wx.EVT_LEAVE_WINDOW, self.left_up)
+        self.Bind(wx.EVT_LEAVE_WINDOW, self.out_of_window)
         self.Bind(wx.EVT_MOUSEWHEEL, self.zoom)
         self.moved = False
         self.Show()
@@ -75,20 +77,29 @@ class Map(wx.Panel):
         ans = json.loads(requests.get(self.point_search_url.format(x=x, y=y, z=self.zoom)).text, encoding="utf-8")
         if ans["status"] == "success":
 
-            print(json.dumps(ans, ensure_ascii=False, indent=2))
-            self.shapes_dict[ans["objects"][0]["id"]] = ans["objects"][0]["points"]
-
+            if ans["objects"][0]["id"] not in self.shapes_dict:
+                print(json.dumps(ans, ensure_ascii=False, indent=2))
+                self.shapes_dict[ans["objects"][0]["id"]] = ans["objects"][0]["points"]
+                self.current_id = ans["objects"][0]["id"]
+                self.road_turn_on = True
+                self.already_updated_bitmaps.clear()
+            else:
+                del self.shapes_dict[ans["objects"][0]["id"]]
+                self.road_turn_on = False
+                self.road_tiles_dict.clear()
+                self.already_updated_bitmaps.clear()
             self.Refresh(False)
 
+    def out_of_window(self, event):
+        self.pressed = False
+
     def left_down(self, event):
-        # print("CLICK")
         self.pressed = True
         self.moved = False
 
         self.last_pos = event.GetPosition()
 
     def left_up(self, event):
-        # print("UNCLICK")
         self.pressed = False
         if not self.moved:
             Thread(target=self.request_location, args=(self.map_x+event.Position[0], self.map_y+event.Position[1]),
@@ -142,11 +153,6 @@ class Map(wx.Panel):
             self.already_updated_bitmaps.clear()
             self.Refresh()
 
-    def on_size(self, event):
-        # event.Skip()
-        # self.Refresh()
-        self.on_paint(None)
-
     def on_paint(self, event):
         w, h = self.GetClientSize()
         dc = wx.AutoBufferedPaintDC(self)
@@ -158,6 +164,7 @@ class Map(wx.Panel):
                 x2, y2 = x//256, y//256
                 if (x2, y2) not in self.already_updated_bitmaps:
                     if 0 <= x2 < self.bounds[0] and 0 <= y2 < self.bounds[1]:
+                        dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
                         if (x2, y2) in self.tiles_dict.keys():
                             image_base = self.tiles_dict[(x2, y2)]
                             # Image.alpha_composite(image_base, self)
@@ -172,17 +179,20 @@ class Map(wx.Panel):
                             self.already_updated_bitmaps.add((x2, y2))
                         else:
                             self.bitmaps[(x2, y2)] = self.missing_image
-                            dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
                             self.tile_queue.put(LoadTask(self.map_tiles_url, dist, (x2, y2), self.tiles_dict, x=x2, y=y2, z=self.zoom))
                             self.already_updated_bitmaps.add((x2, y2))
-                            if self.price_turn_on:
-                                self.tile_queue.put(LoadTask(self.price_tiles_url, dist + 1, (x2, y2), self.price_tiles_dict, x=x2, y=y2, z=self.zoom, price=150000, range=0.5))
-                            if self.road_turn_on:
-                                self.tile_queue.put(LoadTask(self.road_tiles_url, dist + 2, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=97660596, max_dist=4500))
+
+                        if self.price_turn_on:
+                            self.tile_queue.put(LoadTask(self.price_tiles_url, dist + 1, (x2, y2), self.price_tiles_dict, x=x2, y=y2, z=self.zoom, price=150000, range=0.5))
+                        if self.road_turn_on:
+                            self.tile_queue.put(LoadTask(self.road_tiles_url, dist + 2, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id, max_dist=3500))
 
                     else:
                         self.bitmaps[(x // 256, y // 256)] = self.missing_image
                 dc.DrawBitmap(self.bitmaps[(x2, y2)], x - self.map_x, y - self.map_y)
+
+        dc.SetPen(wx.Pen(wx.Colour(255, 0, 0, alpha=120)))
+        dc.SetBrush(wx.Brush(wx.Colour(255, 0, 0, alpha=120), wx.SOLID))
 
         for v in self.shapes_dict.values():
             l = []
@@ -190,15 +200,12 @@ class Map(wx.Panel):
                 l.append((round(i[0]/2**(self.server_zoom-self.zoom))-self.map_x, round(i[1]/2**(self.server_zoom-self.zoom))-self.map_y))
             dc.DrawPolygon(l)
 
-
     def tile_loader(self):
         while True:
             to_load = self.tile_queue.get()
             if to_load not in self.loaded_tiles_set:
-                try:
-                    image = Image.open(io.BytesIO(requests.get(to_load.url.format(**to_load.params)).content))
-                except Exception:
-                    print("PLEASE FUCKING DEBUG")
+
+                image = Image.open(io.BytesIO(requests.get(to_load.url.format(**to_load.params)).content))
                 image = image.convert("RGBA")
 
                 to_load.place[to_load.key] = image
