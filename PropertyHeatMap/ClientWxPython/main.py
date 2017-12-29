@@ -3,8 +3,9 @@ from PIL import Image
 import queue
 import io
 import requests
-from threading import Thread
+from threading import Thread, Lock
 import json
+import time
 
 
 class LoadTask:
@@ -28,13 +29,22 @@ class LoadTask:
 
 class Map(wx.Panel):
 
+    LocalNetwork = False
+
     def __init__(self, *args, **kwargs):
         super(Map, self).__init__(*args, **kwargs)
         self.map_folder = "C:/PropertyHeatMap/osm_map_small/image"
-        self.map_tiles_url = "http://127.0.0.1:25565/image/z{z}/{x}.{y}.png"
-        self.price_tiles_url = "http://127.0.0.1:25565/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
-        self.road_tiles_url = "http://127.0.0.1:25565/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}"
-        self.point_search_url = "http://127.0.0.1:25565/api/search/point?z={z}&x={x}&y={y}"
+        if self.LocalNetwork:
+
+            self.map_tiles_url = "http://127.0.0.1/image/z{z}/{x}.{y}.png"
+            self.price_tiles_url = "http://127.0.0.1/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
+            self.road_tiles_url = "http://127.0.0.1/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}"
+            self.point_search_url = "http://127.0.0.1/api/search/point?z={z}&x={x}&y={y}"
+        else:
+            self.map_tiles_url = "http://178.140.109.241/image/z{z}/{x}.{y}.png"
+            self.price_tiles_url = "http://178.140.109.241/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
+            self.road_tiles_url = "http://178.140.109.241/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}"
+            self.point_search_url = "http://178.140.109.241/api/search/point?z={z}&x={x}&y={y}"
         self.tiles_dict = {}
         self.shapes_dict = {}
         self.server_zoom = 19
@@ -47,9 +57,11 @@ class Map(wx.Panel):
         self.road_turn_on = False
 
         self.current_id = 0
+        self.buff = True
 
         self.loaded_tiles_set = set()
         self.already_updated_bitmaps = set()
+        self.bitmaps_to_update = set()
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_CHAR_HOOK, self.key)
@@ -70,8 +82,11 @@ class Map(wx.Panel):
         self.bounds = (9, 9)
         self.tile_queue = queue.PriorityQueue()
 
+        self.loader_lock = Lock()
+        self.need_refresh = True
         Thread(target=self.tile_loader, daemon=True, name="loader 1").start()
-        Thread(target=self.tile_loader, daemon=True, name="loader 2").start()
+        # Thread(target=self.tile_loader, daemon=True, name="loader 2").start()
+        # Thread(target=self.map_refresher, daemon=True, name="map_updater").start()
 
     def request_location(self, x, y):
         ans = json.loads(requests.get(self.point_search_url.format(x=x, y=y, z=self.zoom)).text, encoding="utf-8")
@@ -82,13 +97,29 @@ class Map(wx.Panel):
                 self.shapes_dict[ans["objects"][0]["id"]] = ans["objects"][0]["points"]
                 self.current_id = ans["objects"][0]["id"]
                 self.road_turn_on = True
+                self.bitmaps.clear()
+                while not self.tile_queue.empty():
+                    self.tile_queue.get()
+                self.tiles_dict.clear()
+                self.loaded_tiles_set.clear()
+                self.price_tiles_dict.clear()
+                self.road_tiles_dict.clear()
                 self.already_updated_bitmaps.clear()
+
+                w, h = self.GetClientSize()
+                for x in range(self.map_x // 256 * 256, ((self.map_x + w) // 256 + 1) * 256, 256):
+                    for y in range(self.map_y // 256 * 256, ((self.map_y + h) // 256 + 1) * 256, 256):
+                        x2, y2 = x // 256, y // 256
+                        dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
+                        self.tile_queue.put(
+                            LoadTask(self.road_tiles_url, dist + 2, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id,
+                                     max_dist=3500))
             else:
                 del self.shapes_dict[ans["objects"][0]["id"]]
                 self.road_turn_on = False
                 self.road_tiles_dict.clear()
-                self.already_updated_bitmaps.clear()
-            self.Refresh(False)
+                self.update_all_bitmaps()
+            self.Refresh()
 
     def out_of_window(self, event):
         self.pressed = False
@@ -153,6 +184,13 @@ class Map(wx.Panel):
             self.already_updated_bitmaps.clear()
             self.Refresh()
 
+    def update_all_bitmaps(self):
+        w, h = self.GetClientSize()
+        for x in range(self.map_x // 256 * 256, ((self.map_x + w) // 256 + 1) * 256, 256):
+            for y in range(self.map_y // 256 * 256, ((self.map_y + h) // 256 + 1) * 256, 256):
+                self.bitmaps_to_update.add((x // 256, y // 256))
+        self.Refresh(False)
+
     def on_paint(self, event):
         w, h = self.GetClientSize()
         dc = wx.AutoBufferedPaintDC(self)
@@ -162,33 +200,36 @@ class Map(wx.Panel):
         for x in range(self.map_x//256*256, ((self.map_x+w)//256+1)*256, 256):
             for y in range(self.map_y//256*256, ((self.map_y+h)//256+1)*256, 256):
                 x2, y2 = x//256, y//256
-                if (x2, y2) not in self.already_updated_bitmaps:
-                    if 0 <= x2 < self.bounds[0] and 0 <= y2 < self.bounds[1]:
-                        dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
-                        if (x2, y2) in self.tiles_dict.keys():
-                            image_base = self.tiles_dict[(x2, y2)]
-                            # Image.alpha_composite(image_base, self)
-                            if self.price_turn_on:
-                                if (x2, y2) in self.price_tiles_dict.keys():
-                                    image_base = Image.alpha_composite(image_base, self.price_tiles_dict[(x2, y2)])
-                            if self.road_turn_on:
-                                if (x2, y2) in self.road_tiles_dict.keys():
-                                    image_base = Image.alpha_composite(image_base, self.road_tiles_dict[(x2, y2)])
+                if 0 <= x2 < self.bounds[0] and 0 <= y2 < self.bounds[1]:
+                    if (x2, y2) in self.bitmaps.keys():
+                        if (x2, y2) in self.bitmaps_to_update:
+                            if (x2, y2) in self.tiles_dict.keys():
+                                image_base = self.tiles_dict[(x2, y2)]
+                                if self.price_turn_on:
+                                    if (x2, y2) in self.price_tiles_dict.keys():
+                                        image_base = Image.alpha_composite(image_base, self.price_tiles_dict[(x2, y2)])
+                                if self.road_turn_on:
+                                    if (x2, y2) in self.road_tiles_dict.keys():
+                                        image_base = Image.alpha_composite(image_base, self.road_tiles_dict[(x2, y2)])
 
-                            self.bitmaps[(x2, y2)] = wx.Bitmap.FromBufferRGBA(256, 256, image_base.tobytes())
-                            self.already_updated_bitmaps.add((x2, y2))
-                        else:
-                            self.bitmaps[(x2, y2)] = self.missing_image
-                            self.tile_queue.put(LoadTask(self.map_tiles_url, dist, (x2, y2), self.tiles_dict, x=x2, y=y2, z=self.zoom))
-                            self.already_updated_bitmaps.add((x2, y2))
-
-                        if self.price_turn_on:
-                            self.tile_queue.put(LoadTask(self.price_tiles_url, dist + 1, (x2, y2), self.price_tiles_dict, x=x2, y=y2, z=self.zoom, price=150000, range=0.5))
-                        if self.road_turn_on:
-                            self.tile_queue.put(LoadTask(self.road_tiles_url, dist + 2, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id, max_dist=3500))
-
+                                self.bitmaps[(x2, y2)] = wx.Bitmap.FromBufferRGBA(256, 256, image_base.tobytes())
+                                self.bitmaps_to_update.remove((x2, y2))
+                                self.buff = True
                     else:
-                        self.bitmaps[(x // 256, y // 256)] = self.missing_image
+                        dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
+                        self.bitmaps[(x2, y2)] = self.missing_image
+                        self.tile_queue.put(LoadTask(self.map_tiles_url, dist, (x2, y2), self.tiles_dict, x=x2, y=y2, z=self.zoom))
+                        self.already_updated_bitmaps.add((x2, y2))
+                        if self.price_turn_on:
+                            self.tile_queue.put(
+                                LoadTask(self.price_tiles_url, dist + 1, (x2, y2), self.price_tiles_dict, x=x2, y=y2, z=self.zoom, price=150000,
+                                         range=0.5))
+                        if self.road_turn_on:
+                            self.tile_queue.put(
+                                LoadTask(self.road_tiles_url, dist + 2, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id,
+                                         max_dist=3500))
+                else:
+                    self.bitmaps[(x // 256, y // 256)] = self.missing_image
                 dc.DrawBitmap(self.bitmaps[(x2, y2)], x - self.map_x, y - self.map_y)
 
         dc.SetPen(wx.Pen(wx.Colour(255, 0, 0, alpha=120)))
@@ -203,17 +244,20 @@ class Map(wx.Panel):
     def tile_loader(self):
         while True:
             to_load = self.tile_queue.get()
-            if to_load not in self.loaded_tiles_set:
 
-                image = Image.open(io.BytesIO(requests.get(to_load.url.format(**to_load.params)).content))
-                image = image.convert("RGBA")
+            image = Image.open(io.BytesIO(requests.get(to_load.url.format(**to_load.params)).content))
+            image = image.convert("RGBA")
+            self.loader_lock.acquire()
+            to_load.place[to_load.key] = image
+            self.loaded_tiles_set.add(to_load)
+            self.bitmaps_to_update.add(to_load.key)
+            self.Refresh()
+            self.loader_lock.release()
 
-                to_load.place[to_load.key] = image
-                self.loaded_tiles_set.add(to_load)
-                if to_load.key in self.already_updated_bitmaps:
-                    self.already_updated_bitmaps.remove(to_load.key)
-
-                self.Refresh(False)
+    def map_refresher(self):
+        while True:
+            self.Refresh()
+            time.sleep(0.02)
 
 
 class DataView(wx.ScrolledWindow):
