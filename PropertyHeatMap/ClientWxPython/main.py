@@ -1,5 +1,5 @@
 import wx
-from PIL import Image
+from PIL import Image, ImageDraw
 import queue
 import io
 import requests
@@ -29,7 +29,7 @@ class LoadTask:
 
 class Map(wx.Panel):
 
-    LocalNetwork = False
+    LocalNetwork = True
 
     def __init__(self, *args, **kwargs):
         super(Map, self).__init__(*args, **kwargs)
@@ -46,8 +46,10 @@ class Map(wx.Panel):
             self.road_tiles_url = "http://178.140.109.241/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}"
             self.point_search_url = "http://178.140.109.241/api/search/point?z={z}&x={x}&y={y}"
         self.tiles_dict = {}
+
         self.shapes_dict = {}
         self.server_zoom = 19
+        self.shapes_bitmaps = {}
 
         # price stuff
         self.price_tiles_dict = {}
@@ -94,17 +96,16 @@ class Map(wx.Panel):
 
             if ans["objects"][0]["id"] not in self.shapes_dict:
                 print(json.dumps(ans, ensure_ascii=False, indent=2))
-                self.shapes_dict[ans["objects"][0]["id"]] = ans["objects"][0]["points"]
+                max_x, max_y = 0, 0
+                min_x, min_y = 2 ** 32 - 1, 2 ** 32 - 1
+                for p in ans["objects"][0]["points"]:
+                    max_x, max_y = max(max_x, p[0]), max(max_y, p[1])
+                    min_x, min_y = min(min_x, p[0]), min(min_y, p[1])
+
+                self.shapes_dict[ans["objects"][0]["id"]] = ((min_x, min_y, max_x, max_y), ans["objects"][0]["points"])
+                self.render_shapes_to_bitmaps()
                 self.current_id = ans["objects"][0]["id"]
                 self.road_turn_on = True
-                self.bitmaps.clear()
-                while not self.tile_queue.empty():
-                    self.tile_queue.get()
-                self.tiles_dict.clear()
-                self.loaded_tiles_set.clear()
-                self.price_tiles_dict.clear()
-                self.road_tiles_dict.clear()
-                self.already_updated_bitmaps.clear()
 
                 w, h = self.GetClientSize()
                 for x in range(self.map_x // 256 * 256, ((self.map_x + w) // 256 + 1) * 256, 256):
@@ -112,14 +113,35 @@ class Map(wx.Panel):
                         x2, y2 = x // 256, y // 256
                         dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
                         self.tile_queue.put(
-                            LoadTask(self.road_tiles_url, dist + 2, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id,
-                                     max_dist=3500))
+                            LoadTask(self.road_tiles_url, dist + 2, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id, max_dist=3500))
+
             else:
                 del self.shapes_dict[ans["objects"][0]["id"]]
+                del self.shapes_bitmaps[ans["objects"][0]["id"]]
                 self.road_turn_on = False
                 self.road_tiles_dict.clear()
                 self.update_all_bitmaps()
             self.Refresh()
+
+    def render_shapes_to_bitmaps(self):
+        for k, v in self.shapes_dict.items():
+            AAmult = 4
+            mult = 2 ** (self.server_zoom - self.zoom) // AAmult
+            bounds = v[0]
+
+            shape = Image.new("RGBA", (bounds[2] - bounds[0], bounds[3] - bounds[1]), 0x00FFFFFF)
+            draw = ImageDraw.ImageDraw(shape)
+            x, y = v[1][0][0] // mult - bounds[0]//mult, v[1][0][1] // mult - bounds[1]//mult
+            poly = [x, y]
+            for p in v[1]:
+                x1, y1 = round(p[0] / mult - bounds[0]/mult), round(p[1] / mult - bounds[1]/mult)
+                poly.append(x1)
+                poly.append(y1)
+                draw.line((x, y, x1, y1), fill=0xFF0000FF, width=round(AAmult*2))
+                x, y = x1, y1
+            draw.polygon(poly, fill=0x100000FF)
+            shape = shape.resize((shape.size[0] // AAmult, shape.size[1] // AAmult), Image.NEAREST)
+            self.shapes_bitmaps[k] = wx.Bitmap.FromBufferRGBA(shape.size[0], shape.size[1], shape.tobytes())
 
     def out_of_window(self, event):
         self.pressed = False
@@ -127,7 +149,6 @@ class Map(wx.Panel):
     def left_down(self, event):
         self.pressed = True
         self.moved = False
-
         self.last_pos = event.GetPosition()
 
     def left_up(self, event):
@@ -182,6 +203,7 @@ class Map(wx.Panel):
             self.price_tiles_dict.clear()
             self.road_tiles_dict.clear()
             self.already_updated_bitmaps.clear()
+            self.render_shapes_to_bitmaps()
             self.Refresh()
 
     def update_all_bitmaps(self):
@@ -193,9 +215,10 @@ class Map(wx.Panel):
 
     def on_paint(self, event):
         w, h = self.GetClientSize()
-        dc = wx.AutoBufferedPaintDC(self)
-        dc.Clear()
-        dc.DestroyClippingRegion()
+        dc = wx.BufferedPaintDC(self)
+
+        # dc.Clear()
+        # dc.DestroyClippingRegion()
 
         for x in range(self.map_x//256*256, ((self.map_x+w)//256+1)*256, 256):
             for y in range(self.map_y//256*256, ((self.map_y+h)//256+1)*256, 256):
@@ -230,16 +253,13 @@ class Map(wx.Panel):
                                          max_dist=3500))
                 else:
                     self.bitmaps[(x // 256, y // 256)] = self.missing_image
+
                 dc.DrawBitmap(self.bitmaps[(x2, y2)], x - self.map_x, y - self.map_y)
 
-        dc.SetPen(wx.Pen(wx.Colour(255, 0, 0, alpha=120)))
-        dc.SetBrush(wx.Brush(wx.Colour(255, 0, 0, alpha=120), wx.SOLID))
-
-        for v in self.shapes_dict.values():
-            l = []
-            for i in v:
-                l.append((round(i[0]/2**(self.server_zoom-self.zoom))-self.map_x, round(i[1]/2**(self.server_zoom-self.zoom))-self.map_y))
-            dc.DrawPolygon(l)
+                mult = 2**(self.server_zoom-self.zoom)
+                for k, v in self.shapes_bitmaps.items():
+                    bounds = self.shapes_dict[k][0]
+                    dc.DrawBitmap(v, bounds[0]//mult-self.map_x, bounds[1]//mult-self.map_y)
 
     def tile_loader(self):
         while True:
@@ -253,11 +273,6 @@ class Map(wx.Panel):
             self.bitmaps_to_update.add(to_load.key)
             self.Refresh()
             self.loader_lock.release()
-
-    def map_refresher(self):
-        while True:
-            self.Refresh()
-            time.sleep(0.02)
 
 
 class DataView(wx.ScrolledWindow):
