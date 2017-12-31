@@ -7,6 +7,8 @@ from threading import Thread, Lock
 import json
 import time
 
+# 2k18 yaaaay
+
 
 class LoadTask:
 
