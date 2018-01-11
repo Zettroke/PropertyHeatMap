@@ -1,7 +1,7 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
 
-import net.zettroke.PropertyHeatMapServer.utils.RoadTypes;
+import net.zettroke.PropertyHeatMapServer.utils.RoadType;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -11,6 +11,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 
 /**
  * Created by Olleggerr on 15.10.2017.
@@ -99,7 +100,7 @@ public class PropertyMapLoaderOSM{
                             long id = Long.decode(streamReader.getAttributeValue(1));
                             switch (streamReader.getAttributeValue(0)) {
                                 case "node":
-                                    Node n1 = nodes.get(id);
+                                    SimpleNode n1 = nodes.get(id);
                                     if (n1 != null) {
                                         tempRelation.nodes.add(n1);
                                         //n1.relations.add(tempRelation);
@@ -109,6 +110,7 @@ public class PropertyMapLoaderOSM{
                                     tempRelation.ways.add(ways.get(id));
                                     break;
                                 case "relation":
+                                    // fixme: relations might be null
                                     tempRelation.relations.add(relations.get(id));
                                     break;
                             }
@@ -117,10 +119,7 @@ public class PropertyMapLoaderOSM{
                 } else {
                     switch (streamReader.getLocalName()) {
                         case "node":
-                            if (tempNode.data.size() == 0) {
-                                tempNode.data = null;
-                                count++;
-                            }
+
                             coords = m.mercator(tempNode.lon, tempNode.lat);
                             tempNode.x = coords[0]; tempNode.y = coords[1];
                             nodes.put(tempNode.id, tempNode);
@@ -165,12 +164,12 @@ public class PropertyMapLoaderOSM{
                                     m.roadGraphConnections.get(index).add(prev_index);
                                     m.roadGraphDistances.get(index).add(dist);
                                     m.roadGraphNodes.get(index).addWay(tempWay);
-                                    m.roadGraphConnectionsTypes.get(index).add(RoadTypes.getType(tempWay.data));
+                                    m.roadGraphConnectionsTypes.get(index).add(RoadType.getType(tempWay.data));
 
                                     m.roadGraphConnections.get(prev_index).add(index);
                                     m.roadGraphDistances.get(prev_index).add(dist);
                                     m.roadGraphNodes.get(prev_index).addWay(tempWay);
-                                    m.roadGraphConnectionsTypes.get(prev_index).add(RoadTypes.getType(tempWay.data));
+                                    m.roadGraphConnectionsTypes.get(prev_index).add(RoadType.getType(tempWay.data));
 
                                     prev_index = index;
                                 }
@@ -194,6 +193,19 @@ public class PropertyMapLoaderOSM{
         System.out.println("Nodes: "+nodes.size());
         System.out.println("Ways: "+ways.size());
         System.out.println("Relations: "+relations.size());
+        Iterator<HashMap.Entry<Long, Node>> iter = nodes.entrySet().iterator();
+        while (iter.hasNext()){
+            HashMap.Entry<Long, Node> entry = iter.next();
+            Node n = entry.getValue();
+            if (!(n.data.containsKey("shop") || m.roadGraphIndexes.containsKey(n.id))){
+                iter.remove();
+                m.simpleNodes.add(new SimpleNode(n));
+            }else{
+                if (n.data.size() == 0) {
+                    n.data = null;
+                }
+            }
+        }
         m.nodes = nodes;
         m.ways = ways;
         m.relations = new ArrayList<>(relations.values());

@@ -1,6 +1,6 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
-import net.zettroke.PropertyHeatMapServer.utils.RoadTypes;
+import net.zettroke.PropertyHeatMapServer.utils.RoadType;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -12,8 +12,8 @@ public class RoadGraphNode {
     public RoadGraphNode[] ref_to;
     public Integer[] distances;
     public HashSet<String> road_types = new HashSet<>();
-    public HashSet<RoadTypes> types = new HashSet<>();
-    public ArrayList<RoadTypes> ref_types = new ArrayList<>();
+    public HashSet<RoadType> types = new HashSet<>();
+    public ArrayList<RoadType> ref_types = new ArrayList<>();
     public boolean visited = false;
 
     RoadGraphNode(Node n){
@@ -22,7 +22,7 @@ public class RoadGraphNode {
     }
 
     public void addWay(Way way){
-        types.add(RoadTypes.getType(way.data));
+        types.add(RoadType.getType(way.data));
         // road_types.add(s);
     }
 

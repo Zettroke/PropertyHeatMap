@@ -2,7 +2,7 @@ package net.zettroke.PropertyHeatMapServer.utils;
 
 import java.util.HashMap;
 
-public enum RoadTypes{
+public enum RoadType {
     FOOTWAY,
     SECONDARY,
     LIVING_STREET,
@@ -11,15 +11,23 @@ public enum RoadTypes{
     CONSTRUCTION,
     TERTIARY,
     PRIMARY,
+    PATH,
+    TRUNK,
     DEFAULT;
 
 
-    public static RoadTypes getType(HashMap<String, String> data){
+    public static RoadType getType(HashMap<String, String> data){
         if (data.containsKey("living_street")){
-            return RoadTypes.LIVING_STREET;
+            return RoadType.LIVING_STREET;
         }
         String s = data.get("highway");
         switch (s) {
+            case "secondary":
+                return SECONDARY;
+
+            case "secondary_link":
+                return SECONDARY;
+
             case "footway":
                 return FOOTWAY;
 
@@ -32,14 +40,25 @@ public enum RoadTypes{
             case "service":
                 return SERVICE;
 
-            case "secondary":
-                return SECONDARY;
-
             case "tertiary":
+                return TERTIARY;
+            case "unclassified":
+                return TERTIARY;
+            case "tertiary_link":
                 return TERTIARY;
 
             case "primary":
                 return PRIMARY;
+            case "primary_link":
+                return PRIMARY;
+
+            case "path":
+                return PATH;
+
+            case "trunk":
+                return TRUNK;
+            case "trunk_link":
+                return TRUNK;
 
             default:
                 return DEFAULT;

@@ -9,13 +9,11 @@ import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.QuadTreeNode;
 import net.zettroke.PropertyHeatMapServer.map.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphCache;
-import net.zettroke.PropertyHeatMapServer.utils.RoadTypes;
+import net.zettroke.PropertyHeatMapServer.utils.RoadType;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -66,8 +64,8 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
             graph = CalculatedGraphCache.get(start_id, max_dist);
             //System.out.println("get form cache");
         }else {
-            graph = propertyMap.getCalculatedRoadGraph(start_id, new HashSet<>(Arrays.asList(RoadTypes.FOOTWAY,
-                    RoadTypes.CONSTRUCTION, RoadTypes.SERVICE)), max_dist);
+            graph = propertyMap.getCalculatedRoadGraph(start_id, new HashSet<>(Arrays.asList(RoadType.FOOTWAY,
+                    RoadType.CONSTRUCTION, RoadType.SERVICE, RoadType.PATH)), max_dist);
             CalculatedGraphCache.store(start_id, max_dist, graph);
             //System.out.println("stored");
         }
@@ -84,6 +82,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                     RoadGraphNode ref = rgn.ref_to[i];
                     if (!ref.visited){
                         switch (rgn.ref_types.get(i)){
+
                             case SECONDARY:
                                 g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;
@@ -99,8 +98,14 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                             case PRIMARY:
                                 g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;
+                            case TRUNK:
+                                g.setStroke(new BasicStroke(80f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                break;
                             case DEFAULT:
                                 g.setStroke(new BasicStroke(20f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                break;
+                            case LIVING_STREET:
+                                g.setStroke(new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;
                         }
                         g.setPaint(new GradientPaint(coef(rgn.n.x-offx), coef(rgn.n.y-offy), rgn.getNodeColor(max_dist), coef(ref.n.x-offx), coef(ref.n.y-offy), ref.getNodeColor(max_dist)));
@@ -118,7 +123,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
 
         Graphics2D g2 = (Graphics2D)image.getGraphics();
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.8f));
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.75f));
         g2.drawImage(imageTemp, 0, 0, null);
 
         ImageIO.write(image, "png", out);

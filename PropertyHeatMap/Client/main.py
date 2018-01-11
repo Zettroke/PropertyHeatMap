@@ -1,4 +1,4 @@
-from tkinter import Tk, Canvas, NW, ALL, Button, Label, Toplevel, Entry, EventType
+from tkinter import Tk, Canvas, NW, ALL, Button, Label, Toplevel, Entry
 from PIL import Image, ImageTk, ImageDraw
 import time
 from threading import Thread, Lock
@@ -322,8 +322,8 @@ class MapApp(Canvas):
             self.update_shapes()
 
     def zoom_map(self, event):
-        if event.type == EventType.KeyPress:
-            event.delta = (1 if event.char == "+" else -1)
+        '''if event.type == EventType.KeyPress:
+            event.delta = (1 if event.char == "+" else -1)'''
         if not (self.zoom == self.max_zoom and event.delta > 0) and not (self.zoom == self.min_zoom and event.delta < 0):
             self.kinetic_thread_running = False
 

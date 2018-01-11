@@ -11,7 +11,7 @@ import java.util.HashMap;
  */
 public class Way implements Serializable{
     public long id;
-    public ArrayList<Node> nodes = new ArrayList<>();
+    public ArrayList<SimpleNode> nodes = new ArrayList<>();
     public HashMap<String, String> data = new HashMap<>();
     public int[] legth;
     public ArrayList<Apartment> apartments;
@@ -19,7 +19,7 @@ public class Way implements Serializable{
     public MapPoint getCenter(){
         long x = 0;
         long y = 0;
-        for (Node n: nodes){
+        for (SimpleNode n: nodes){
             x += n.x;
             y += n.y;
         }

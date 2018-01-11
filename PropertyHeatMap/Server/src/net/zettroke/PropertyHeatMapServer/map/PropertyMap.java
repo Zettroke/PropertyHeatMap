@@ -3,8 +3,9 @@ package net.zettroke.PropertyHeatMapServer.map;
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
-import net.zettroke.PropertyHeatMapServer.utils.RoadTypes;
+import net.zettroke.PropertyHeatMapServer.utils.RoadType;
 
 import java.io.*;
 import java.util.*;
@@ -34,16 +35,18 @@ public class PropertyMap {
     public int x_begin=0, y_begin=0;
     public int x_end=0, y_end=0;
 
+    ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
     HashMap<Long, Node> nodes = new HashMap<>();
     HashMap<Long, Way> ways = new HashMap<>();
     ArrayList<Relation> relations = new ArrayList<>();
+    ArrayList<Relation> public_transport = new ArrayList<>();
 
 
     HashMap<Long, Integer> roadGraphIndexes = new HashMap<>();
     ArrayList<RoadGraphNode> roadGraphNodes = new ArrayList<>();
     ArrayList<ArrayList<Integer>> roadGraphConnections = new ArrayList<>();
     ArrayList<ArrayList<Integer>> roadGraphDistances = new ArrayList<>();
-    ArrayList<ArrayList<RoadTypes>> roadGraphConnectionsTypes = new ArrayList<>();
+    ArrayList<ArrayList<RoadType>> roadGraphConnectionsTypes = new ArrayList<>();
 
 
     public QuadTree tree;
@@ -114,7 +117,12 @@ public class PropertyMap {
                 pit.join();
             }catch (InterruptedException e){}
         }
+        long start = System.nanoTime();
         load_prices();
+        System.out.println("Loaded prices in " + (System.nanoTime()-start)/1000000.0 + " millis.");
+
+        public_transport_init();
+
 
         System.gc();
 
@@ -122,13 +130,18 @@ public class PropertyMap {
         //System.out.println("contain calls - " + count_contain);
     }
 
+    void public_transport_init(){
+
+    }
+
     void load_prices(){
         int counter = 0;
-        try{
+        try {
             System.out.println("Loading prices...");
             BufferedReader reader = new BufferedReader(new FileReader("data_json"));
             String line = reader.readLine();
             while (line != null) {
+
                 JsonObject jsonObject = Json.parse(line).asObject();
                 JsonArray coords = jsonObject.get("coords").asArray();
                 int[] t = mercator(coords.get(0).asDouble(), coords.get(1).asDouble());
@@ -136,44 +149,63 @@ public class PropertyMap {
                 int y = t[1];
                 MapPoint p = new MapPoint(x, y);
                 Way way = findShapeByPoint(p);
-                if (tree.root.inBounds(p) && way == null){
+                if (tree.root.inBounds(p) && way == null) {
                     /*counter++;
                     lost_price.add(p);*/
                     List<Way> wayList = findShapesByCircle(p, 100);
-                    if (wayList.size() == 1){
+                    if (wayList.size() == 1) {
                         way = wayList.get(0);
-                    }else{
+                    } else {
                         counter++;
                     }
                 }
                 if (way != null) {
-                    if (way.apartments == null){
-                        way.apartments = new ArrayList<>();
-                    }
-                    double area = Double.valueOf(jsonObject.get("Общая площадь").asString().replace("м2", "").replace(',', '.'));
-                    String[] floors_string = jsonObject.get("Этаж").asString().split("/");
-                    if (floors_string.length < 2){
-                        floors_string = new String[]{floors_string[0], "-1"};
-                    }
-                    int price = jsonObject.get("Цена").asInt();
+                    try {
+                        if (way.apartments == null) {
+                            way.apartments = new ArrayList<>();
+                        }
+                        double area = Double.valueOf(jsonObject.get("Общая площадь").asString().replace("м2", "").replace(',', '.'));
+                        JsonValue floor = jsonObject.get("Этаж");
+                        String[] floors_string;
+                        if (floor != null) {
+                            floors_string = jsonObject.get("Этаж").asString().split("/");
+                            if (floors_string.length < 2) {
+                                floors_string = new String[]{floors_string[0], "-1"};
+                            }
+                        } else {
+                            floors_string = new String[]{"-1", "-1"};
+                        }
+                        long pricel = jsonObject.get("Цена").asLong();
+                        int price;
+                        if (pricel > Integer.MAX_VALUE) {
+                            price = 1;
+                        } else {
+                            price = (int) pricel;
+                        }
 
-                    way.apartments.add(new Apartment(price, area, Integer.parseInt(floors_string[0]), Integer.parseInt(floors_string[1])));
+                        way.apartments.add(new Apartment(price, area, Integer.parseInt(floors_string[0]), Integer.parseInt(floors_string[1])));
 
-                    if ((int)Math.round(price/area) < 1000000){
+                        if ((int) Math.round(price / area) < 10000000) {
 
-                        max_price_per_metr = Math.max(max_price_per_metr, (int)Math.round(price/area));
-                        min_price_per_metr = Math.min(min_price_per_metr, (int)Math.round(price/area));
+                            max_price_per_metr = Math.max(max_price_per_metr, (int) Math.round(price / area));
+                            min_price_per_metr = Math.min(min_price_per_metr, (int) Math.round(price / area));
+                        }
+                    } catch (Exception e) {
+                        System.err.println("LoadPrices Exception");
+                        e.printStackTrace();
                     }
 
                 }
                 line = reader.readLine();
+                /*counter++;
+                if (counter%1000 == 0){
+                    System.out.println(counter);
+                }*/
             }
-            System.out.println("lost_prices: " + counter);
-        }catch (Exception e){
+        } catch (Exception e) {
             System.err.println("LoadPrices Exception");
             e.printStackTrace();
         }
-
     }
 
     public List<Way> findShapesByCircle(MapPoint center, int radius){
@@ -192,7 +224,7 @@ public class PropertyMap {
         tree.fillTreeNode(n);
     }
 
-    public static int calculateDistance(Node n1, Node n2){
+    public static int calculateDistance(SimpleNode n1, SimpleNode n2){
         double lat1 = Math.toRadians(n1.lat);
         double lat2 = Math.toRadians(n2.lat);
         double dlat = Math.toRadians(n2.lat-n1.lat);
@@ -205,12 +237,12 @@ public class PropertyMap {
 
     }
 
-    public HashMap<Long, RoadGraphNode> getCalculatedRoadGraph(long id, HashSet<RoadTypes> exclude, int max_dist){
+    public HashMap<Long, RoadGraphNode> getCalculatedRoadGraph(long id, HashSet<RoadType> exclude, int max_dist){
         //long start_t = System.nanoTime();
         this.max_calculation_dist = max_dist;
         HashMap<Long, RoadGraphNode> res = new HashMap<>();
         for (RoadGraphNode rgn: roadGraphNodes){
-            if (!(rgn.types.size() + rgn.road_types.size() == 1 && (rgn.types.iterator().hasNext() && exclude.contains(rgn.types.iterator().next())))){// || rgn.types.contains(RoadTypes.LIVING_STREET)))) {
+            if (!(rgn.types.size() + rgn.road_types.size() == 1 && (rgn.types.iterator().hasNext() && exclude.contains(rgn.types.iterator().next())))){// || rgn.types.contains(RoadType.LIVING_STREET)))) {
                 res.put(rgn.n.id, rgn.clone());
             }
         }
@@ -242,7 +274,6 @@ public class PropertyMap {
             List<Node> nds = findNodesInCircle(center, radius);
             for (Node n: nds){
                 if (n.isRoadNode){
-
                     if (res.keySet().contains(n.id)){
                         start = n;
                         found = true;

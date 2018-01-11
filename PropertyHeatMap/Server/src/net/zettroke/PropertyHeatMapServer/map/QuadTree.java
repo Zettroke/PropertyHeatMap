@@ -65,7 +65,7 @@ public class QuadTree {
                 Way suka = new Way();
                 suka.id = mh.way.id;
                 for(MapPoint psuka: mh.way.nodes){
-                    suka.nodes.add(new Node(psuka.x, psuka.y));
+                    suka.nodes.add(new SimpleNode(psuka.x, psuka.y));
                 }
 
                 new ObjectOutputStream(new FileOutputStream("fuck.obj")).writeObject(suka);

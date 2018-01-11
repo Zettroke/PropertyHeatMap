@@ -35,14 +35,15 @@ class Map(wx.Panel):
 
     def __init__(self, *args, **kwargs):
         super(Map, self).__init__(*args, **kwargs)
-        self.map_folder = "C:/PropertyHeatMap/osm_map_small/image"
         if self.LocalNetwork:
-
+            self.base_server_url = "http://127.0.0.1/"
             self.map_tiles_url = "http://127.0.0.1/image/z{z}/{x}.{y}.png"
             self.price_tiles_url = "http://127.0.0.1/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
             self.road_tiles_url = "http://127.0.0.1/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}"
             self.point_search_url = "http://127.0.0.1/api/search/point?z={z}&x={x}&y={y}"
+
         else:
+            self.base_server_url = "http://178.140.109.241/"
             self.map_tiles_url = "http://178.140.109.241/image/z{z}/{x}.{y}.png"
             self.price_tiles_url = "http://178.140.109.241/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
             self.road_tiles_url = "http://178.140.109.241/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}"
@@ -82,8 +83,8 @@ class Map(wx.Panel):
         self.pressed = False
         self.missing_image = wx.Bitmap.FromBuffer(256, 256, Image.new("RGB", (256, 256), 0xCCCCCC).tobytes())
         self.zoom = 16
-        self.available_zoom_levels = tuple(map(int, open(self.map_folder+"/zoom_levels", "r").read().split()))
-        self.bounds = (9, 9)
+        self.available_zoom_levels = tuple(map(int, requests.get(self.base_server_url + "image/zoom_levels").text.split()))
+        self.bounds = tuple(map(int, requests.get(self.base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
         self.tile_queue = queue.PriorityQueue()
 
         self.loader_lock = Lock()
@@ -195,7 +196,7 @@ class Map(wx.Panel):
                 self.zoom -= 1
                 self.map_x = self.map_x // 2 - event.GetPosition()[0] // 2
                 self.map_y = self.map_y // 2 - event.GetPosition()[1] // 2
-            self.bounds = tuple(map(int, open(self.map_folder+"/z" + str(self.zoom) + "/config", "r").read().split()))
+            self.bounds = tuple(map(int, requests.get(self.base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
 
             self.bitmaps.clear()
             while not self.tile_queue.empty():
