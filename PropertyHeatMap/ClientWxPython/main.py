@@ -53,6 +53,7 @@ class Map(wx.Panel):
         self.shapes_dict = {}
         self.server_zoom = 19
         self.shapes_bitmaps = {}
+        self.shapes_images = {}
 
         # price stuff
         self.price_tiles_dict = {}
@@ -130,6 +131,7 @@ class Map(wx.Panel):
         for k, v in self.shapes_dict.items():
             AAmult = 4
             mult = 2 ** (self.server_zoom - self.zoom) // AAmult
+            real_mult = 2 ** (self.server_zoom - self.zoom)
             bounds = v[0]
 
             shape = Image.new("RGBA", (bounds[2] - bounds[0], bounds[3] - bounds[1]), 0x00FFFFFF)
@@ -143,8 +145,12 @@ class Map(wx.Panel):
                 draw.line((x, y, x1, y1), fill=0xFF0000FF, width=round(AAmult*2))
                 x, y = x1, y1
             draw.polygon(poly, fill=0x100000FF)
-            shape = shape.resize((shape.size[0] // AAmult, shape.size[1] // AAmult), Image.NEAREST)
+            shape = shape.resize((shape.size[0] // AAmult, shape.size[1] // AAmult), Image.BICUBIC)
             self.shapes_bitmaps[k] = wx.Bitmap.FromBufferRGBA(shape.size[0], shape.size[1], shape.tobytes())
+            for x in range(v[0][0]//real_mult//256, v[0][2]//real_mult//256+1):
+                for y in range(v[0][1]//real_mult//256, v[0][3]//real_mult//256+1):
+                    self.shapes_images[(x, y)] = ((v[0][0]//real_mult, v[0][1]//real_mult), shape)
+                    self.bitmaps_to_update.add((x, y))
 
     def out_of_window(self, event):
         self.pressed = False
@@ -237,6 +243,12 @@ class Map(wx.Panel):
                                 if self.road_turn_on:
                                     if (x2, y2) in self.road_tiles_dict.keys():
                                         image_base = Image.alpha_composite(image_base, self.road_tiles_dict[(x2, y2)])
+                                if (x2, y2) in self.shapes_images.keys():
+                                    x3 = self.shapes_images[(x2, y2)][0][0] - x2*256
+                                    y3 = self.shapes_images[(x2, y2)][0][1] - y2*256
+                                    if x3 < 0 or y3 < 0:
+                                        print()
+                                    image_base.alpha_composite(self.shapes_images[(x2, y2)][1], (x3, y3))
 
                                 self.bitmaps[(x2, y2)] = wx.Bitmap.FromBufferRGBA(256, 256, image_base.tobytes())
                                 self.bitmaps_to_update.remove((x2, y2))
@@ -259,10 +271,10 @@ class Map(wx.Panel):
 
                 dc.DrawBitmap(self.bitmaps[(x2, y2)], x - self.map_x, y - self.map_y)
 
-                mult = 2**(self.server_zoom-self.zoom)
+                '''mult = 2**(self.server_zoom-self.zoom)
                 for k, v in self.shapes_bitmaps.items():
                     bounds = self.shapes_dict[k][0]
-                    dc.DrawBitmap(v, bounds[0]//mult-self.map_x, bounds[1]//mult-self.map_y)
+                    dc.DrawBitmap(v, bounds[0]//mult-self.map_x, bounds[1]//mult-self.map_y)'''
 
     def tile_loader(self):
         while True:

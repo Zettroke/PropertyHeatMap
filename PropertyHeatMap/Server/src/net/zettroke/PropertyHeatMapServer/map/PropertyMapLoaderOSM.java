@@ -173,6 +173,9 @@ public class PropertyMapLoaderOSM{
 
                                     prev_index = index;
                                 }
+                                if (tempWay.data.containsKey("alt_name:mcm")){
+                                    m.predictor.add(tempWay.data.get("alt_name:mcm"));
+                                }
                             }
                             tempWay = null;
                             tempNodeList.clear();

@@ -12,6 +12,7 @@ import com.eclipsesource.json.PrettyPrint;
 import com.eclipsesource.json.WriterConfig;
 import net.zettroke.PropertyHeatMapServer.map.*;
 import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
+import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
 
 import javax.imageio.ImageIO;
 
@@ -41,9 +42,33 @@ public class Main {
         /*Scanner scanner = new Scanner(System.in);
         scanner.nextLine();*/
 
-        ImageIO.setUseCache(false);
+        /*ImageIO.setUseCache(false);
         PropertyMapServer server = new PropertyMapServer(map_name);
-        server.start();
+        server.start();*/
+        PropertyMap propertyMap = new PropertyMap();
+        PropertyMapLoaderOSM.load(propertyMap, map_name);
+
+        StringPredictor pred = propertyMap.predictor;
+        pred.add("Zettroke", null);
+        pred.add("Olleggerr", null);
+        pred.add("Zettroker", null);
+        Scanner sc = new Scanner(System.in);
+        String s = sc.nextLine();
+        while (!s.equals("end")){
+            String[] req = s.split(" ", 1);
+            if (req[0].equals("1")){
+                pred.add(req[1], null);
+                System.out.println("Added " + '"' + req[1] + '"');
+            }else if(req[0].equals("2")){
+
+                ArrayList<String> strs = pred.predict(req.length != 1 ? req[1]:"");
+                System.out.println("Predicts(" + strs.size()+"):");
+                for (String str: strs){
+                    System.out.println("    " + str);
+                }
+            }
+            s = sc.nextLine();
+        }
 
         //TestPolygonClipping.test();
 

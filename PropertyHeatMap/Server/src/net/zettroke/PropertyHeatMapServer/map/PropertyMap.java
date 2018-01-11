@@ -6,6 +6,7 @@ import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
 import net.zettroke.PropertyHeatMapServer.utils.RoadType;
+import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
 
 import java.io.*;
 import java.util.*;
@@ -34,6 +35,8 @@ public class PropertyMap {
 
     public int x_begin=0, y_begin=0;
     public int x_end=0, y_end=0;
+
+    public StringPredictor predictor = new StringPredictor();
 
     ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
     HashMap<Long, Node> nodes = new HashMap<>();
