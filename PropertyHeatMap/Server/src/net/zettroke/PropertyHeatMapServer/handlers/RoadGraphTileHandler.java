@@ -23,8 +23,11 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
 
     PropertyMap propertyMap;
 
-    static String path = "tile/road";
-
+    final String path = "tile/road";
+    @Override
+    public String getPath() {
+        return path;
+    }
     double coefficent = 1;
 
     int coef(int n){
@@ -32,11 +35,6 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
     }
 
     int max_dist = 0;
-
-    @Override
-    public String getPath() {
-        return path;
-    }
 
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {

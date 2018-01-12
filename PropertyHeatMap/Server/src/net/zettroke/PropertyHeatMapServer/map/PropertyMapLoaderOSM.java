@@ -173,8 +173,11 @@ public class PropertyMapLoaderOSM{
 
                                     prev_index = index;
                                 }
-                                if (tempWay.data.containsKey("alt_name:mcm")){
-                                    m.predictor.add(tempWay.data.get("alt_name:mcm"));
+                                if (tempWay.data.containsKey("name") && tempWay.data.containsKey("highway") && !tempWay.data.get("highway").equals("trunk")){
+                                    m.predictor.add(tempWay.data.get("name"), tempWay);
+                                    /*if (tempWay.data.get("name").toLowerCase().equals("«м-1 “беларусь” – крёкшино – троицк» – ильичёвка")){
+                                        System.out.println();
+                                    }*/
                                 }
                             }
                             tempWay = null;

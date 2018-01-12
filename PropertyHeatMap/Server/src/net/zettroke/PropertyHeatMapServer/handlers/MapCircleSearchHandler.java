@@ -16,12 +16,14 @@ import java.util.ArrayList;
 
 public class MapCircleSearchHandler implements ShittyHttpHandler{
 
-    static String path = "search/circle";
+    final String path = "search/circle";
     private PropertyMap propertyMap;
+
     @Override
     public String getPath() {
         return path;
     }
+
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
 

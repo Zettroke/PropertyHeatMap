@@ -22,8 +22,7 @@ public class PriceTileHandler implements ShittyHttpHandler{
     PropertyMap propertyMap;
     double coefficent = 1;
 
-    static String path = "tile/price";
-
+    final String path = "tile/price";
     @Override
     public String getPath() {
         return path;

@@ -21,15 +21,11 @@ public class MapPointSearchHandler implements ShittyHttpHandler {
     private PropertyMap propertyMap;
 
 
-    static String path = "search/point";
-
+    final String path = "search/point";
     @Override
     public String getPath() {
         return path;
     }
-
-
-
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         //System.out.println(Thread.currentThread().getName());
         //System.out.println(request.uri());

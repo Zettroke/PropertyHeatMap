@@ -34,6 +34,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception{
         String map_name = new Scanner(new FileInputStream("current_map_file.conf")).nextLine();
+        ImageIO.setUseCache(false);
         //ab -n 5000 -c 8 "http://localhost:24062/draw?text=Zettroke"
         //ab -n 5000 -c 4 "http://127.0.0.1:24062/search/circle/?x=730&y=1432&z=14&r=551"
         //ab -n 50000 -c 8 "http://192.168.1.150:24062/search/circle/?x=300&y=300&r=200&z=16"
@@ -42,10 +43,10 @@ public class Main {
         /*Scanner scanner = new Scanner(System.in);
         scanner.nextLine();*/
 
-        /*ImageIO.setUseCache(false);
+
         PropertyMapServer server = new PropertyMapServer(map_name);
-        server.start();*/
-        PropertyMap propertyMap = new PropertyMap();
+        server.start();
+        /*PropertyMap propertyMap = new PropertyMap();
         PropertyMapLoaderOSM.load(propertyMap, map_name);
 
         StringPredictor pred = propertyMap.predictor;
@@ -55,20 +56,20 @@ public class Main {
         Scanner sc = new Scanner(System.in);
         String s = sc.nextLine();
         while (!s.equals("end")){
-            String[] req = s.split(" ", 1);
+            String[] req = s.split(" ", 2);
             if (req[0].equals("1")){
                 pred.add(req[1], null);
                 System.out.println("Added " + '"' + req[1] + '"');
             }else if(req[0].equals("2")){
 
-                ArrayList<String> strs = pred.predict(req.length != 1 ? req[1]:"");
+                ArrayList<String> strs = pred.predict(req.length != 1 ? req[1]:"", pred.size());
                 System.out.println("Predicts(" + strs.size()+"):");
                 for (String str: strs){
                     System.out.println("    " + str);
                 }
             }
             s = sc.nextLine();
-        }
+        }*/
 
         //TestPolygonClipping.test();
 

@@ -81,13 +81,13 @@ public class PathRouter {
     }
 
     public static PathRouter getPathRouter(PropertyMap propertyMap){
-        propertyMap = propertyMap;
         PathRouter pr = new PathRouter();
         pr.addPath(new MapPointSearchHandler(propertyMap));
         pr.addPath(new DrawerHandler());
         pr.addPath(new MapCircleSearchHandler(propertyMap));
         pr.addPath(new PriceTileHandler(propertyMap));
         pr.addPath(new RoadGraphTileHandler(propertyMap));
+        pr.addPath(new StringSearchHandler(propertyMap));
         setErrorHandler(new ErrorHandler());
 
         return pr;
