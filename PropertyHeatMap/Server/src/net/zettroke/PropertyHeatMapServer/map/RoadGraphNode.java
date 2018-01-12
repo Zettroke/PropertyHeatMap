@@ -1,7 +1,5 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
-import net.zettroke.PropertyHeatMapServer.utils.RoadType;
-
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashSet;

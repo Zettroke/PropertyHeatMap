@@ -5,7 +5,6 @@ import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
-import net.zettroke.PropertyHeatMapServer.utils.RoadType;
 import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
 
 import java.io.*;
@@ -69,7 +68,7 @@ public class PropertyMap {
             tree.add(n);
         }
         System.out.println("Done with nodes!");
-        for (int i=0; i<ways.size(); i++){
+        for (Long i:ways.keySet()){
             if (ways.get(i).data.containsKey("building") || ways.get(i).data.containsKey("highway")){// || ways.get(i).data.containsKey("railway") ) {
                 tree.add(new MapShape(ways.get(i)));
             }

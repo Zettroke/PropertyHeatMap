@@ -14,6 +14,28 @@ public class StringPredictor {
         return size;
     }
 
+    public Way get(String s){
+        Way res = null;
+        char[] val = s.toCharArray();
+        HashMap<Character, HashMap> curr = container;
+        boolean found = true;
+        for (char c: val){
+            if (curr.containsKey(c)){
+                curr = curr.get(c);
+            }else{
+                found = false;
+                break;
+            }
+        }
+        if (found){
+            if (curr.containsKey((char)0)){
+                res = (Way)curr.get((char)0).get((char)0);
+            }
+        }
+
+        return res;
+    }
+
     public ArrayList<String> predict(String segment, int number){
         ArrayList<String> res = new ArrayList<>();
         HashMap<Character, HashMap> curr = container;

@@ -9,7 +9,7 @@ import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.QuadTreeNode;
 import net.zettroke.PropertyHeatMapServer.map.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphCache;
-import net.zettroke.PropertyHeatMapServer.utils.RoadType;
+import net.zettroke.PropertyHeatMapServer.map.RoadType;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -104,6 +104,9 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                                 break;
                             case LIVING_STREET:
                                 g.setStroke(new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                break;
+                            case INVISIBLE:
+                                g.setStroke(new BasicStroke(0));
                                 break;
                         }
                         g.setPaint(new GradientPaint(coef(rgn.n.x-offx), coef(rgn.n.y-offy), rgn.getNodeColor(max_dist), coef(ref.n.x-offx), coef(ref.n.y-offy), ref.getNodeColor(max_dist)));

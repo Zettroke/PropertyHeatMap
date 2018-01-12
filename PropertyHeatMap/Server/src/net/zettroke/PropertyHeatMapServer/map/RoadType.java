@@ -1,4 +1,4 @@
-package net.zettroke.PropertyHeatMapServer.utils;
+package net.zettroke.PropertyHeatMapServer.map;
 
 import java.util.HashMap;
 
@@ -13,6 +13,7 @@ public enum RoadType {
     PRIMARY,
     PATH,
     TRUNK,
+    INVISIBLE,
     DEFAULT;
 
 
