@@ -14,6 +14,10 @@ public enum RoadType {
     PATH,
     TRUNK,
     INVISIBLE,
+    SUBWAY,
+    BUS,
+    TRAM,
+    TROLLEYBUS,
     DEFAULT;
 
 

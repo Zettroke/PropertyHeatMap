@@ -134,13 +134,14 @@ public class PropertyMapLoaderOSM{
                                     rgn.addWay(tempWay);
                                     m.roadGraphNodes.add(rgn);
                                     m.roadGraphConnections.add(new ArrayList<>());
-                                    m.roadGraphDistances.add(new ArrayList<>());
+                                    m.roadGraphDistancesCar.add(new ArrayList<>());
+                                    m.roadGraphDistancesFoot.add(new ArrayList<>());
                                     m.roadGraphConnectionsTypes.add(new ArrayList<>());
                                 }else{
                                     prev_index = m.roadGraphIndexes.get(n1.id);
                                     m.roadGraphNodes.get(prev_index).addWay(tempWay);
                                 }
-
+                                RoadType roadType = RoadType.getType(tempWay.data);
                                 for (int i = 1; i < tempNodeList.size(); i++){
                                     int index;
                                     if (m.roadGraphIndexes.containsKey(tempNodeList.get(i).id)){
@@ -151,22 +152,27 @@ public class PropertyMapLoaderOSM{
                                         m.roadGraphIndexes.put(rgn.n.id, m.roadGraphNodes.size());
                                         m.roadGraphNodes.add(rgn);
                                         m.roadGraphConnections.add(new ArrayList<>());
-                                        m.roadGraphDistances.add(new ArrayList<>());
+                                        m.roadGraphDistancesCar.add(new ArrayList<>());
+                                        m.roadGraphDistancesFoot.add(new ArrayList<>());
                                         m.roadGraphConnectionsTypes.add(new ArrayList<>());
 
                                     }
                                     //m.roadGraphNodes.get(index).addWay(tempWay);
-                                    int dist = PropertyMap.calculateDistance(m.roadGraphNodes.get(index).n, m.roadGraphNodes.get(prev_index).n);
+                                    int dst = PropertyMap.calculateDistance(m.roadGraphNodes.get(index).n, m.roadGraphNodes.get(prev_index).n);
+                                    int distCar = Math.round(dst/PropertyMap.car_speed);
+                                    int distFoot = Math.round(dst/PropertyMap.foot_speed);
 
                                     m.roadGraphConnections.get(index).add(prev_index);
-                                    m.roadGraphDistances.get(index).add(dist);
+                                    m.roadGraphDistancesCar.get(index).add(distCar);
+                                    m.roadGraphDistancesFoot.get(index).add(distFoot);
                                     m.roadGraphNodes.get(index).addWay(tempWay);
-                                    m.roadGraphConnectionsTypes.get(index).add(RoadType.getType(tempWay.data));
+                                    m.roadGraphConnectionsTypes.get(index).add(roadType);
 
                                     m.roadGraphConnections.get(prev_index).add(index);
-                                    m.roadGraphDistances.get(prev_index).add(dist);
+                                    m.roadGraphDistancesCar.get(prev_index).add(distCar);
+                                    m.roadGraphDistancesFoot.get(prev_index).add(distFoot);
                                     m.roadGraphNodes.get(prev_index).addWay(tempWay);
-                                    m.roadGraphConnectionsTypes.get(prev_index).add(RoadType.getType(tempWay.data));
+                                    m.roadGraphConnectionsTypes.get(prev_index).add(roadType);
 
                                     prev_index = index;
                                 }

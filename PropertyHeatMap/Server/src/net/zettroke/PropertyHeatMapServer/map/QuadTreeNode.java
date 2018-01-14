@@ -300,6 +300,24 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }
             nodes.clear();
             nodes = null;
+            
+            for (RoadGraphNode rgn: roadGraphNodes){
+                if (rgn.n.x <= hx) {
+                    if (rgn.n.y <= hy) {
+                        nw.add(rgn);
+                    } else {
+                        sw.add(rgn);
+                    }
+                } else {
+                    if (rgn.n.y <= hy) {
+                        ne.add(rgn);
+                    } else {
+                        se.add(rgn);
+                    }
+                }
+            }
+            roadGraphNodes.clear();
+            roadGraphNodes = null;
 
             for (MapShape m : shapes) {
                 nw.add(m);
@@ -316,19 +334,19 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     }
 
     void add (RoadGraphNode rgn){
-        Node n = rgn.n;
+
         if (!this.isEndNode) {
-            if (n.x <= (bounds[0] + bounds[2]) / 2) {
-                if (n.y <= (bounds[1] + bounds[3]) / 2) {
-                    nw.add(n);
+            if (rgn.n.x <= (bounds[0] + bounds[2]) / 2) {
+                if (rgn.n.y <= (bounds[1] + bounds[3]) / 2) {
+                    nw.add(rgn);
                 } else {
-                    sw.add(n);
+                    sw.add(rgn);
                 }
             } else {
-                if (n.y <= (bounds[1] + bounds[3]) / 2) {
-                    ne.add(n);
+                if (rgn.n.y <= (bounds[1] + bounds[3]) / 2) {
+                    ne.add(rgn);
                 } else {
-                    se.add(n);
+                    se.add(rgn);
                 }
             }
         } else {
