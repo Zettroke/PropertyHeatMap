@@ -39,6 +39,9 @@ public class Jsonizer {
             data.add("apartments", apartments);
         }
         answer.add("data", data);
+        MapPoint center = way.getCenter();
+        answer.add("center", new JsonArray().add(center.x).add(center.y));
+
 
         return answer;
     }

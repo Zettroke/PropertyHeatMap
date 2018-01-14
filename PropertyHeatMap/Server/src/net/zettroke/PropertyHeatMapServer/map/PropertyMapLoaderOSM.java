@@ -87,8 +87,10 @@ public class PropertyMapLoaderOSM{
                             break;
                         case "nd":
                             Node n = nodes.get(Long.decode(streamReader.getAttributeValue(0)));
-                            tempNodeList.add(n);
-                            tempWay.nodes.add(n);
+                            if (n != null) {
+                                tempNodeList.add(n);
+                                tempWay.nodes.add(n);
+                            }
                             break;
                         case "relation":
                             tempRelation = new Relation();
@@ -98,11 +100,8 @@ public class PropertyMapLoaderOSM{
                             long id = Long.decode(streamReader.getAttributeValue(1));
                             switch (streamReader.getAttributeValue(0)) {
                                 case "node":
-                                    SimpleNode n1 = nodes.get(id);
-                                    if (n1 != null) {
-                                        tempRelation.nodes.add(n1);
-                                        //n1.relations.add(tempRelation);
-                                    }
+                                    Node n1 = nodes.get(id);
+                                    tempRelation.nodes.add(n1);
                                     break;
                                 case "way":
                                     tempRelation.ways.add(ways.get(id));
@@ -201,14 +200,14 @@ public class PropertyMapLoaderOSM{
         while (iter.hasNext()){
             HashMap.Entry<Long, Node> entry = iter.next();
             Node n = entry.getValue();
-            if (!(n.data.containsKey("shop") || m.roadGraphIndexes.containsKey(n.id))){
+            /*if (!m.roadGraphIndexes.containsKey(n.id) && n.data.size()){
                 iter.remove();
                 m.simpleNodes.add(new SimpleNode(n));
-            }else{
+            }else{*/
                 if (n.data.size() == 0) {
                     n.data = null;
                 }
-            }
+            //}
         }
         m.nodes = nodes;
         m.ways = ways;

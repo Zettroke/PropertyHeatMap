@@ -242,6 +242,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     QuadTreeNode se;
     public ArrayList<MapShape> shapes = new ArrayList<>();
     ArrayList<Node> nodes = new ArrayList<>();
+    ArrayList<RoadGraphNode> roadGraphNodes = new ArrayList<>();
 
     public QuadTreeNode(int[] bounds){
         this.bounds = bounds;
@@ -311,6 +312,31 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             shapes = null;
             //------------------------------------------
 
+        }
+    }
+
+    void add (RoadGraphNode rgn){
+        Node n = rgn.n;
+        if (!this.isEndNode) {
+            if (n.x <= (bounds[0] + bounds[2]) / 2) {
+                if (n.y <= (bounds[1] + bounds[3]) / 2) {
+                    nw.add(n);
+                } else {
+                    sw.add(n);
+                }
+            } else {
+                if (n.y <= (bounds[1] + bounds[3]) / 2) {
+                    ne.add(n);
+                } else {
+                    se.add(n);
+                }
+            }
+        } else {
+            this.roadGraphNodes.add(rgn);
+            this.items++;
+            if (this.items > QuadTree.THRESHOLD) {
+                this.split();
+            }
         }
     }
 

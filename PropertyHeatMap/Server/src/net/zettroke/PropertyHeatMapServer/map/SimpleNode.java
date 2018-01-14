@@ -28,5 +28,11 @@ public class SimpleNode extends MapPoint{
         id = n.id;
         lon = n.lon;
         lat = n.lat;
+        x = n.x;
+        y = n.y;
+    }
+    public SimpleNode(MapPoint p){
+        x = p.x;
+        y = p.y;
     }
 }

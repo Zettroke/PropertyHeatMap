@@ -6,9 +6,9 @@ import math
 UPDATE = False
 PROC_NUM = 2
 
-map_folder = "C:/PropertyHeatMap/osm_map/"
+map_folder = "C:/PropertyHeatMap/osm_map_full_moscow/"
 
-zoom_start = 14
+zoom_start = 10
 zoom_end = 17
 
 
@@ -72,10 +72,10 @@ if __name__ == '__main__':
     start_y = 55.9737
     end_x = 38.322
     end_y = 55.379'''
-    start_x = 37.6611335
-    start_y = 55.825973
-    end_x = 37.8588868
-    end_y = 55.7147345
+    start_x = 36.9250000
+    start_y = 56.1027000
+    end_x = 38.3286000
+    end_y = 55.3729000
     bounds = [start_x, start_y, end_x, end_y]
 
     # servers = ["vec01", "vec02", "vec03", "vec04"]*max((PROC_NUM//4), 1)

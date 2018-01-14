@@ -18,17 +18,14 @@ import java.util.List;
 public class PropertyMap {
 
     static final int earthRadius = 6371000;
+    public static PropertyMap propertyMap = null;
 
     public static int default_zoom = 19;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
+    final static HashSet<String> supportedRoutes = new HashSet<>(Arrays.asList("subway", "bus", "tram", "trolleybus"));
     public int max_calculation_dist = 16000;
 
-    
-    
 
-
-    public int max_price_per_metr = Integer.MIN_VALUE;
-    public int min_price_per_metr = Integer.MAX_VALUE;
     double minlat, minlon;
     double maxlat, maxlon;
 
@@ -41,7 +38,7 @@ public class PropertyMap {
     HashMap<Long, Node> nodes = new HashMap<>();
     HashMap<Long, Way> ways = new HashMap<>();
     ArrayList<Relation> relations = new ArrayList<>();
-    ArrayList<Relation> public_transport = new ArrayList<>();
+    //ArrayList<Relation> public_transport = new ArrayList<>();
 
 
     HashMap<Long, Integer> roadGraphIndexes = new HashMap<>();
@@ -58,8 +55,16 @@ public class PropertyMap {
         int y = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.PI-Math.log(Math.tan(Math.toRadians(lat)/2+Math.PI/4))))-y_begin);
         return new int[]{x, y};
     }
+    double[] inverse_mercator(double x, double y){
+        double lon = Math.toDegrees((x + x_begin)/(MAP_RESOLUTION/2/Math.PI) - Math.PI);
+        double lat = Math.toDegrees(-(2*Math.atan(Math.exp((y + y_begin)/(MAP_RESOLUTION/2/Math.PI) - Math.PI)) - Math.PI/2));
+        return new double[]{lon, lat};
+    }
 
-    public PropertyMap() {}
+    public PropertyMap() {
+
+        propertyMap = this;
+    }
 
     public void init(){
         tree = new QuadTree(new int[]{0, 0, x_end-x_begin, y_end-y_begin});
@@ -94,6 +99,11 @@ public class PropertyMap {
                     t.add(n);
                 }
             }
+            for (RoadGraphNode rgn: m.roadGraphNodes){
+                if (t.inBounds(rgn.n)) {
+                    t.add(rgn);
+                }
+            }
             //System.out.println(getName() + " Done with nodes!");
             for (Way w: ways.values()){
                 if (w.data.containsKey("building") || w.data.containsKey("highway")){// || ways.get(i).data.containsKey("railway")) {
@@ -123,9 +133,9 @@ public class PropertyMap {
         load_prices();
         System.out.println("Loaded prices in " + (System.nanoTime()-start)/1000000.0 + " millis.");
 
+        start = System.nanoTime();
         public_transport_init();
-
-
+        System.out.println("Public transport init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
         System.gc();
 
         //System.out.println("addPoly calls - " + count_addPoly);
@@ -133,7 +143,177 @@ public class PropertyMap {
     }
 
     void public_transport_init(){
+        for (Relation rel: relations){
+            if (rel.data.containsKey("route_master") && supportedRoutes.contains(rel.data.get("route_master"))){
+                Relation r = null;// = rel.relations.get(0);// should be with max id
+                for (int i=0; i<rel.relations.size(); i++){
+                    if (rel.relations.get(i) != null){
+                        r = rel.relations.get(i);
+                        break;
+                    }
+                }
+                if (r == null){
+                    continue;
+                }
+                if (r.nodes.size() == 1) continue;
 
+                Way way = new Way();
+                int relation_way_index_begin = -1;
+                int relation_way_index_end = -1;
+                int relation_node_index_begin = -1;
+                int relation_node_index_end = -1;
+
+                // finding first and last not null way
+                for (int i=0; i<r.ways.size(); i++){
+                    if (r.ways.get(i) != null && relation_way_index_begin == -1){
+                        relation_way_index_begin = i;
+                    }
+                    if (relation_way_index_begin != -1 && r.ways.get(i) == null){
+                        relation_way_index_end = i;
+                        break;
+                    }
+                }
+                if (relation_way_index_end == -1){relation_way_index_end = r.ways.size();}
+                if (relation_way_index_begin == -1) continue;
+
+                // finding first and last not null node
+                for (int i=0; i<r.nodes.size(); i++){
+                    if (r.nodes.get(i) != null && relation_node_index_begin == -1){
+                        relation_node_index_begin = i;
+                    }else if (relation_node_index_begin != -1 && r.nodes.get(i) == null){
+                        relation_node_index_end = i;
+                        break;
+                    }
+                }
+                if (relation_node_index_end == -1){relation_node_index_end = r.nodes.size();}
+                if (relation_node_index_begin == -1) continue;
+
+                //Assembling all ways into one big.
+                //Assembling only one segment
+                if (relation_way_index_end-relation_way_index_begin > 1) {
+                    int st = relation_way_index_begin;
+                    Way tmp = r.ways.get(st);
+                    if (tmp.nodes.get(0) == r.ways.get(st + 1).nodes.get(0) || tmp.nodes.get(0) == r.ways.get(st + 1).nodes.get(r.ways.get(st + 1).nodes.size() - 1)) {
+                        for (int i = r.ways.get(st).nodes.size() - 1; i >= 0; i--) {
+                            way.nodes.add(tmp.nodes.get(i));
+                        }
+                    } else {
+                        way.nodes.addAll(r.ways.get(relation_way_index_begin).nodes);
+                    }
+
+                    Way temp0;
+                    Way temp1;
+                    for (int i = relation_way_index_begin + 1; i < relation_way_index_end; i++) {
+                        temp0 = r.ways.get(i - 1);
+                        temp1 = r.ways.get(i);
+                        if (temp0.nodes.get(temp0.nodes.size() - 1) == temp1.nodes.get(0) || temp0.nodes.get(0) == temp1.nodes.get(0)) {
+                            for (int j = 1; j < temp1.nodes.size(); j++) {
+                                way.nodes.add(temp1.nodes.get(j));
+                            }
+                        } else {
+                            for (int j = temp1.nodes.size() - 2; j >= 0; j--) {
+                                way.nodes.add(temp1.nodes.get(j));
+                            }
+                        }
+                    }
+                }else{
+                    way.nodes.addAll(r.ways.get(relation_way_index_begin).nodes);
+                }
+                // Mark stops with publicTransportStop=true
+                String route_type = r.data.get("route");
+                if (route_type.equals("bus") || route_type.equals("trolleybus")) {
+                    for (int i = relation_node_index_begin; i < relation_node_index_end; i++) {
+                        MiddleMapPoint mdmp = way.minDistToPoint(r.nodes.get(i));
+
+                        Node trn = r.nodes.get(i);
+                        trn.publicTransportStop = true;
+                        way.nodes.add(mdmp.ind + 1, trn);
+                    }
+                }else if(route_type.equals("subway") || route_type.equals("tram")){
+                    if (route_type.equals("subway")) {
+                        for (SimpleNode n1 : way.nodes) {
+                            if (n1 instanceof Node) {
+                                Node n = (Node) n1;
+                                if (n.data != null && n.data.containsKey("station") && n.data.get("station").equals("subway")){
+                                    n.publicTransportStop = true;
+                                }
+                            }
+                        }
+                    }else{
+                        for (SimpleNode n1 : way.nodes) {
+                            if (n1 instanceof Node) {
+                                Node n = (Node) n1;
+                                if (n.data != null && n.data.containsKey("public_transport") && n.data.get("public_transport").equals("stop_position")){
+                                    n.publicTransportStop = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                RoadGraphNode curr_stop = null;
+                int start_ind = Integer.MAX_VALUE;
+                int curr_distance = 0;
+                for (int i=0; i < way.nodes.size(); i++){
+                    if (way.nodes.get(i) instanceof Node){
+                        if (((Node)way.nodes.get(i)).publicTransportStop){
+                            curr_stop = new RoadGraphNode((Node)way.nodes.get(i));
+                            int ind = roadGraphNodes.size();
+                            roadGraphIndexes.put(curr_stop.n.id, ind);
+                            roadGraphNodes.add(curr_stop);
+                            roadGraphConnections.add(new ArrayList<>());
+                            roadGraphConnectionsTypes.add(new ArrayList<>());
+                            roadGraphDistances.add(new ArrayList<>());
+                            List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(curr_stop.n, 300); // 300 radius ~ 50m.
+                            for (RoadGraphNode toConnect: nodes){
+                                roadGraphConnections.get(ind).add(roadGraphIndexes.get(toConnect.n.id));
+                                roadGraphConnections.get(roadGraphIndexes.get(toConnect.n.id)).add(ind);
+                                roadGraphConnectionsTypes.get(ind).add(RoadType.INVISIBLE);
+                                roadGraphConnectionsTypes.get(roadGraphIndexes.get(toConnect.n.id)).add(RoadType.INVISIBLE);
+                                int dist = calculateDistance(curr_stop.n, toConnect.n);
+                                roadGraphDistances.get(ind).add(dist);
+                                roadGraphDistances.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
+                            }
+                            start_ind = i+1;
+                        }
+                    }
+                }
+                for (int i=start_ind; i < way.nodes.size(); i++){
+                    if (way.nodes.get(i) instanceof Node){
+                        Node n = (Node) way.nodes.get(i);
+                        if (n.publicTransportStop){
+                            int ind = roadGraphNodes.size();
+                            RoadGraphNode rgn = new RoadGraphNode(n);
+                            roadGraphIndexes.put(rgn.n.id, ind);
+                            roadGraphNodes.add(rgn);
+                            roadGraphConnections.add(new ArrayList<>());
+                            roadGraphConnectionsTypes.add(new ArrayList<>());
+                            roadGraphDistances.add(new ArrayList<>());
+
+                            roadGraphConnections.get(ind).add(ind-1);
+                            roadGraphConnections.get(ind-1).add(ind);
+                            roadGraphConnectionsTypes.get(ind).add(RoadType.INVISIBLE);
+                            roadGraphConnectionsTypes.get(ind-1).add(RoadType.INVISIBLE);
+                            int dist = calculateDistance(rgn.n, curr_stop.n);
+                            roadGraphDistances.get(ind).add(dist);
+                            roadGraphDistances.get(ind-1).add(dist);
+
+                            List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(rgn.n, 300); // 300 radius ~ 50m.
+                            for (RoadGraphNode toConnect: nodes){
+                                roadGraphConnections.get(ind).add(roadGraphIndexes.get(toConnect.n.id));
+                                roadGraphConnections.get(roadGraphIndexes.get(toConnect.n.id)).add(ind);
+                                roadGraphConnectionsTypes.get(ind).add(RoadType.INVISIBLE);
+                                roadGraphConnectionsTypes.get(roadGraphIndexes.get(toConnect.n.id)).add(RoadType.INVISIBLE);
+                                dist = calculateDistance(curr_stop.n, toConnect.n);
+                                roadGraphDistances.get(ind).add(dist);
+                                roadGraphDistances.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
     }
 
     void load_prices(){
@@ -187,11 +367,11 @@ public class PropertyMap {
 
                         way.apartments.add(new Apartment(price, area, Integer.parseInt(floors_string[0]), Integer.parseInt(floors_string[1])));
 
-                        if ((int) Math.round(price / area) < 10000000) {
+                        /*if ((int) Math.round(price / area) < 10000000) {
 
                             max_price_per_metr = Math.max(max_price_per_metr, (int) Math.round(price / area));
                             min_price_per_metr = Math.min(min_price_per_metr, (int) Math.round(price / area));
-                        }
+                        }*/
                     } catch (Exception e) {
                         System.err.println("LoadPrices Exception");
                         e.printStackTrace();
@@ -216,6 +396,10 @@ public class PropertyMap {
 
     public List<Node> findNodesInCircle(MapPoint center, int radius){
         return tree.findNodesInCircle(center, radius);
+    }
+
+    public List<RoadGraphNode> findRoadGraphNodesInCircle(MapPoint center, int radius){
+        return tree.findRoadGraphNodesInCircle(center, radius);
     }
 
     public Way findShapeByPoint(MapPoint p) throws Exception{

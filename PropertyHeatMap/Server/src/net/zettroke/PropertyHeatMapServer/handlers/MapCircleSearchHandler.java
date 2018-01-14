@@ -44,7 +44,9 @@ public class MapCircleSearchHandler implements ShittyHttpHandler{
             answer.add("zoom_level", PropertyMap.default_zoom);
             JsonArray arr = new JsonArray();
             for (Way w: ways){
-                arr.add(Jsonizer.toJson(w, true));
+                if (w.data.containsKey("building")) {
+                    arr.add(Jsonizer.toJson(w, true));
+                }
             }
             answer.add("objects", arr);
         }

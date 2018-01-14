@@ -14,6 +14,12 @@ public class QuadTree {
 
     public QuadTreeNode root;
 
+    void add(RoadGraphNode rgn){
+        if (root.inBounds(rgn.n)){
+            root.add(rgn);
+        }
+    }
+
     void add(Node n){
         if (root.inBounds(n)) {
             root.add(n);
@@ -61,7 +67,7 @@ public class QuadTree {
             return null;
         }
         for (MapShape mh: treeNode.shapes){
-            if (mh.way.id == 198560029){
+            /*if (mh.way.id == 198560029){
                 Way suka = new Way();
                 suka.id = mh.way.id;
                 for(MapPoint psuka: mh.way.nodes){
@@ -69,7 +75,7 @@ public class QuadTree {
                 }
 
                 new ObjectOutputStream(new FileOutputStream("fuck.obj")).writeObject(suka);
-            }
+            }*/
             if (mh.isPoly && mh.contain(p)){
                 count++;
                 res = mh.way;
@@ -107,13 +113,11 @@ public class QuadTree {
             if (new MapPoint(node.bounds[0], node.bounds[1]).inCircle(center, radius) && new MapPoint(node.bounds[2], node.bounds[1]).inCircle(center, radius) &&
                     new MapPoint(node.bounds[2], node.bounds[3]).inCircle(center, radius) && new MapPoint(node.bounds[0], node.bounds[3]).inCircle(center, radius)){
                 for (MapShape shape: node.shapes){
-                    if (shape.isPoly) {
-                        result.put(shape.way.id, shape.way);
-                    }
+                    result.put(shape.way.id, shape.way);
                 }
             }else{
                 for (MapShape shape: node.shapes){
-                    if (shape.isPoly && circle_contain_shape_or_cross(shape, center, radius)) {
+                    if (circle_contain_shape_or_cross(shape, center, radius)) {
                         result.put(shape.way.id, shape.way);
                     }
                 }
@@ -145,6 +149,28 @@ public class QuadTree {
         return res;
         
     }
+
+    List<RoadGraphNode> findRoadGraphNodesInCircle(MapPoint center, int radius){
+        QuadTreeNode treeNode = getEndNode(center);
+        while (true){
+            if (center.x - treeNode.bounds[0] > radius && treeNode.bounds[2] - center.x > radius &&
+                    center.y - treeNode.bounds[1] > radius && treeNode.bounds[3] - center.y > radius){
+                break;
+            }else {
+                if (treeNode.parent != null){
+                    treeNode = treeNode.parent;
+                }else{
+                    break;
+                }
+            }
+        }
+
+        ArrayList<RoadGraphNode> res = new ArrayList<>();
+
+        rec_circle_rgn_nodes_search(treeNode, res, center, radius);
+
+        return res;
+    }
     
     private void rec_circle_nodes_search(QuadTreeNode treeNode, ArrayList<Node> res, MapPoint center, int radius){
         if (treeNode.isEndNode){
@@ -156,6 +182,20 @@ public class QuadTree {
         }else{
             for (QuadTreeNode tr1: treeNode) {
                 rec_circle_nodes_search(tr1, res, center, radius);
+            }
+        }
+    }
+
+    private void rec_circle_rgn_nodes_search(QuadTreeNode treeNode, ArrayList<RoadGraphNode> res, MapPoint center, int radius){
+        if (treeNode.isEndNode){
+            for (RoadGraphNode rgn: treeNode.roadGraphNodes){
+                if ((rgn.n.x-center.x)*(rgn.n.x-center.x) + (rgn.n.y-center.y)*(rgn.n.y-center.y) <= radius*radius){
+                    res.add(rgn);
+                }
+            }
+        }else{
+            for (QuadTreeNode tr1: treeNode) {
+                rec_circle_rgn_nodes_search(tr1, res, center, radius);
             }
         }
     }

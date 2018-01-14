@@ -8,6 +8,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.Way;
+import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -27,7 +28,9 @@ public class StringSearchHandler implements ShittyHttpHandler{
         Way w = propertyMap.predictor.get(req);
         JsonObject obj = new JsonObject();
         if (w != null){
-
+            JsonObject way = Jsonizer.toJson(w, true);
+            obj.add("status", "found");
+            obj.add("result", way);
         }else{
             ArrayList<String> preds = propertyMap.predictor.predict(req, num);
 
