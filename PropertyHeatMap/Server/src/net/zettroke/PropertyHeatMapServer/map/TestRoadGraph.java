@@ -47,8 +47,7 @@ public class TestRoadGraph {
         //Scanner scanner = new Scanner(System.in);
         //scanner.nextLine();
         long start = System.nanoTime();
-        HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795, new HashSet<>(Arrays.asList(RoadType.FOOTWAY,
-                RoadType.CONSTRUCTION, RoadType.LIVING_STREET)), 10000);
+        HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795, false,  10000);
 
         //System.out.println((System.nanoTime()-start)/1000000000.0 + "sec. Recursion");
         //scanner.nextLine();"933754783" -> "933754783" ->
@@ -73,13 +72,13 @@ public class TestRoadGraph {
     final static int repeats = 20;
     static void bench(PropertyMap propertyMap){
         for (int i=0; i<repeats; i++) {
-            HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795, new HashSet<>(), 1);
+            HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795, false, 1);
         }
 
         long time = 0;
         for (int i=0; i<repeats; i++) {
             long start = System.nanoTime();
-            HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795, new HashSet<>(), 1);
+            HashMap<Long, RoadGraphNode> roadGraph = propertyMap.getCalculatedRoadGraph(933754795, false, 1);
             time += System.nanoTime()-start;
         }
         System.out.println((time/(double)repeats)/1000000.0 + "millis.");

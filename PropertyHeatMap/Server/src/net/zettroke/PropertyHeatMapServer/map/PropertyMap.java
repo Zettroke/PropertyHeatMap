@@ -26,11 +26,15 @@ public class PropertyMap {
     public int max_calculation_dist = 16000;
 
     // Speed in meters per 0.1 seconds.
-    public static float car_speed = 1.38888f;
-    public static float foot_speed = 0.138888f;
-    public static float subway_speed = 1.25f;
-    public static float bus_speed = 0.8333f;
-    public static float tram_speed = 0.55555f;
+    public static final float car_speed = 1.38888f;
+    public static final float foot_speed = 0.138888f;
+    public static final float subway_speed = 1.25f;
+    public static final float bus_speed = 0.8333f;
+    public static final float tram_speed = 0.55555f;
+
+    public static final HashSet<RoadType> foot_exclude = new HashSet<>(Arrays.asList(RoadType.TRUNK, RoadType.PRIMARY, RoadType.CONSTRUCTION));
+    public static final HashSet<RoadType> car_exclude = new HashSet<>(Arrays.asList(RoadType.SUBWAY, RoadType.BUS, RoadType.TRAM, RoadType.TROLLEYBUS,
+            RoadType.SERVICE, RoadType.FOOTWAY, RoadType.CONSTRUCTION, RoadType.PATH));
 
     double minlat, minlon;
     double maxlat, maxlon;
@@ -263,34 +267,6 @@ public class PropertyMap {
 
                 RoadGraphNode curr_stop = null;
                 int start_ind = Integer.MAX_VALUE;
-
-                for (int i=0; i < way.nodes.size(); i++){
-                    if (way.nodes.get(i) instanceof Node){
-                        if (((Node)way.nodes.get(i)).publicTransportStop){
-                            curr_stop = new RoadGraphNode((Node)way.nodes.get(i));
-                            curr_stop.types.add(roadType);
-                            int ind = roadGraphNodes.size();
-                            roadGraphIndexes.put(curr_stop.n.id, ind);
-                            roadGraphNodes.add(curr_stop);
-                            roadGraphConnections.add(new ArrayList<>());
-                            roadGraphConnectionsTypes.add(new ArrayList<>());
-                            roadGraphDistancesCar.add(new ArrayList<>());
-                            roadGraphDistancesFoot.add(new ArrayList<>());
-                            List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(curr_stop.n, 300); // 300 radius ~ 50m.
-                            for (RoadGraphNode toConnect: nodes){
-                                roadGraphConnections.get(ind).add(roadGraphIndexes.get(toConnect.n.id));
-                                roadGraphConnections.get(roadGraphIndexes.get(toConnect.n.id)).add(ind);
-                                roadGraphConnectionsTypes.get(ind).add(roadType);
-                                roadGraphConnectionsTypes.get(roadGraphIndexes.get(toConnect.n.id)).add(roadType);
-                                int dist = calculateDistance(curr_stop.n, toConnect.n);
-                                roadGraphDistancesCar.get(ind).add(dist);
-                                roadGraphDistancesCar.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
-                            }
-                            start_ind = i+1;
-                            break;
-                        }
-                    }
-                }
                 float divider = 1;
                 switch (roadType){
                     case SUBWAY:
@@ -305,6 +281,38 @@ public class PropertyMap {
                     case TRAM:
                         divider = tram_speed;
                 }
+
+                for (int i=0; i < way.nodes.size(); i++){
+                    if (way.nodes.get(i) instanceof Node){
+                        if (((Node)way.nodes.get(i)).publicTransportStop){
+                            curr_stop = new RoadGraphNode((Node)way.nodes.get(i));
+                            curr_stop.types.add(roadType);
+                            int ind = roadGraphNodes.size();
+                            roadGraphIndexes.put(curr_stop.n.id, ind);
+                            roadGraphNodes.add(curr_stop);
+                            roadGraphConnections.add(new ArrayList<>());
+                            roadGraphConnectionsTypes.add(new ArrayList<>());
+                            roadGraphDistancesCar.add(new ArrayList<>());
+                            roadGraphDistancesFoot.add(new ArrayList<>());
+                            /*List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(curr_stop.n, 10); // 300 radius ~ 50m.
+                            for (RoadGraphNode toConnect: nodes){
+                                toConnect.types.add(roadType);
+                                roadGraphConnections.get(ind).add(roadGraphIndexes.get(toConnect.n.id));
+                                roadGraphConnections.get(roadGraphIndexes.get(toConnect.n.id)).add(ind);
+                                roadGraphConnectionsTypes.get(ind).add(roadType);
+                                roadGraphConnectionsTypes.get(roadGraphIndexes.get(toConnect.n.id)).add(roadType);
+                                int dist = Math.round(calculateDistance(curr_stop.n, toConnect.n)/divider);
+                                roadGraphDistancesFoot.get(ind).add(dist);
+                                roadGraphDistancesFoot.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
+                                roadGraphDistancesCar.get(ind).add(dist);
+                                roadGraphDistancesCar.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
+                            }*/
+                            start_ind = i+1;
+                            break;
+                        }
+                    }
+                }
+
                 for (int i=start_ind; i < way.nodes.size(); i++){
                     if (way.nodes.get(i) instanceof Node){
                         Node n = (Node) way.nodes.get(i);
@@ -326,9 +334,12 @@ public class PropertyMap {
                             int dist = Math.round(calculateDistance(rgn.n, curr_stop.n)/divider);
                             roadGraphDistancesFoot.get(ind).add(dist);
                             roadGraphDistancesFoot.get(ind-1).add(dist);
+                            roadGraphDistancesCar.get(ind).add(dist);
+                            roadGraphDistancesCar.get(ind-1).add(dist);
 
-                            List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(rgn.n, 300); // 300 radius ~ 50m.
+                            /*List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(rgn.n, 10); // 300 radius ~ 50m.
                             for (RoadGraphNode toConnect: nodes){
+                                toConnect.types.add(roadType);
                                 roadGraphConnections.get(ind).add(roadGraphIndexes.get(toConnect.n.id));
                                 roadGraphConnections.get(roadGraphIndexes.get(toConnect.n.id)).add(ind);
                                 roadGraphConnectionsTypes.get(ind).add(roadType);
@@ -336,7 +347,9 @@ public class PropertyMap {
                                 dist = Math.round(calculateDistance(rgn.n, toConnect.n)/divider);
                                 roadGraphDistancesFoot.get(ind).add(dist);
                                 roadGraphDistancesFoot.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
-                            }
+                                roadGraphDistancesCar.get(ind).add(dist);
+                                roadGraphDistancesCar.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
+                            }*/
                             curr_stop = rgn;
                         }
                     }
@@ -452,10 +465,16 @@ public class PropertyMap {
 
     }
 
-    public HashMap<Long, RoadGraphNode> getCalculatedRoadGraph(long id, HashSet<RoadType> exclude, int max_dist){
+    public HashMap<Long, RoadGraphNode> getCalculatedRoadGraph(long id, boolean foot, final int max_dist){
         // TODO: Избавится от оторванных кусков графа.
         // TODO: Доделать пешеходный режим.
         //long start_t = System.nanoTime();
+        HashSet<RoadType> exclude;
+        if (foot){
+            exclude = foot_exclude;
+        }else{
+            exclude = car_exclude;
+        }
         this.max_calculation_dist = max_dist;
         HashMap<Long, RoadGraphNode> res = new HashMap<>();
         for (RoadGraphNode rgn: roadGraphNodes){
@@ -508,20 +527,19 @@ public class PropertyMap {
 
         RoadGraphNode start_rgn = res.get(start.id);
         start_rgn.dist = 0;
-        recCalculateDistances(start_rgn);
-
+        recCalculateDistances(start_rgn, max_dist);
 
         return res;
     }
 
-    void recCalculateDistances(RoadGraphNode rgn){
+    void recCalculateDistances(RoadGraphNode rgn, final int max_dist){
         for (int i=0; i<rgn.ref_to.length; i++){
             RoadGraphNode to = rgn.ref_to[i];
             int dist = rgn.distances[i];
             if (rgn.dist + dist < to.dist){
                 to.dist = rgn.dist + dist;
-                if (to.dist <= max_calculation_dist) {
-                    recCalculateDistances(to);
+                if (to.dist <= max_dist) {
+                    recCalculateDistances(to, max_dist);
                 }
             }
         }

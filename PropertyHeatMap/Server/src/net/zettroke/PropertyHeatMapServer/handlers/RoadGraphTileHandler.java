@@ -49,7 +49,8 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         coefficent = 1.0/mult;
         max_dist = max_dist;
 
-        QuadTreeNode treeNode = new QuadTreeNode(new int[]{(x-1)*mult*256, (y-1)*mult*256, (x+2)*mult*256, (y+2)*mult*256});
+        //QuadTreeNode treeNode = new QuadTreeNode(new int[]{(x-1)*mult*256, (y-1)*mult*256, (x+2)*mult*256, (y+2)*mult*256});
+        QuadTreeNode treeNode = propertyMap.tree.root;
         BufferedImage imageTemp = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
 
 
@@ -62,25 +63,26 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
             graph = CalculatedGraphCache.get(start_id, max_dist);
             //System.out.println("get form cache");
         }else {
-            graph = propertyMap.getCalculatedRoadGraph(start_id, new HashSet<>(Arrays.asList(RoadType.FOOTWAY,
-                    RoadType.CONSTRUCTION, RoadType.SERVICE, RoadType.PATH)), max_dist);
+            graph = propertyMap.getCalculatedRoadGraph(start_id, true, max_dist);
             CalculatedGraphCache.store(start_id, max_dist, graph);
             //System.out.println("stored");
         }
         ArrayList<RoadGraphNode> to_clear = new ArrayList<>();
         int offx = x*mult*256;
         int offy = y*mult*256;
+        boolean dont_draw = false;
         g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         for (RoadGraphNode rgn : graph.values()){
-            //if (rgn.dist != Integer.MAX_VALUE){
             if (treeNode.inBounds(rgn.n)){
+                if (rgn.n.id == 1464111639){
+                    System.out.println();
+                }
                 to_clear.add(rgn);
                 rgn.visited = true;
                 for (int i=0; i<rgn.ref_to.length; i++){
                     RoadGraphNode ref = rgn.ref_to[i];
                     if (!ref.visited){
                         switch (rgn.ref_types.get(i)){
-
                             case SECONDARY:
                                 g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;
@@ -105,12 +107,31 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                             case LIVING_STREET:
                                 g.setStroke(new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;
+                            case SUBWAY:
+                                dont_draw = true;
+                                break;
+                            case TRAM:
+                                dont_draw = true;
+                                break;
+                            case BUS:
+                                dont_draw = true;
+                                break;
+                            case TROLLEYBUS:
+                                dont_draw = true;
+                                break;
                             case INVISIBLE:
-                                g.setStroke(new BasicStroke(0));
+                                dont_draw = true;
+                                break;
+                            default:
+                                g.setStroke(new BasicStroke(10f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;
                         }
-                        g.setPaint(new GradientPaint(coef(rgn.n.x-offx), coef(rgn.n.y-offy), rgn.getNodeColor(max_dist), coef(ref.n.x-offx), coef(ref.n.y-offy), ref.getNodeColor(max_dist)));
-                        g.drawLine(coef(rgn.n.x-offx), coef(rgn.n.y-offy), coef(ref.n.x-offx), coef(ref.n.y-offy));
+                        if (!dont_draw) {
+                            g.setPaint(new GradientPaint(coef(rgn.n.x - offx), coef(rgn.n.y - offy), rgn.getNodeColor(max_dist), coef(ref.n.x - offx), coef(ref.n.y - offy), ref.getNodeColor(max_dist)));
+                            g.drawLine(coef(rgn.n.x - offx), coef(rgn.n.y - offy), coef(ref.n.x - offx), coef(ref.n.y - offy));
+                        }else{
+                            dont_draw = false;
+                        }
                     }
                 }
             }
