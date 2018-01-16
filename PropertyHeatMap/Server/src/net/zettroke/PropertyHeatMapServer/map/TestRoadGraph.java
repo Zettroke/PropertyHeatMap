@@ -86,7 +86,7 @@ public class TestRoadGraph {
 
 
     static void depth_graph_draw(RoadGraphNode n){
-        n.visited = true;
+        //n.visited = true;
         for (int i=0; i<n.ref_to.length; i++){
             RoadGraphNode n1 = n.ref_to[i];
             boolean flag = true;
@@ -111,9 +111,9 @@ public class TestRoadGraph {
             if (flag) {
                 g.drawLine(coef(n.n.x), coef(n.n.y), coef(n1.n.x), coef(n1.n.y));
             }
-            if (!n1.visited) {
+            /*if (!n1.visited) {
                 depth_graph_draw(n1);
-            }
+            }*/
         }
     }
     static Color getNodeColor(RoadGraphNode n, int max_dist){

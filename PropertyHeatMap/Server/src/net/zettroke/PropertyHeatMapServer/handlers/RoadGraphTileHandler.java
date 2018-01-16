@@ -8,20 +8,25 @@ import io.netty.handler.codec.http.*;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.QuadTreeNode;
 import net.zettroke.PropertyHeatMapServer.map.RoadGraphNode;
+import net.zettroke.PropertyHeatMapServer.utils.BoolArrayPool;
 import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphCache;
-import net.zettroke.PropertyHeatMapServer.map.RoadType;
+import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphKey;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.locks.Lock;
+import java.util.HashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class RoadGraphTileHandler implements ShittyHttpHandler{
-
     PropertyMap propertyMap;
+
+    static Lock global_rgn_lock = new ReentrantLock();
+
 
     final String path = "tile/road";
     @Override
@@ -34,10 +39,10 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         return (int)Math.round(coefficent*n);
     }
 
-    int max_dist = 0;
 
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         int z = Integer.decode(decoder.parameters().get("z").get(0));
         int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
@@ -45,67 +50,99 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         int y = Integer.decode(decoder.parameters().get("y").get(0));
         long start_id = Long.decode(decoder.parameters().get("start_id").get(0));
         int max_dist =  Integer.decode(decoder.parameters().get("max_dist").get(0));
+        //System.out.println("Id - " + id + " Thread - " + Thread.currentThread().getName());
 
         coefficent = 1.0/mult;
-        max_dist = max_dist;
 
-        //QuadTreeNode treeNode = new QuadTreeNode(new int[]{(x-1)*mult*256, (y-1)*mult*256, (x+2)*mult*256, (y+2)*mult*256});
-        QuadTreeNode treeNode = propertyMap.tree.root;
+        QuadTreeNode treeNode = new QuadTreeNode(new int[]{(x-1)*mult*256, (y-1)*mult*256, (x+2)*mult*256, (y+2)*mult*256});
+        //QuadTreeNode treeNode = new QuadTreeNode(new int[]{(x)*mult*256, (y)*mult*256, (x+1)*mult*256, (y+1)*mult*256});
+        //QuadTreeNode treeNode = propertyMap.tree.root;
         BufferedImage imageTemp = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
 
-
+        boolean foot = true;
 
         Graphics2D g = (Graphics2D) imageTemp.getGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        HashMap<Long, RoadGraphNode> graph;
+        HashMap<Long, RoadGraphNode> graph = null;
 
-        if (CalculatedGraphCache.contain(start_id, max_dist)){
-            graph = CalculatedGraphCache.get(start_id, max_dist);
-            //System.out.println("get form cache");
+        global_rgn_lock.lock();
+        if (CalculatedGraphCache.contain(start_id, foot, max_dist)){
+            graph = CalculatedGraphCache.get(start_id, foot,  max_dist);
+            global_rgn_lock.unlock();
         }else {
-            graph = propertyMap.getCalculatedRoadGraph(start_id, true, max_dist);
-            CalculatedGraphCache.store(start_id, max_dist, graph);
-            //System.out.println("stored");
+            //System.out.println("Start calculating roadgraph - " + Thread.currentThread().getName());
+            CalculatedGraphKey key = new CalculatedGraphKey(start_id, foot, max_dist);
+            if (!CalculatedGraphCache.current_processing.containsKey(key)) {
+                ReentrantLock lck = new ReentrantLock();
+                CalculatedGraphCache.current_processing.put(key, lck);
+                lck.lock();
+                global_rgn_lock.unlock();
+
+                long start = System.nanoTime();
+                graph = propertyMap.getCalculatedRoadGraph(start_id, true, max_dist);
+                CalculatedGraphCache.store(start_id, foot, max_dist, graph);
+                System.out.println("Graph Calculated in " + ((System.nanoTime()-start) / 1000000.0) + "millis.");
+                lck.unlock();
+            }else{
+                ReentrantLock lck = CalculatedGraphCache.current_processing.get(key);
+                global_rgn_lock.unlock();
+                lck.lock();
+                graph = CalculatedGraphCache.get(start_id, foot, max_dist);
+                if (!lck.hasQueuedThreads()){
+                    CalculatedGraphCache.current_processing.remove(key);
+                }
+                lck.unlock();
+
+            }
         }
-        ArrayList<RoadGraphNode> to_clear = new ArrayList<>();
+
+        BasicStroke secondary_stroke = new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke primary_stroke = new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke tertiary_stroke = new BasicStroke(60f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke service_stroke = new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke residential_stroke = new BasicStroke(50f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke living_stroke = new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke default_stroke = new BasicStroke(20f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke unknown_stroke = new BasicStroke(10f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+
+
+
         int offx = x*mult*256;
         int offy = y*mult*256;
         boolean dont_draw = false;
+        boolean[] visited = BoolArrayPool.getArray(graph.size());
+        //HashSet<Integer> visited = new HashSet<>();
         g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         for (RoadGraphNode rgn : graph.values()){
             if (treeNode.inBounds(rgn.n)){
-                if (rgn.n.id == 1464111639){
-                    System.out.println();
-                }
-                to_clear.add(rgn);
-                rgn.visited = true;
+                visited[rgn.index] = true;
                 for (int i=0; i<rgn.ref_to.length; i++){
                     RoadGraphNode ref = rgn.ref_to[i];
-                    if (!ref.visited){
+                    if (!visited[ref.index]){
                         switch (rgn.ref_types.get(i)){
                             case SECONDARY:
-                                g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                g.setStroke(secondary_stroke);
                                 break;
                             case RESIDENTIAL:
-                                g.setStroke(new BasicStroke(50f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                g.setStroke(residential_stroke);
                                 break;
                             case SERVICE:
-                                g.setStroke(new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                g.setStroke(service_stroke);
                                 break;
                             case TERTIARY:
-                                g.setStroke(new BasicStroke(60f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                g.setStroke(tertiary_stroke);
                                 break;
                             case PRIMARY:
-                                g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                g.setStroke(primary_stroke);
                                 break;
                             case TRUNK:
                                 g.setStroke(new BasicStroke(80f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;
                             case DEFAULT:
-                                g.setStroke(new BasicStroke(20f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                g.setStroke(default_stroke);
                                 break;
                             case LIVING_STREET:
-                                g.setStroke(new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                g.setStroke(living_stroke);
                                 break;
                             case SUBWAY:
                                 dont_draw = true;
@@ -123,7 +160,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                                 dont_draw = true;
                                 break;
                             default:
-                                g.setStroke(new BasicStroke(10f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                g.setStroke(unknown_stroke);
                                 break;
                         }
                         if (!dont_draw) {
@@ -136,10 +173,10 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                 }
             }
         }
-        for (RoadGraphNode rgn: to_clear) {
+        /*for (RoadGraphNode rgn: to_clear) {
             rgn.visited = false;
-        }
-
+        }*/
+        BoolArrayPool.returnArray(visited);
         ByteBuf buf = ctx.alloc().buffer();
         ByteBufOutputStream out = new ByteBufOutputStream(buf);
         BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
@@ -149,6 +186,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         g2.drawImage(imageTemp, 0, 0, null);
 
         ImageIO.write(image, "png", out);
+        //ImageIO.write(image, "png", new FileOutputStream("" + x + "." + y + ".png"));
 
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
 

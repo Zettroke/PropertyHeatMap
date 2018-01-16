@@ -5,6 +5,7 @@ import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
+import net.zettroke.PropertyHeatMapServer.utils.IntArrayList;
 import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
 
 import java.io.*;
@@ -22,7 +23,7 @@ public class PropertyMap {
 
     public static int default_zoom = 19;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
-    final static HashSet<String> supportedRoutes = new HashSet<>(Arrays.asList("subway", "bus", "tram", "trolleybus"));
+    private final static HashSet<String> supportedRoutes = new HashSet<>(Arrays.asList("subway", "tram", "trolleybus", "bus"));
     public int max_calculation_dist = 16000;
 
     // Speed in meters per 0.1 seconds.
@@ -32,7 +33,7 @@ public class PropertyMap {
     public static final float bus_speed = 0.8333f;
     public static final float tram_speed = 0.55555f;
 
-    public static final HashSet<RoadType> foot_exclude = new HashSet<>(Arrays.asList(RoadType.TRUNK, RoadType.PRIMARY, RoadType.CONSTRUCTION));
+    public static final HashSet<RoadType> foot_exclude = new HashSet<>(Arrays.asList(RoadType.CONSTRUCTION, RoadType.PATH));
     public static final HashSet<RoadType> car_exclude = new HashSet<>(Arrays.asList(RoadType.SUBWAY, RoadType.BUS, RoadType.TRAM, RoadType.TROLLEYBUS,
             RoadType.SERVICE, RoadType.FOOTWAY, RoadType.CONSTRUCTION, RoadType.PATH));
 
@@ -43,20 +44,21 @@ public class PropertyMap {
     public int x_end=0, y_end=0;
 
     public StringPredictor predictor = new StringPredictor();
+    public HashMap<String, Way> searchMap = new HashMap<>();
 
-    ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
+    //ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
     HashMap<Long, Node> nodes = new HashMap<>();
     HashMap<Long, Way> ways = new HashMap<>();
     ArrayList<Relation> relations = new ArrayList<>();
 
     HashMap<Long, Integer> roadGraphIndexes = new HashMap<>();
     ArrayList<RoadGraphNode> roadGraphNodes = new ArrayList<>();
-    ArrayList<ArrayList<Integer>> roadGraphConnections = new ArrayList<>();
+    ArrayList<IntArrayList> roadGraphConnections = new ArrayList<>();
     ArrayList<ArrayList<RoadType>> roadGraphConnectionsTypes = new ArrayList<>();
 
-    // Distance in 0.1 seconds.
-    ArrayList<ArrayList<Integer>> roadGraphDistancesCar = new ArrayList<>();
-    ArrayList<ArrayList<Integer>> roadGraphDistancesFoot = new ArrayList<>();
+    // Дистанция в 0.1 секундах.
+    ArrayList<IntArrayList> roadGraphDistancesCar = new ArrayList<>();
+    ArrayList<IntArrayList> roadGraphDistancesFoot = new ArrayList<>();
 
     public QuadTree tree;
 
@@ -147,14 +149,14 @@ public class PropertyMap {
         public_transport_init();
         System.out.println("Public transport init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
         System.gc();
-
-        //System.out.println("addPoly calls - " + count_addPoly);
-        //System.out.println("contain calls - " + count_contain);
     }
 
     void public_transport_init(){
         for (Relation rel: relations){
             if (rel.data.containsKey("route_master") && supportedRoutes.contains(rel.data.get("route_master"))){
+                if (rel.id == 1472548){
+                    System.out.println();
+                }
                 Relation r = null;// = rel.relations.get(0);// should be with max id
                 for (int i=0; i<rel.relations.size(); i++){
                     if (rel.relations.get(i) != null){
@@ -162,9 +164,7 @@ public class PropertyMap {
                         break;
                     }
                 }
-                if (r == null){
-                    continue;
-                }
+                if (r == null) continue;
                 if (r.nodes.size() == 1) continue;
 
                 Way way = new Way();
@@ -208,6 +208,9 @@ public class PropertyMap {
                             way.nodes.add(tmp.nodes.get(i));
                         }
                     } else {
+                        /*for (int j = 0; j < r.ways.get(relation_way_index_begin).nodes.size(); j++) {
+                            way.nodes.add(r.ways.get(relation_way_index_begin).nodes.get(j));
+                        }*/
                         way.nodes.addAll(r.ways.get(relation_way_index_begin).nodes);
                     }
 
@@ -244,28 +247,42 @@ public class PropertyMap {
                 }else if(route_type.equals("subway") || route_type.equals("tram")){
                     if (route_type.equals("subway")) {
                         roadType = RoadType.SUBWAY;
-                        for (SimpleNode n1 : way.nodes) {
-                            if (n1 instanceof Node) {
-                                Node n = (Node) n1;
-                                if (n.data != null && n.data.containsKey("station") && n.data.get("station").equals("subway")){
-                                    n.publicTransportStop = true;
-                                }
+                        HashSet<Long> ids = new HashSet<>();
+                        for (SimpleNode sn: way.nodes){
+                            Node n = (Node) sn;
+                            if (n.data != null && n.data.containsKey("station") && n.data.get("station").equals("subway")){
+                                ids.add(n.id);
+                            }
+                        }
+                        for (int i=relation_node_index_begin; i<relation_node_index_end; i++){
+                            Node n = r.nodes.get(i);
+                            n.publicTransportStop = true;
+                            if (!ids.contains(n.id)){
+                                MiddleMapPoint mdmp = way.minDistToPoint(n);
+                                way.nodes.add(mdmp.ind + 1, n);
                             }
                         }
                     }else{
                         roadType = RoadType.TRAM;
-                        for (SimpleNode n1 : way.nodes) {
-                            if (n1 instanceof Node) {
-                                Node n = (Node) n1;
-                                if (n.data != null && n.data.containsKey("public_transport") && n.data.get("public_transport").equals("stop_position")){
-                                    n.publicTransportStop = true;
-                                }
+                        HashSet<Long> ids = new HashSet<>();
+                        for (SimpleNode sn: way.nodes){
+                            Node n = (Node) sn;
+                            if (n.data != null && n.data.containsKey("public_transport") && n.data.get("public_transport").equals("stop_position")){
+                                ids.add(n.id);
+                            }
+                        }
+                        for (int i=relation_node_index_begin; i<relation_node_index_end; i++){
+                            Node n = r.nodes.get(i);
+                            n.publicTransportStop = true;
+                            if (!ids.contains(n.id)){
+                                MiddleMapPoint mdmp = way.minDistToPoint(n);
+                                way.nodes.add(mdmp.ind + 1, n);
                             }
                         }
                     }
                 }
 
-                RoadGraphNode curr_stop = null;
+                RoadGraphNode prev_stop = null;
                 int start_ind = Integer.MAX_VALUE;
                 float divider = 1;
                 switch (roadType){
@@ -280,64 +297,87 @@ public class PropertyMap {
                         break;
                     case TRAM:
                         divider = tram_speed;
+                        break;
                 }
+                ArrayList<Integer> rgn_to_connect_indexes = new ArrayList<>();
 
+                SimpleNode prev_simple_node = null;
                 for (int i=0; i < way.nodes.size(); i++){
                     if (way.nodes.get(i) instanceof Node){
                         if (((Node)way.nodes.get(i)).publicTransportStop){
-                            curr_stop = new RoadGraphNode((Node)way.nodes.get(i));
-                            curr_stop.types.add(roadType);
-                            int ind = roadGraphNodes.size();
-                            roadGraphIndexes.put(curr_stop.n.id, ind);
-                            roadGraphNodes.add(curr_stop);
-                            roadGraphConnections.add(new ArrayList<>());
-                            roadGraphConnectionsTypes.add(new ArrayList<>());
-                            roadGraphDistancesCar.add(new ArrayList<>());
-                            roadGraphDistancesFoot.add(new ArrayList<>());
-                            /*List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(curr_stop.n, 10); // 300 radius ~ 50m.
+                            prev_stop = new RoadGraphNode((Node)way.nodes.get(i));
+                            int ind;
+                            if (!roadGraphIndexes.containsKey(prev_stop.n.id)) {
+                                prev_stop.types.add(roadType);
+                                ind = roadGraphNodes.size();
+                                roadGraphIndexes.put(prev_stop.n.id, ind);
+                                roadGraphNodes.add(prev_stop);
+                                roadGraphConnections.add(new IntArrayList());
+                                roadGraphConnectionsTypes.add(new ArrayList<>());
+                                roadGraphDistancesCar.add(new IntArrayList());
+                                roadGraphDistancesFoot.add(new IntArrayList());
+                            }else{
+                                ind = roadGraphIndexes.get(prev_stop.n.id);
+                                prev_stop = roadGraphNodes.get(ind);
+                                prev_stop.types.add(roadType);
+
+                            }
+                            rgn_to_connect_indexes.add(ind);
+                            /*List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(prev_stop.n, 300); // 300 radius ~ 50m.
                             for (RoadGraphNode toConnect: nodes){
                                 toConnect.types.add(roadType);
                                 roadGraphConnections.get(ind).add(roadGraphIndexes.get(toConnect.n.id));
                                 roadGraphConnections.get(roadGraphIndexes.get(toConnect.n.id)).add(ind);
                                 roadGraphConnectionsTypes.get(ind).add(roadType);
                                 roadGraphConnectionsTypes.get(roadGraphIndexes.get(toConnect.n.id)).add(roadType);
-                                int dist = Math.round(calculateDistance(curr_stop.n, toConnect.n)/divider);
+                                int dist = Math.round(calculateDistance(prev_stop.n, toConnect.n)/divider);
                                 roadGraphDistancesFoot.get(ind).add(dist);
                                 roadGraphDistancesFoot.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
                                 roadGraphDistancesCar.get(ind).add(dist);
                                 roadGraphDistancesCar.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
                             }*/
                             start_ind = i+1;
+                            prev_simple_node = prev_stop.n;
                             break;
                         }
                     }
                 }
-
+                int dist = 0;
                 for (int i=start_ind; i < way.nodes.size(); i++){
+                    dist += Math.round(calculateDistance(prev_simple_node, way.nodes.get(i))/divider);
                     if (way.nodes.get(i) instanceof Node){
                         Node n = (Node) way.nodes.get(i);
                         if (n.publicTransportStop){
                             int ind = roadGraphNodes.size();
+                            int prev_ind = roadGraphIndexes.get(prev_stop.n.id);
                             RoadGraphNode rgn = new RoadGraphNode(n);
-                            rgn.types.add(roadType);
-                            roadGraphIndexes.put(rgn.n.id, ind);
-                            roadGraphNodes.add(rgn);
-                            roadGraphConnections.add(new ArrayList<>());
-                            roadGraphConnectionsTypes.add(new ArrayList<>());
-                            roadGraphDistancesCar.add(new ArrayList<>());
-                            roadGraphDistancesFoot.add(new ArrayList<>());
+                            if (!roadGraphIndexes.containsKey(rgn.n.id)){
+                                rgn.types.add(roadType);
+                                roadGraphIndexes.put(rgn.n.id, ind);
+                                roadGraphNodes.add(rgn);
+                                roadGraphConnections.add(new IntArrayList());
+                                roadGraphConnectionsTypes.add(new ArrayList<>());
+                                roadGraphDistancesCar.add(new IntArrayList());
+                                roadGraphDistancesFoot.add(new IntArrayList());
+                            }else{
+                                ind = roadGraphIndexes.get(rgn.n.id);
+                                rgn = roadGraphNodes.get(ind);
+                            }
 
-                            roadGraphConnections.get(ind).add(ind-1);
-                            roadGraphConnections.get(ind-1).add(ind);
+
+                            roadGraphConnections.get(ind).add(prev_ind);
+                            roadGraphConnections.get(prev_ind).add(ind);
                             roadGraphConnectionsTypes.get(ind).add(roadType);
-                            roadGraphConnectionsTypes.get(ind-1).add(roadType);
-                            int dist = Math.round(calculateDistance(rgn.n, curr_stop.n)/divider);
+                            roadGraphConnectionsTypes.get(prev_ind).add(roadType);
+                            //int dist = Math.round(calculateDistance(rgn.n, prev_stop.n)/divider);
                             roadGraphDistancesFoot.get(ind).add(dist);
-                            roadGraphDistancesFoot.get(ind-1).add(dist);
+                            roadGraphDistancesFoot.get(prev_ind).add(dist);
                             roadGraphDistancesCar.get(ind).add(dist);
-                            roadGraphDistancesCar.get(ind-1).add(dist);
+                            roadGraphDistancesCar.get(prev_ind).add(dist);
 
-                            /*List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(rgn.n, 10); // 300 radius ~ 50m.
+
+                            rgn_to_connect_indexes.add(ind);
+                            /*List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(rgn.n, 300); // 300 radius ~ 50m.
                             for (RoadGraphNode toConnect: nodes){
                                 toConnect.types.add(roadType);
                                 roadGraphConnections.get(ind).add(roadGraphIndexes.get(toConnect.n.id));
@@ -350,8 +390,26 @@ public class PropertyMap {
                                 roadGraphDistancesCar.get(ind).add(dist);
                                 roadGraphDistancesCar.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
                             }*/
-                            curr_stop = rgn;
+                            prev_stop = rgn;
+                            dist = 0;
                         }
+                    }
+                    prev_simple_node = way.nodes.get(i);
+                }
+                for (int ind: rgn_to_connect_indexes){
+                    RoadGraphNode rgn = roadGraphNodes.get(ind);
+                    List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(roadGraphNodes.get(ind).n, 300);
+                    for (RoadGraphNode toConnect: nodes){
+                        toConnect.types.add(roadType);
+                        roadGraphConnections.get(ind).add(roadGraphIndexes.get(toConnect.n.id));
+                        roadGraphConnections.get(roadGraphIndexes.get(toConnect.n.id)).add(ind);
+                        roadGraphConnectionsTypes.get(ind).add(roadType);
+                        roadGraphConnectionsTypes.get(roadGraphIndexes.get(toConnect.n.id)).add(roadType);
+                        dist = Math.round(calculateDistance(rgn.n, toConnect.n)/divider);
+                        roadGraphDistancesFoot.get(ind).add(dist);
+                        roadGraphDistancesFoot.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
+                        roadGraphDistancesCar.get(ind).add(dist);
+                        roadGraphDistancesCar.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
                     }
                 }
             }
@@ -452,6 +510,10 @@ public class PropertyMap {
         tree.fillTreeNode(n);
     }
 
+    public void fillTreeNodeWithRoadGraphNodes(QuadTreeNode n){
+        tree.fillTreeNodeWithRoadGraphNodes(n);
+    }
+
     public static int calculateDistance(SimpleNode n1, SimpleNode n2){
         double lat1 = Math.toRadians(n1.lat);
         double lat2 = Math.toRadians(n2.lat);
@@ -470,16 +532,22 @@ public class PropertyMap {
         // TODO: Доделать пешеходный режим.
         //long start_t = System.nanoTime();
         HashSet<RoadType> exclude;
+        ArrayList<IntArrayList> rgn_distances;
         if (foot){
             exclude = foot_exclude;
+            rgn_distances = roadGraphDistancesFoot;
         }else{
             exclude = car_exclude;
+            rgn_distances = roadGraphDistancesCar;
         }
         this.max_calculation_dist = max_dist;
         HashMap<Long, RoadGraphNode> res = new HashMap<>();
+        int cnt = 0;
         for (RoadGraphNode rgn: roadGraphNodes){
             if (!(rgn.types.size() + rgn.road_types.size() == 1 && (rgn.types.iterator().hasNext() && exclude.contains(rgn.types.iterator().next())))){// || rgn.types.contains(RoadType.LIVING_STREET)))) {
-                res.put(rgn.n.id, rgn.clone());
+                RoadGraphNode clone = rgn.clone();
+                clone.index = cnt++;
+                res.put(rgn.n.id, clone);
             }
         }
         ArrayList<Integer> distances = new ArrayList<>(100);
@@ -491,7 +559,7 @@ public class PropertyMap {
                     if (!exclude.contains(roadGraphConnectionsTypes.get(i).get(j))){
                         curr_node.ref_types.add(roadGraphConnectionsTypes.get(i).get(j));
                         ref_to.add(res.get(roadGraphNodes.get(roadGraphConnections.get(i).get(j)).n.id));
-                        distances.add(roadGraphDistancesCar.get(i).get(j));
+                        distances.add(rgn_distances.get(i).get(j));
                     }
                 }
                 curr_node.distances = distances.toArray(new Integer[distances.size()]);
@@ -527,7 +595,13 @@ public class PropertyMap {
 
         RoadGraphNode start_rgn = res.get(start.id);
         start_rgn.dist = 0;
-        recCalculateDistances(start_rgn, max_dist);
+        //recCalculateDistances(start_rgn, max_dist);
+        System.out.println("Initial arrays size - " + res.size());
+
+        RoadGraphNode[] start_arr = new RoadGraphNode[res.size()];
+        RoadGraphNode[] dest_arr = new RoadGraphNode[res.size()];
+        start_arr[0] = start_rgn;
+        widthRecCalculateDistance(start_arr, dest_arr, max_dist);
 
         return res;
     }
@@ -543,6 +617,40 @@ public class PropertyMap {
                 }
             }
         }
+    }
+
+    // 10 times faster *-*
+    void widthRecCalculateDistance(RoadGraphNode[] src, RoadGraphNode[] dest, final int max_dist){
+        int max_consuption = 0;
+        RoadGraphNode[] temp;
+        RoadGraphNode rgn, to;
+        int dist_to;
+        int src_size = 1;
+        int dest_ind = 0;
+        while (src_size != 0) {
+            for (int i = 0; i < src_size; i++) {
+                rgn = src[i];
+                for (int j = 0; j < rgn.ref_to.length; j++) {
+                    to = rgn.ref_to[j];
+                    dist_to = rgn.dist + rgn.distances[j];
+                    if (dist_to < to.dist) {
+                        to.dist = dist_to;
+                        if (dist_to <= max_dist) {
+                            dest[dest_ind++] = to;
+                        }
+                    }
+                }
+            }
+            src_size = dest_ind;
+            if (src_size > max_consuption){
+                max_consuption = src_size;
+            }
+            dest_ind = 0;
+            temp = src;
+            src = dest;
+            dest = temp;
+        }
+        System.out.println("Max array usage - " + max_consuption);
     }
 
 }

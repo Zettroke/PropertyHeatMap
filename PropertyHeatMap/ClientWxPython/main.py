@@ -3,11 +3,15 @@ from PIL import Image, ImageDraw
 import queue
 import io
 import requests
-from threading import Thread, Lock
+from threading import Thread, Lock, current_thread
 import json
 import time
 
+
 # 2k18 yaaaay
+
+EVT_REFRESH = wx.NewId()
+mx_dist = 12000
 
 
 class LoadTask:
@@ -29,9 +33,15 @@ class LoadTask:
         return id(self.place) * hash(self.key)
 
 
+class RefreshEvent(wx.PyEvent):
+    def __init__(self):
+        wx.PyEvent.__init__(self)
+        self.SetEventType(EVT_REFRESH)
+
+
 class Map(wx.Panel):
 
-    LocalNetwork = True
+    LocalNetwork = False
 
     def __init__(self, *args, **kwargs):
         super(Map, self).__init__(*args, **kwargs)
@@ -75,7 +85,8 @@ class Map(wx.Panel):
         self.Bind(wx.EVT_LEFT_UP, self.left_up)
         self.Bind(wx.EVT_MOTION, self.on_move)
         self.Bind(wx.EVT_LEAVE_WINDOW, self.out_of_window)
-        self.Bind(wx.EVT_MOUSEWHEEL, self.zoom)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.zoom_method)
+        self.Bind(wx.EVT_CLOSE, self.Destroy)
         self.moved = False
         self.Show()
         self.map_x, self.map_y = 0, 0
@@ -87,14 +98,20 @@ class Map(wx.Panel):
         self.available_zoom_levels = tuple(map(int, requests.get(self.base_server_url + "image/zoom_levels").text.split()))
         self.bounds = tuple(map(int, requests.get(self.base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
         self.tile_queue = queue.PriorityQueue()
-
+        self.Connect(-1, -1, EVT_REFRESH, self.my_refresh)
         self.loader_lock = Lock()
         self.need_refresh = True
         Thread(target=self.tile_loader, daemon=True, name="loader 1").start()
-        # Thread(target=self.tile_loader, daemon=True, name="loader 2").start()
+        Thread(target=self.tile_loader, daemon=True, name="loader 2").start()
+        Thread(target=self.tile_loader, daemon=True, name="loader 3").start()
         # Thread(target=self.map_refresher, daemon=True, name="map_updater").start()
 
+    def my_refresh(self, event):
+        # print(current_thread().getName())
+        self.Refresh()
+
     def request_location(self, x, y):
+
         ans = json.loads(requests.get(self.point_search_url.format(x=x, y=y, z=self.zoom)).text, encoding="utf-8")
         if ans["status"] == "success":
 
@@ -117,7 +134,7 @@ class Map(wx.Panel):
                         x2, y2 = x // 256, y // 256
                         dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
                         self.tile_queue.put(
-                            LoadTask(self.road_tiles_url, dist + 2, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id, max_dist=3500))
+                            LoadTask(self.road_tiles_url, dist + 20000, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id, max_dist=mx_dist))
 
             else:
                 del self.shapes_dict[ans["objects"][0]["id"]]
@@ -159,6 +176,7 @@ class Map(wx.Panel):
         self.pressed = True
         self.moved = False
         self.last_pos = event.GetPosition()
+        event.Skip()
 
     def left_up(self, event):
         self.pressed = False
@@ -176,6 +194,13 @@ class Map(wx.Panel):
             # print(self.sx, self.sy)
 
     def key(self, event):
+        class evt:
+                def __init__(self, rotation, position):
+                    self.WheelRotation = rotation
+                    self.c = position
+
+                def GetPosition(self):
+                    return self.c
         speed = 25
         if event.KeyCode == 316:
             # right
@@ -189,9 +214,15 @@ class Map(wx.Panel):
         elif event.KeyCode == 317:
             # down
             self.map_y += speed
+        elif event.KeyCode == 388:
+            c = self.ScreenToClient(wx.GetMousePosition())
+            self.zoom_method(evt(1, c))
+        elif event.KeyCode == 390:
+            c = self.ScreenToClient(wx.GetMousePosition())
+            self.zoom_method(evt(-1, c))
         self.Refresh()
 
-    def zoom(self, event=None):
+    def zoom_method(self, event=None):
         z = abs(event.WheelRotation)//event.WheelRotation
         if self.available_zoom_levels[0] <= z+self.zoom <= self.available_zoom_levels[1]:
             if z > 0:
@@ -223,12 +254,13 @@ class Map(wx.Panel):
         self.Refresh(False)
 
     def on_paint(self, event):
+
+        # print(current_thread().getName())
         w, h = self.GetClientSize()
         dc = wx.BufferedPaintDC(self)
 
-        # dc.Clear()
-        # dc.DestroyClippingRegion()
-
+        dc.Clear()
+        dc.DestroyClippingRegion()
         for x in range(self.map_x//256*256, ((self.map_x+w)//256+1)*256, 256):
             for y in range(self.map_y//256*256, ((self.map_y+h)//256+1)*256, 256):
                 x2, y2 = x//256, y//256
@@ -243,12 +275,12 @@ class Map(wx.Panel):
                                 if self.road_turn_on:
                                     if (x2, y2) in self.road_tiles_dict.keys():
                                         image_base = Image.alpha_composite(image_base, self.road_tiles_dict[(x2, y2)])
-                                if (x2, y2) in self.shapes_images.keys():
+                                '''if (x2, y2) in self.shapes_images.keys():
                                     x3 = self.shapes_images[(x2, y2)][0][0] - x2*256
                                     y3 = self.shapes_images[(x2, y2)][0][1] - y2*256
                                     if x3 < 0 or y3 < 0:
                                         print()
-                                    image_base.alpha_composite(self.shapes_images[(x2, y2)][1], (x3, y3))
+                                    image_base.alpha_composite(self.shapes_images[(x2, y2)][1], (x3, y3))'''
 
                                 self.bitmaps[(x2, y2)] = wx.Bitmap.FromBufferRGBA(256, 256, image_base.tobytes())
                                 self.bitmaps_to_update.remove((x2, y2))
@@ -264,30 +296,49 @@ class Map(wx.Panel):
                                          range=0.5))
                         if self.road_turn_on:
                             self.tile_queue.put(
-                                LoadTask(self.road_tiles_url, dist + 2, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id,
-                                         max_dist=3500))
+                                LoadTask(self.road_tiles_url, dist + 20000, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id,
+                                         max_dist=mx_dist))
                 else:
                     self.bitmaps[(x // 256, y // 256)] = self.missing_image
 
                 dc.DrawBitmap(self.bitmaps[(x2, y2)], x - self.map_x, y - self.map_y)
 
-                '''mult = 2**(self.server_zoom-self.zoom)
-                for k, v in self.shapes_bitmaps.items():
-                    bounds = self.shapes_dict[k][0]
-                    dc.DrawBitmap(v, bounds[0]//mult-self.map_x, bounds[1]//mult-self.map_y)'''
+        '''mult = 2**(self.server_zoom-self.zoom)
+        for k, v in self.shapes_bitmaps.items():
+            bounds = self.shapes_dict[k][0]
+            dc.DrawBitmap(v, bounds[0]//mult-self.map_x, bounds[1]//mult-self.map_y)'''
+
+    def map_refresher(self):
+        while True:
+            self.loader_lock.acquire()
+            wx.PostEvent(self, RefreshEvent())
+            self.loader_lock.release()
+            time.sleep(0.5)
 
     def tile_loader(self):
         while True:
-            to_load = self.tile_queue.get()
 
-            image = Image.open(io.BytesIO(requests.get(to_load.url.format(**to_load.params)).content))
+            to_load = self.tile_queue.get()
+            image = Image.open(io.BytesIO(requests.get(to_load.url.format(**to_load.params), stream=False).content))
             image = image.convert("RGBA")
             self.loader_lock.acquire()
             to_load.place[to_load.key] = image
-            self.loaded_tiles_set.add(to_load)
+            # self.loaded_tiles_set.add(to_load)
             self.bitmaps_to_update.add(to_load.key)
+
+            # wx.PostEvent(self, wx.EVT_PAINT())
             self.Refresh()
+
+            # time.sleep(0.01)
             self.loader_lock.release()
+            
+    def center_on(self, obj):
+        mult = 2**(self.server_zoom - self.zoom)
+        print("from:", self.map_x, self.map_y)
+        print("to:", round(obj["result"]["center"][0] / mult),round(obj["result"]["center"][1] / mult))
+        self.map_x = round(obj["result"]["center"][0] / mult) - self.GetSize()[0]//2
+        self.map_y = round(obj["result"]["center"][1] / mult) - self.GetSize()[1]//2
+        self.Refresh()
 
 
 class DataView(wx.ScrolledWindow):
@@ -310,29 +361,90 @@ class PropertyHeatMap(wx.Frame):
 
         self.Center()
         self.map = Map(self.panel)
-        self.box_sizer.Add(self.map, 4, wx.ALL | wx.EXPAND)
-        sc = wx.ScrolledWindow(self.panel)
+
+        sc = wx.ScrolledWindow(self.panel, size=(300, 100))
 
         sc.SetScrollbars(1, 1, 1, 2000)
         sc.SetScrollRate(5, 5)
         sc.Bind(wx.EVT_SIZE, self.size)
-        p = wx.Panel(sc, pos=(0, 0), size=(100, 2000))
+        p = wx.Panel(sc, pos=(0, 0), size=(1, 2000))
+        pbx = wx.BoxSizer()
+        pbx.Add(p, 1, wx.ALL|wx.EXPAND)
+        sc.SetSizer(pbx)
+        p.SetBackgroundColour(wx.Colour(255, 255, 255))
 
         line = wx.StaticLine(p, size=(1, 2000))
 
-        self.box_sizer.Add(sc, 1, wx.ALL | wx.EXPAND)
+        self.box_sizer.Add(self.map, 9, wx.ALL | wx.EXPAND)
+        self.box_sizer.Add(sc, 2, wx.ALL | wx.EXPAND)
 
-        self.panel.SetSizer(self.box_sizer)
         self.Bind(wx.EVT_CLOSE, self.on_close)
+        another_sizer = wx.BoxSizer(wx.VERTICAL)
+        search_sizer = wx.BoxSizer()
+        another_sizer.AddSpacer(25)
+        another_sizer.Add(search_sizer, 1, wx.ALL|wx.EXPAND)
 
-        self.SetClientSize((500, 500))
-        # self.view.SetScrollbars(1, 1, 1000, 1000)
+        self.search_entry = wx.TextCtrl(p, pos=(0, 0), size=(100, 25), style=wx.TE_PROCESS_ENTER)
+
+        class Completer(wx.TextCompleterSimple):
+
+            def __init__(self, app):
+                wx.TextCompleterSimple.__init__(self)
+                self.s = []
+                self.ind = 0
+                self.app = app
+
+            def GetCompletions(self, prefix, res):
+
+                print("Completion for", prefix)
+
+            def Start(self, prefix):
+                print("Completion for", prefix)
+                self.ind = 0
+                s = self.app.search_entry.GetValue()
+                resp = requests.get("http://127.0.0.1/api/search/predict?text={}&suggestions=10".format(s)).text
+                ans = json.loads(resp)
+                self.s = ans["suggestions"]
+                return True
+
+            def GetNext(self):
+                if self.ind < len(self.s):
+                    self.ind += 1
+                    return self.s[self.ind-1]
+                else:
+                    return ""
+        # self.tx.Bind(wx.EVT_TEXT, text_update)
+        self.search_entry.AutoComplete(Completer(self))
+
+        def fuck(event):
+            if event.KeyCode == 13:
+                Thread(target=self.find, daemon=True).start()
+                self.search_entry.SelectNone()
+                self.search_entry.SetInsertionPointEnd()
+                self.map.SetFocus()
+            event.Skip()
+
+        self.search_entry.Bind(wx.EVT_KEY_DOWN, fuck)
+
+        search_sizer.Add(self.search_entry, 1, wx.ALIGN_RIGHT|wx.LEFT, 5)
+        search_sizer.Add(wx.Button(p, size=(50, 25), label="Поиск"), 0, wx.ALIGN_RIGHT|wx.LEFT, 2)
+        self.search_entry.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        p.SetSizer(another_sizer)
+        self.panel.SetSizer(self.box_sizer)
+        self.SetClientSize((750, 500))
 
     def on_close(self, event):
         self.Destroy()
 
     def size(self, event):
         print("sizing")
+        
+    def find(self):
+        print("finding")
+        s = self.search_entry.GetValue()
+        ans = json.loads(requests.get("http://127.0.0.1/api/search/string?text={}".format(s)).text)
+        if ans["status"] == "found":
+            self.map.center_on(ans)
 
 
 def main():

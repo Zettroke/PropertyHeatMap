@@ -1,6 +1,8 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
 
+import net.zettroke.PropertyHeatMapServer.utils.IntArrayList;
+
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -133,9 +135,9 @@ public class PropertyMapLoaderOSM{
                                     RoadGraphNode rgn = new RoadGraphNode(n1);
                                     rgn.addWay(tempWay);
                                     m.roadGraphNodes.add(rgn);
-                                    m.roadGraphConnections.add(new ArrayList<>());
-                                    m.roadGraphDistancesCar.add(new ArrayList<>());
-                                    m.roadGraphDistancesFoot.add(new ArrayList<>());
+                                    m.roadGraphConnections.add(new IntArrayList());
+                                    m.roadGraphDistancesCar.add(new IntArrayList());
+                                    m.roadGraphDistancesFoot.add(new IntArrayList());
                                     m.roadGraphConnectionsTypes.add(new ArrayList<>());
                                 }else{
                                     prev_index = m.roadGraphIndexes.get(n1.id);
@@ -151,9 +153,9 @@ public class PropertyMapLoaderOSM{
                                         index = m.roadGraphNodes.size();
                                         m.roadGraphIndexes.put(rgn.n.id, m.roadGraphNodes.size());
                                         m.roadGraphNodes.add(rgn);
-                                        m.roadGraphConnections.add(new ArrayList<>());
-                                        m.roadGraphDistancesCar.add(new ArrayList<>());
-                                        m.roadGraphDistancesFoot.add(new ArrayList<>());
+                                        m.roadGraphConnections.add(new IntArrayList());
+                                        m.roadGraphDistancesCar.add(new IntArrayList());
+                                        m.roadGraphDistancesFoot.add(new IntArrayList());
                                         m.roadGraphConnectionsTypes.add(new ArrayList<>());
 
                                     }
@@ -177,7 +179,8 @@ public class PropertyMapLoaderOSM{
                                     prev_index = index;
                                 }
                                 if (tempWay.data.containsKey("name") && tempWay.data.containsKey("highway") && !tempWay.data.get("highway").equals("trunk")){
-                                    m.predictor.add(tempWay.data.get("name"), tempWay);
+                                    m.predictor.add(tempWay.data.get("name"));
+                                    m.searchMap.put(tempWay.data.get("name").toLowerCase(), tempWay);
                                     /*if (tempWay.data.get("name").toLowerCase().equals("«м-1 “беларусь” – крёкшино – троицк» – ильичёвка")){
                                         System.out.println();
                                     }*/

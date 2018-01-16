@@ -6,8 +6,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.Way;
 import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
@@ -15,35 +13,43 @@ import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 
-public class StringSearchHandler implements ShittyHttpHandler{
-    final static String path = "search/string";
-    PropertyMap propertyMap;
+public class StringPredictHandler implements ShittyHttpHandler{
+    private PropertyMap propertyMap;
+    final String path = "search/predict";
     @Override
     public String getPath() {
         return path;
     }
-
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        String req = decoder.parameters().get("text").get(0);
+        int num = Integer.parseInt(decoder.parameters().get("suggestions").get(0));
+        //Way w = propertyMap.predictor.get(req);
+        JsonObject obj = new JsonObject();
+        ArrayList<String> preds = propertyMap.predictor.predict(req, num);
 
-        String text = decoder.parameters().get("text").get(0);
 
-        Way way = propertyMap.searchMap.get(text.toLowerCase());
-        JsonObject ans = new JsonObject();
-        if (way == null){
-            ans.add("status", "not found");
-        }else{
-            ans.add("status", "found");
-            ans.add("result", Jsonizer.toJson(way, true));
+        obj.add("status", "success");
+
+
+
+        JsonArray suggesitons = new JsonArray();
+        for (String s: preds){
+            suggesitons.add(s);
         }
-        ByteBuf buf = ctx.alloc().buffer().writeBytes(ans.toString().getBytes(Charset.forName("utf-8")));
+        obj.add("suggestions", suggesitons);
+        //}
+        ByteBuf buf = ctx.alloc().buffer().writeBytes(obj.toString().getBytes(Charset.forName("utf-8")));
+        //System.out.println("handled string search");
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
+        response.headers().set("content-type", "text/json; charset=UTF-8");
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 
 
-    StringSearchHandler(PropertyMap propertyMap){
+
+    public StringPredictHandler(PropertyMap propertyMap) {
         this.propertyMap = propertyMap;
     }
 }

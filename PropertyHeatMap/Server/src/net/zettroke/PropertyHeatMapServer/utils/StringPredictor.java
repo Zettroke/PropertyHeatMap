@@ -4,6 +4,7 @@ import net.zettroke.PropertyHeatMapServer.map.Way;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 
 public class StringPredictor {
 
@@ -56,18 +57,18 @@ public class StringPredictor {
         return res;
     }
 
-    private void rec_string_search(String seg, HashMap<Character, HashMap> m, ArrayList<String> arr, int max){
-        for (char c: m.keySet()){
+    private void rec_string_search(String seg, HashMap m, ArrayList<String> arr, int max){
+        HashMap<Character, HashMap> m1 = m;
+        for (char c: m1.keySet()){
             if (c == 0){
                 arr.add(seg);
             }else if (arr.size() < max){
-
-                rec_string_search(seg+c, m.get(c), arr, max);
+                rec_string_search(seg+c, m1.get(c), arr, max);
             }
         }
     }
 
-    public void add(String s, Way way){
+    public void add(String s){
         char[] val = s.toLowerCase().toCharArray();
         HashMap<Character, HashMap> curr = container;
         for (char c: val){
@@ -83,8 +84,6 @@ public class StringPredictor {
         if (!curr.containsKey((char)0)){
             size++;
         }
-        HashMap<Character, Way> m = new HashMap<>();
-        m.put((char)0, way);
-        curr.put((char)0, m);
+        curr.put((char)0, null);
     }
 }

@@ -28,12 +28,12 @@ class MapApp(Canvas):
             self.map_data_server = "http://178.140.109.241:24062/api/search/point/?x={x}&y={y}&z={z}"
             self.map_data_server_circle_search = "http://178.140.109.241:24062/api/search/circle/?x={x}&y={y}&z={z}&r={r}"
         else:
-            self.map_server = "http://127.0.0.1:25565/image/"
-            self.image_server = "http://127.0.0.1:25565/image/z{z}/{x}.{y}.png"
-            self.image_layer_server = "http://127.0.0.1:24062/api/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
-            self.image_roads_server = "http://127.0.0.1:24062/api/tile/road?x={x}&y={y}&z={z}&start_id=933754795&max_dist={max_dist}"
-            self.map_data_server = "http://127.0.0.1:24062/api/search/point/?x={x}&y={y}&z={z}"
-            self.map_data_server_circle_search = "http://127.0.0.1:24062/api/search/circle/?x={x}&y={y}&z={z}&r={r}"
+            self.map_server = "http://127.0.0.1/image/"
+            self.image_server = "http://127.0.0.1/image/z{z}/{x}.{y}.png"
+            self.image_layer_server = "http://127.0.0.1/api/tile/price?x={x}&y={y}&z={z}&price={price}&range={range}"
+            self.image_roads_server = "http://127.0.0.1/api/tile/road?x={x}&y={y}&z={z}&start_id=62186199&max_dist={max_dist}"
+            self.map_data_server = "http://127.0.0.1/api/search/point/?x={x}&y={y}&z={z}"
+            self.map_data_server_circle_search = "http://127.0.0.1/api/search/circle/?x={x}&y={y}&z={z}&r={r}"
         try:
             self.image_server = open("config", "r").readline()
         except Exception:
@@ -124,6 +124,7 @@ class MapApp(Canvas):
         root.bind("<Configure>", self.c_on_resize)
         root.bind("<Return>", self.load_tiles)
 
+        Thread(target=self.tile_loader, daemon=True).start()
         Thread(target=self.tile_loader, daemon=True).start()
 
     def turn_road_layer(self, event=None):

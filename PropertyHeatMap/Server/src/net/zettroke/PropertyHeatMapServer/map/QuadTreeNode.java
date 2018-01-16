@@ -242,7 +242,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     QuadTreeNode se;
     public ArrayList<MapShape> shapes = new ArrayList<>();
     ArrayList<Node> nodes = new ArrayList<>();
-    ArrayList<RoadGraphNode> roadGraphNodes = new ArrayList<>();
+    public ArrayList<RoadGraphNode> roadGraphNodes = new ArrayList<>();
 
     public QuadTreeNode(int[] bounds){
         this.bounds = bounds;

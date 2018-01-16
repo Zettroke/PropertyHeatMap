@@ -319,4 +319,31 @@ public class QuadTree {
         }
     }
 
+    public void fillTreeNodeWithRoadGraphNodes(QuadTreeNode n){
+        MapPoint p0 = new MapPoint(n.bounds[0], n.bounds[1]), p1 = new MapPoint(n.bounds[2], n.bounds[1]), p2 = new MapPoint(n.bounds[2], n.bounds[3]), p3 = new MapPoint(n.bounds[0], n.bounds[3]);
+        QuadTreeNode treeNode = getEndNode(new MapPoint(n.bounds[0], n.bounds[1]));
+        while (treeNode.parent != null){
+            if (treeNode.inBounds(p0)&&treeNode.inBounds(p1)&&treeNode.inBounds(p2)&&treeNode.inBounds(p3)){
+                break;
+            }else{
+                treeNode = treeNode.parent;
+            }
+        }
+
+        rec_add_rgn_from_nodes_to_node(n, treeNode);
+    }
+
+    private void rec_add_rgn_from_nodes_to_node(QuadTreeNode res, QuadTreeNode source){
+        if (!source.isEndNode){
+            for (QuadTreeNode node: source){
+                rec_add_rgn_from_nodes_to_node(res, node);
+            }
+        }else{
+            for (RoadGraphNode rgn: source.roadGraphNodes){
+                res.add(rgn);
+
+            }
+        }
+    }
+
 }

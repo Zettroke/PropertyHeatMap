@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 public class RoadGraphNode {
+    public int index;
     public Node n;
     public int dist = Integer.MAX_VALUE;
     public RoadGraphNode[] ref_to;
@@ -12,11 +13,12 @@ public class RoadGraphNode {
     public HashSet<String> road_types = new HashSet<>();
     public HashSet<RoadType> types = new HashSet<>();
     public ArrayList<RoadType> ref_types = new ArrayList<>();
-    public boolean visited = false;
+    public ThreadLocal<Boolean> visited = new ThreadLocal<>();
 
     RoadGraphNode(Node n){
         this.n = n;
         n.isRoadNode = true;
+        visited.set(false);
     }
 
     public void addWay(Way way){
