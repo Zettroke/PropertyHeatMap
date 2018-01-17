@@ -562,7 +562,11 @@ public class PropertyMap {
                         distances.add(rgn_distances.get(i).get(j));
                     }
                 }
-                curr_node.distances = distances.toArray(new Integer[distances.size()]);
+                int[] distarr = new int[distances.size()];
+                for (int i1=0; i1<distances.size(); i1++){
+                    distarr[i1] = distances.get(i1);
+                }
+                curr_node.distances = distarr;
                 curr_node.ref_to = ref_to.toArray(new RoadGraphNode[ref_to.size()]);
                 distances.clear();
                 ref_to.clear();
@@ -619,9 +623,8 @@ public class PropertyMap {
         }
     }
 
-    // 10 times faster *-*
+
     void widthRecCalculateDistance(RoadGraphNode[] src, RoadGraphNode[] dest, final int max_dist){
-        int max_consuption = 0;
         RoadGraphNode[] temp;
         RoadGraphNode rgn, to;
         int dist_to;
@@ -642,15 +645,11 @@ public class PropertyMap {
                 }
             }
             src_size = dest_ind;
-            if (src_size > max_consuption){
-                max_consuption = src_size;
-            }
             dest_ind = 0;
             temp = src;
             src = dest;
             dest = temp;
         }
-        System.out.println("Max array usage - " + max_consuption);
     }
 
 }

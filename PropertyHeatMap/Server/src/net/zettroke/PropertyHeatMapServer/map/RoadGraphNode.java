@@ -9,7 +9,7 @@ public class RoadGraphNode {
     public Node n;
     public int dist = Integer.MAX_VALUE;
     public RoadGraphNode[] ref_to;
-    public Integer[] distances;
+    public int[] distances;
     public HashSet<String> road_types = new HashSet<>();
     public HashSet<RoadType> types = new HashSet<>();
     public ArrayList<RoadType> ref_types = new ArrayList<>();
