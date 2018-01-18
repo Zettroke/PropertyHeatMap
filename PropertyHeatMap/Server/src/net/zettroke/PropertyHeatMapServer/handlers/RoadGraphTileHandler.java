@@ -50,6 +50,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         int y = Integer.decode(decoder.parameters().get("y").get(0));
         long start_id = Long.decode(decoder.parameters().get("start_id").get(0));
         int max_dist =  Integer.decode(decoder.parameters().get("max_dist").get(0));
+        boolean foot = Boolean.parseBoolean(decoder.parameters().get("foot").get(0));
         //System.out.println("Id - " + id + " Thread - " + Thread.currentThread().getName());
 
         coefficent = 1.0/mult;
@@ -58,8 +59,6 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         //QuadTreeNode treeNode = new QuadTreeNode(new int[]{(x)*mult*256, (y)*mult*256, (x+1)*mult*256, (y+1)*mult*256});
         //QuadTreeNode treeNode = propertyMap.tree.root;
         BufferedImage imageTemp = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
-
-        boolean foot = true;
 
         Graphics2D g = (Graphics2D) imageTemp.getGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -79,7 +78,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                 global_rgn_lock.unlock();
 
                 long start = System.nanoTime();
-                graph = propertyMap.getCalculatedRoadGraph(start_id, true, max_dist);
+                graph = propertyMap.getCalculatedRoadGraph(start_id, foot, max_dist);
                 CalculatedGraphCache.store(start_id, foot, max_dist, graph);
                 System.out.println("Graph Calculated in " + ((System.nanoTime()-start) / 1000000.0) + "millis.");
                 lck.unlock();
@@ -160,7 +159,11 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                                 dont_draw = true;
                                 break;
                             default:
-                                g.setStroke(unknown_stroke);
+                                if (z > 14) {
+                                    g.setStroke(unknown_stroke);
+                                }else{
+                                    dont_draw = true;
+                                }
                                 break;
                         }
                         if (!dont_draw) {
@@ -182,7 +185,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
 
         Graphics2D g2 = (Graphics2D)image.getGraphics();
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.75f));
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.85f));
         g2.drawImage(imageTemp, 0, 0, null);
 
         ImageIO.write(image, "png", out);

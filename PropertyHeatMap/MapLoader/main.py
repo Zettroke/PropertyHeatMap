@@ -1,12 +1,13 @@
 from multiprocessing import Process
 import requests
 import math
+import os
 
 # from 10 to 17 zoom
-UPDATE = False
-PROC_NUM = 2
+UPDATE = True
+PROC_NUM = 1
 
-map_folder = "C:/PropertyHeatMap/osm_map_full_moscow/"
+map_folder = "C:/PropertyHeatMap/osm_map_full_moscow_test2/"
 
 zoom_start = 10
 zoom_end = 17
@@ -19,7 +20,9 @@ def mercator(lat, lon, z):
 
 def tiles_loader(ind, server, bounds, exclude):
     # url = "http://" + server + ".maps.yandex.net/tiles?l=map&v=17.10.01-0&x={}&y={}&z={}&scale=1&lang=ru_RU"
-    url = "http://" + server + ".tile.openstreetmap.org/{z}/{x}/{y}.png"
+    # url = "http://" + server + ".tile.openstreetmap.org/{z}/{x}/{y}.png"
+    #url = "https://" + server + ".tiles.mapbox.com/v4/mapquest.streets-mb/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwcXVlc3QiLCJhIjoiY2Q2N2RlMmNhY2NiZTRkMzlmZjJmZDk0NWU0ZGJlNTMifQ.mPRiEubbajc6a5y9ISgydg"
+    url = "https://" + server + ".tiles.mapbox.com/v3/foursquare.qhb8olxr/{z}/{x}/{y}.png"
     tmp = mercator(bounds[0], bounds[1], zoom_start)
     offset_tile_x, offset_tile_y = round(tmp[0]), round(tmp[1])
     tmp = mercator(bounds[2], bounds[3], zoom_start)
@@ -27,6 +30,11 @@ def tiles_loader(ind, server, bounds, exclude):
 
     for z in range(zoom_start, zoom_end+1):
         if z not in exclude:
+            excl2 = set()
+            for i in os.listdir(map_folder + "z" + str(z)):
+                x, y = map(int, i.split(".")[:2])
+                excl2.add((x, y))
+
             m = 2**(z-zoom_start)
             m_tiles_x = tiles_x*m
             m_tiles_y = tiles_y*m
@@ -47,18 +55,21 @@ def tiles_loader(ind, server, bounds, exclude):
                 x = i // m_tiles_y
                 y = i % m_tiles_y
                 while True:
-                    try:
-                        r = requests.get(url.format(x=m_offset_tile_x+x, y=m_offset_tile_y+y, z=z), headers={
-                            "Connection": "keep-alive",
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.59 Safari/537.36",
-                            "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
-                            "DNT": "1",
-                            "Referer": "http://www.openstreetmap.org/",
-                            "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"})
-                        open(map_folder + zoom_folder +"{}.{}.png".format(x, y), "wb").write(r.content)
+                    if (x, y) not in excl2:
+                        try:
+                            r = requests.get(url.format(x=m_offset_tile_x+x, y=m_offset_tile_y+y, z=z), headers={
+                                "Connection": "keep-alive",
+                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.59 Safari/537.36",
+                                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+                                "DNT": "1",
+                                "Referer": "http://www.openstreetmap.org/",
+                                "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"})
+                            open(map_folder + zoom_folder + "{}.{}.png".format(x, y), "wb").write(r.content)
+                            break
+                        except Exception as e:
+                            print(e)
+                    else:
                         break
-                    except Exception:
-                        pass
 
                 # print("Process {}: done".format(ind), "{}.{}.png".format(x, y))
 
@@ -79,7 +90,8 @@ if __name__ == '__main__':
     bounds = [start_x, start_y, end_x, end_y]
 
     # servers = ["vec01", "vec02", "vec03", "vec04"]*max((PROC_NUM//4), 1)
-    servers = ["a", "b", "c"]*max((PROC_NUM//3), 1)
+    servers = ["a", "b", "c", "d"]
+    servers = servers*max((PROC_NUM//len(servers)), 1)
     import os
     exclude = []
     for i in range(zoom_start, zoom_end+1):

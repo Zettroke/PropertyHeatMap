@@ -64,6 +64,7 @@ public class MapPointSearchHandler implements ShittyHttpHandler {
             JsonArray arr = new JsonArray();
             arr.add(Jsonizer.toJson(w, true));
             answer.add("objects", arr);
+
         }else{
             answer.add("status", "not found");
         }

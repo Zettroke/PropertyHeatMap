@@ -9,7 +9,7 @@ import java.util.*;
  * Created by Zettroke on 19.10.2017.
  */
 public class QuadTree {
-    static int THRESHOLD = 2000;
+    static int THRESHOLD = 5000;
 
 
     public QuadTreeNode root;
@@ -153,8 +153,8 @@ public class QuadTree {
     List<RoadGraphNode> findRoadGraphNodesInCircle(MapPoint center, int radius){
         QuadTreeNode treeNode = getEndNode(center);
         while (true){
-            if (center.x - treeNode.bounds[0] > radius && treeNode.bounds[2] - center.x > radius &&
-                    center.y - treeNode.bounds[1] > radius && treeNode.bounds[3] - center.y > radius){
+            if (Math.abs(center.x - treeNode.bounds[0]) > radius && Math.abs(treeNode.bounds[2] - center.x) > radius &&
+                    Math.abs(center.y - treeNode.bounds[1]) > radius && Math.abs(treeNode.bounds[3] - center.y) > radius){
                 break;
             }else {
                 if (treeNode.parent != null){
@@ -189,7 +189,7 @@ public class QuadTree {
     private void rec_circle_rgn_nodes_search(QuadTreeNode treeNode, ArrayList<RoadGraphNode> res, MapPoint center, int radius){
         if (treeNode.isEndNode){
             for (RoadGraphNode rgn: treeNode.roadGraphNodes){
-                if ((rgn.n.x-center.x)*(rgn.n.x-center.x) + (rgn.n.y-center.y)*(rgn.n.y-center.y) <= radius*radius){
+                if ((rgn.n.x-center.x)*(long)(rgn.n.x-center.x) + (rgn.n.y-center.y)*(long)(rgn.n.y-center.y) <= radius*radius){
                     res.add(rgn);
                 }
             }
@@ -255,13 +255,13 @@ public class QuadTree {
                 double B = p2.x-p1.x;
                 if (A == 0) {
                     if (center.y < Math.max(p1.y, p2.y) && center.y > Math.min(p1.y, p2.y)) {
-                        if ((p1.y - center.y) * (p1.y - center.y) <= radius * radius) {
+                        if ((p1.y - center.y) * (long)(p1.y - center.y) <= radius * radius) {
                             return true;
                         }
                     }
                 }else if (B == 0){
                     if (center.x < Math.max(p1.x, p2.x) && center.x > Math.min(p1.x, p2.x)) {
-                        if ((p1.x - center.x) * (p1.x - center.x) <= radius * radius) {
+                        if ((p1.x - center.x) * (long)(p1.x - center.x) <= radius * radius) {
                             return true;
                         }
                     }
@@ -274,7 +274,7 @@ public class QuadTree {
                     int y = (int)Math.round(k1*((b2-b1)/(k1-k2))+b1);
 
                     if (Math.max(p1.x, p2.x) > x && Math.min(p1.x, p2.x) < x && Math.max(p1.y, p2.y) > y && Math.min(p1.y, p2.y) < y) {
-                        if ((center.x-x)*(center.x-x)+(center.y-y)*(center.y-y) <= radius*radius){
+                        if ((center.x-x)*(long)(center.x-x)+(center.y-y)*(long)(center.y-y) <= radius*(long)radius){
                             return true;
                         }
                     }

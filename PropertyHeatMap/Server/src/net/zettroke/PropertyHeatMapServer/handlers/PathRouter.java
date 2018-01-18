@@ -1,10 +1,6 @@
 package net.zettroke.PropertyHeatMapServer.handlers;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.FullHttpRequest;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
-import sun.reflect.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -351,8 +351,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }
         } else {
             this.roadGraphNodes.add(rgn);
-            this.items++;
-            if (this.items > QuadTree.THRESHOLD) {
+            if (this.roadGraphNodes.size() > QuadTree.THRESHOLD) {
                 this.split();
             }
         }
@@ -375,8 +374,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }
         } else {
             this.nodes.add(n);
-            this.items++;
-            if (this.items > QuadTree.THRESHOLD) {
+            if (this.nodes.size() > QuadTree.THRESHOLD) {
                 this.split();
             }
         }
@@ -1004,11 +1002,9 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     void add(final MapShape m){
         if (this.isEndNode){
             if (m.isPoly){
-                //TODO: Double version of poly clipping
                 addPoly_double(m);
             }else {
                 addRoad(m);
-                //shapes.add(m);
             }
         }else{
             nw.add(m);

@@ -33,31 +33,21 @@ class LoadTask:
         return id(self.place) * hash(self.key)
 
 
-class RefreshEvent(wx.PyEvent):
-    def __init__(self):
-        wx.PyEvent.__init__(self)
-        self.SetEventType(EVT_REFRESH)
-
-
 class Map(wx.Panel):
 
-    LocalNetwork = False
+    ip = "178.140.109.241"
+
+    base_server_url = "http://" + ip + "/"
+    map_tiles_url = "http://" + ip + "/image/z{z}/{x}.{y}.png"
+    price_tiles_url = "http://" + ip + "/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
+    road_tiles_url = "http://" + ip + "/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}&foot={foot}"
+    point_search_url = "http://" + ip + "/api/search/point?z={z}&x={x}&y={y}"
 
     def __init__(self, *args, **kwargs):
+        self.parent = kwargs["parent"]
+        del kwargs["parent"]
         super(Map, self).__init__(*args, **kwargs)
-        if self.LocalNetwork:
-            self.base_server_url = "http://127.0.0.1/"
-            self.map_tiles_url = "http://127.0.0.1/image/z{z}/{x}.{y}.png"
-            self.price_tiles_url = "http://127.0.0.1/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
-            self.road_tiles_url = "http://127.0.0.1/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}"
-            self.point_search_url = "http://127.0.0.1/api/search/point?z={z}&x={x}&y={y}"
-
-        else:
-            self.base_server_url = "http://178.140.109.241/"
-            self.map_tiles_url = "http://178.140.109.241/image/z{z}/{x}.{y}.png"
-            self.price_tiles_url = "http://178.140.109.241/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
-            self.road_tiles_url = "http://178.140.109.241/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}"
-            self.point_search_url = "http://178.140.109.241/api/search/point?z={z}&x={x}&y={y}"
+        
         self.tiles_dict = {}
 
         self.shapes_dict = {}
@@ -69,8 +59,12 @@ class Map(wx.Panel):
         self.price_tiles_dict = {}
         self.price_turn_on = False
 
+        self.price = 150000
+        self.p_range = 0.5
+
         self.road_tiles_dict = {}
         self.road_turn_on = False
+        self.foot = True
 
         self.current_id = 0
         self.buff = True
@@ -94,7 +88,7 @@ class Map(wx.Panel):
         self.bitmaps = {}
         self.pressed = False
         self.missing_image = wx.Bitmap.FromBuffer(256, 256, Image.new("RGB", (256, 256), 0xCCCCCC).tobytes())
-        self.zoom = 16
+        self.zoom = 10
         self.available_zoom_levels = tuple(map(int, requests.get(self.base_server_url + "image/zoom_levels").text.split()))
         self.bounds = tuple(map(int, requests.get(self.base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
         self.tile_queue = queue.PriorityQueue()
@@ -103,8 +97,7 @@ class Map(wx.Panel):
         self.need_refresh = True
         Thread(target=self.tile_loader, daemon=True, name="loader 1").start()
         Thread(target=self.tile_loader, daemon=True, name="loader 2").start()
-        Thread(target=self.tile_loader, daemon=True, name="loader 3").start()
-        # Thread(target=self.map_refresher, daemon=True, name="map_updater").start()
+        # Thread(target=self.tile_loader, daemon=True, name="loader 3").start()
 
     def my_refresh(self, event):
         # print(current_thread().getName())
@@ -123,10 +116,13 @@ class Map(wx.Panel):
                     max_x, max_y = max(max_x, p[0]), max(max_y, p[1])
                     min_x, min_y = min(min_x, p[0]), min(min_y, p[1])
 
-                self.shapes_dict[ans["objects"][0]["id"]] = ((min_x, min_y, max_x, max_y), ans["objects"][0]["points"])
+                self.shapes_dict.clear()
+                self.shapes_dict[ans["objects"][0]["id"]] = ([min_x, min_y, max_x, max_y], ans["objects"][0]["points"])
                 self.render_shapes_to_bitmaps()
-                self.current_id = ans["objects"][0]["id"]
                 self.road_turn_on = True
+                self.price_turn_on = False
+                self.update_all_bitmaps()
+                self.current_id = ans["objects"][0]["id"]
 
                 w, h = self.GetClientSize()
                 for x in range(self.map_x // 256 * 256, ((self.map_x + w) // 256 + 1) * 256, 256):
@@ -134,23 +130,37 @@ class Map(wx.Panel):
                         x2, y2 = x // 256, y // 256
                         dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
                         self.tile_queue.put(
-                            LoadTask(self.road_tiles_url, dist + 20000, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id, max_dist=mx_dist))
+                            LoadTask(self.road_tiles_url, dist + 20000, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id, max_dist=mx_dist, foot=self.foot))
+                data = ans["objects"][0]["data"]
+                self.parent.show_address(data["addr:street"] + ", " + data["addr:housenumber"])
+                wx.CallAfter(self.parent.price_turn_off)
 
+                if "apartments" in data.keys():
+                    wx.CallAfter(self.parent.show_apartments, data["apartments"])
+                    # self.data.show_apartments()
             else:
                 del self.shapes_dict[ans["objects"][0]["id"]]
-                del self.shapes_bitmaps[ans["objects"][0]["id"]]
+                # del self.shapes_bitmaps[ans["objects"][0]["id"]]
+
                 self.road_turn_on = False
                 self.road_tiles_dict.clear()
+                self.shapes_images.clear()
                 self.update_all_bitmaps()
+                self.parent.show_address("")
+
             self.Refresh()
 
     def render_shapes_to_bitmaps(self):
+        self.shapes_images.clear()
         for k, v in self.shapes_dict.items():
             AAmult = 4
             mult = 2 ** (self.server_zoom - self.zoom) // AAmult
             real_mult = 2 ** (self.server_zoom - self.zoom)
             bounds = v[0]
-
+            bounds[0] -= AAmult*2
+            bounds[1] -= AAmult*2
+            bounds[2] += AAmult*2
+            bounds[3] += AAmult*2
             shape = Image.new("RGBA", (bounds[2] - bounds[0], bounds[3] - bounds[1]), 0x00FFFFFF)
             draw = ImageDraw.ImageDraw(shape)
             x, y = v[1][0][0] // mult - bounds[0]//mult, v[1][0][1] // mult - bounds[1]//mult
@@ -161,9 +171,9 @@ class Map(wx.Panel):
                 poly.append(y1)
                 draw.line((x, y, x1, y1), fill=0xFF0000FF, width=round(AAmult*2))
                 x, y = x1, y1
-            draw.polygon(poly, fill=0x100000FF)
-            shape = shape.resize((shape.size[0] // AAmult, shape.size[1] // AAmult), Image.BICUBIC)
-            self.shapes_bitmaps[k] = wx.Bitmap.FromBufferRGBA(shape.size[0], shape.size[1], shape.tobytes())
+            draw.polygon(poly, fill=0x550000FF)
+            shape = shape.resize((shape.size[0] // AAmult, shape.size[1] // AAmult), Image.ANTIALIAS)
+            # self.shapes_bitmaps[k] = wx.Bitmap.FromBufferRGBA(shape.size[0], shape.size[1], shape.tobytes())
             for x in range(v[0][0]//real_mult//256, v[0][2]//real_mult//256+1):
                 for y in range(v[0][1]//real_mult//256, v[0][3]//real_mult//256+1):
                     self.shapes_images[(x, y)] = ((v[0][0]//real_mult, v[0][1]//real_mult), shape)
@@ -251,16 +261,14 @@ class Map(wx.Panel):
         for x in range(self.map_x // 256 * 256, ((self.map_x + w) // 256 + 1) * 256, 256):
             for y in range(self.map_y // 256 * 256, ((self.map_y + h) // 256 + 1) * 256, 256):
                 self.bitmaps_to_update.add((x // 256, y // 256))
-        self.Refresh(False)
+        self.Refresh()
 
     def on_paint(self, event):
-
-        # print(current_thread().getName())
         w, h = self.GetClientSize()
-        dc = wx.BufferedPaintDC(self)
+        dc = wx.AutoBufferedPaintDC(self)
 
         dc.Clear()
-        dc.DestroyClippingRegion()
+        # dc.DestroyClippingRegion()
         for x in range(self.map_x//256*256, ((self.map_x+w)//256+1)*256, 256):
             for y in range(self.map_y//256*256, ((self.map_y+h)//256+1)*256, 256):
                 x2, y2 = x//256, y//256
@@ -268,19 +276,24 @@ class Map(wx.Panel):
                     if (x2, y2) in self.bitmaps.keys():
                         if (x2, y2) in self.bitmaps_to_update:
                             if (x2, y2) in self.tiles_dict.keys():
-                                image_base = self.tiles_dict[(x2, y2)]
+                                image_base = self.tiles_dict[(x2, y2)].copy()
                                 if self.price_turn_on:
                                     if (x2, y2) in self.price_tiles_dict.keys():
                                         image_base = Image.alpha_composite(image_base, self.price_tiles_dict[(x2, y2)])
                                 if self.road_turn_on:
                                     if (x2, y2) in self.road_tiles_dict.keys():
                                         image_base = Image.alpha_composite(image_base, self.road_tiles_dict[(x2, y2)])
-                                '''if (x2, y2) in self.shapes_images.keys():
+                                if (x2, y2) in self.shapes_images.keys():
                                     x3 = self.shapes_images[(x2, y2)][0][0] - x2*256
                                     y3 = self.shapes_images[(x2, y2)][0][1] - y2*256
-                                    if x3 < 0 or y3 < 0:
-                                        print()
-                                    image_base.alpha_composite(self.shapes_images[(x2, y2)][1], (x3, y3))'''
+                                    img = self.shapes_images[(x2, y2)][1]
+                                    wi = img.size[0]
+                                    hi = img.size[1]
+                                    if x3 > 0 and y3 > 0:
+                                        image_base.alpha_composite(img, (x3, y3))
+                                    else:
+                                        to_compose = img.crop((x2*256-self.shapes_images[(x2, y2)][0][0], y2*256-self.shapes_images[(x2, y2)][0][1], wi, hi))
+                                        image_base.alpha_composite(to_compose, (0, 0))
 
                                 self.bitmaps[(x2, y2)] = wx.Bitmap.FromBufferRGBA(256, 256, image_base.tobytes())
                                 self.bitmaps_to_update.remove((x2, y2))
@@ -292,12 +305,12 @@ class Map(wx.Panel):
                         self.already_updated_bitmaps.add((x2, y2))
                         if self.price_turn_on:
                             self.tile_queue.put(
-                                LoadTask(self.price_tiles_url, dist + 1, (x2, y2), self.price_tiles_dict, x=x2, y=y2, z=self.zoom, price=150000,
-                                         range=0.5))
+                                LoadTask(self.price_tiles_url, dist + 1, (x2, y2), self.price_tiles_dict, x=x2, y=y2, z=self.zoom, price=self.price,
+                                         range=self.p_range))
                         if self.road_turn_on:
                             self.tile_queue.put(
                                 LoadTask(self.road_tiles_url, dist + 20000, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id,
-                                         max_dist=mx_dist))
+                                         max_dist=mx_dist, foot=self.foot))
                 else:
                     self.bitmaps[(x // 256, y // 256)] = self.missing_image
 
@@ -340,16 +353,44 @@ class Map(wx.Panel):
         self.map_y = round(obj["result"]["center"][1] / mult) - self.GetSize()[1]//2
         self.Refresh()
 
+    def turn_on_price(self):
+        self.price_turn_on = True
+        self.bitmaps.clear()
+        self.Refresh()
 
-class DataView(wx.ScrolledWindow):
-    def __init__(self, parent):
-        super().__init__(parent)
+    def turn_off_price(self):
+        self.price_turn_on = False
+        self.update_all_bitmaps()
+        self.price_tiles_dict.clear()
+        self.Refresh()
 
-    def view_info(self, json_string):
-        pass
 
-    def on_resize(self, event):
-        pass
+class Completer(wx.TextCompleterSimple):
+
+    def __init__(self, app):
+        wx.TextCompleterSimple.__init__(self)
+        self.s = []
+        self.ind = 0
+        self.app = app
+
+    def GetCompletions(self, prefix, res):
+        print("Completion for", prefix)
+
+    def Start(self, prefix):
+        print("Completion for", prefix)
+        self.ind = 0
+        s = self.app.search_entry.GetValue()
+        resp = requests.get("http://127.0.0.1/api/search/predict?text={}&suggestions=10".format(s)).text
+        ans = json.loads(resp)
+        self.s = ans["suggestions"]
+        return True
+
+    def GetNext(self):
+        if self.ind < len(self.s):
+            self.ind += 1
+            return self.s[self.ind - 1]
+        else:
+            return ""
 
 
 class PropertyHeatMap(wx.Frame):
@@ -360,84 +401,88 @@ class PropertyHeatMap(wx.Frame):
         self.SetTitle('PropertyHeatMap')
 
         self.Center()
-        self.map = Map(self.panel)
+        self.map = Map(self.panel, parent=self)
 
-        sc = wx.ScrolledWindow(self.panel, size=(300, 100))
+        self.sc = wx.ScrolledWindow(self.panel, size=(300, 100))
 
-        sc.SetScrollbars(1, 1, 1, 2000)
-        sc.SetScrollRate(5, 5)
-        sc.Bind(wx.EVT_SIZE, self.size)
-        p = wx.Panel(sc, pos=(0, 0), size=(1, 2000))
+        self.sc.SetScrollbars(1, 1, 1, 2000)
+        self.sc.SetScrollRate(5, 5)
+        self.p = wx.Panel(self.sc, pos=(0, 0), size=(1, 2000))
         pbx = wx.BoxSizer()
-        pbx.Add(p, 1, wx.ALL|wx.EXPAND)
-        sc.SetSizer(pbx)
-        p.SetBackgroundColour(wx.Colour(255, 255, 255))
+        pbx.Add(self.p, 1, wx.ALL|wx.EXPAND)
+        self.sc.SetSizer(pbx)
+        self.p.SetBackgroundColour(wx.Colour(235, 235, 235))
 
-        line = wx.StaticLine(p, size=(1, 2000))
+        line = wx.StaticLine(self.p, size=(1, 5000))
 
         self.box_sizer.Add(self.map, 9, wx.ALL | wx.EXPAND)
-        self.box_sizer.Add(sc, 2, wx.ALL | wx.EXPAND)
+        self.box_sizer.Add(self.sc, 2, wx.ALL | wx.EXPAND)
 
         self.Bind(wx.EVT_CLOSE, self.on_close)
         another_sizer = wx.BoxSizer(wx.VERTICAL)
         search_sizer = wx.BoxSizer()
-        another_sizer.AddSpacer(25)
-        another_sizer.Add(search_sizer, 1, wx.ALL|wx.EXPAND)
+        another_sizer.AddSpacer(5)
+        another_sizer.Add(search_sizer, 0, wx.ALL|wx.EXPAND)
 
-        self.search_entry = wx.TextCtrl(p, pos=(0, 0), size=(100, 25), style=wx.TE_PROCESS_ENTER)
+        self.search_entry = wx.TextCtrl(self.p, pos=(0, 0), size=(100, 25), style=wx.TE_PROCESS_ENTER)
 
-        class Completer(wx.TextCompleterSimple):
-
-            def __init__(self, app):
-                wx.TextCompleterSimple.__init__(self)
-                self.s = []
-                self.ind = 0
-                self.app = app
-
-            def GetCompletions(self, prefix, res):
-
-                print("Completion for", prefix)
-
-            def Start(self, prefix):
-                print("Completion for", prefix)
-                self.ind = 0
-                s = self.app.search_entry.GetValue()
-                resp = requests.get("http://127.0.0.1/api/search/predict?text={}&suggestions=10".format(s)).text
-                ans = json.loads(resp)
-                self.s = ans["suggestions"]
-                return True
-
-            def GetNext(self):
-                if self.ind < len(self.s):
-                    self.ind += 1
-                    return self.s[self.ind-1]
-                else:
-                    return ""
+        
         # self.tx.Bind(wx.EVT_TEXT, text_update)
         self.search_entry.AutoComplete(Completer(self))
 
-        def fuck(event):
-            if event.KeyCode == 13:
-                Thread(target=self.find, daemon=True).start()
-                self.search_entry.SelectNone()
-                self.search_entry.SetInsertionPointEnd()
-                self.map.SetFocus()
-            event.Skip()
-
-        self.search_entry.Bind(wx.EVT_KEY_DOWN, fuck)
-
+        self.search_entry.Bind(wx.EVT_KEY_DOWN, self.enter)
+        
         search_sizer.Add(self.search_entry, 1, wx.ALIGN_RIGHT|wx.LEFT, 5)
-        search_sizer.Add(wx.Button(p, size=(50, 25), label="Поиск"), 0, wx.ALIGN_RIGHT|wx.LEFT, 2)
+
+        line1 = wx.StaticLine(self.p, size=(300, 2), style=wx.LI_VERTICAL)
+        another_sizer.Add(line1, 0, wx.TOP | wx.BOTTOM | wx.EXPAND, 5)
+        search_sizer.Add(wx.Button(self.p, size=(50, 25), label="Поиск"), 0, wx.ALIGN_RIGHT|wx.LEFT, 2)
         self.search_entry.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
-        p.SetSizer(another_sizer)
+        # another_sizer.AddSpacer(5)
+
+        price_choose_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.price = wx.TextCtrl(self.p)
+        self.price.SetLabel(str(self.map.price))
+        self.p_range = wx.TextCtrl(self.p, size=(50, 25))
+        self.p_range.SetLabel(str(round(self.map.p_range * 100)) + "%")
+        price_choose_sizer.Add(wx.StaticText(self.p, label="Цена "), 0, wx.EXPAND | wx.TOP, 5)
+        price_choose_sizer.Add(self.price, 10, wx.EXPAND | wx.RIGHT, 2)
+
+        price_choose_sizer.Add(wx.StaticText(self.p, label="Диапозон "), 0, wx.EXPAND | wx.TOP, 5)
+        price_choose_sizer.Add(self.p_range, 1, wx.EXPAND | wx.ALL)
+
+        another_sizer.Add(price_choose_sizer, 0, wx.LEFT | wx.BOTTOM, 4)
+
+        self.button = wx.Button(self.p, label="Включить")
+        self.button.Bind(wx.EVT_BUTTON, self.price_turn_on)
+
+        another_sizer.Add(self.button, 0, wx.ALIGN_CENTER)
+        rbox = wx.RadioBox(self.p, style=wx.RA_SPECIFY_COLS, majorDimension=2, choices=["Пешком", "Машина"])
+        rbox.Bind(wx.EVT_RADIOBOX, self.foot_change)
+        another_sizer.Add(rbox, 0, wx.ALIGN_CENTER)
+
+        self.choose_text = wx.StaticText(self.p, label="Выбрано: ", pos=(1, 1))
+        self.choose_text.SetFont(wx.Font(10, wx.FONTFAMILY_DECORATIVE, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        line2 = wx.StaticLine(self.p, size=(350, 2), style=wx.LI_VERTICAL)
+        another_sizer.Add(line2, 0, wx.TOP|wx.BOTTOM|wx.EXPAND, 5)
+        another_sizer.Add(self.choose_text, 0, wx.LEFT|wx.EXPAND, 5)
+        another_sizer.AddSpacer(4)
+        self.apartments_panel = wx.Panel(self.p)
+        self.apartments_panel.SetBackgroundColour(wx.Colour(255, 255, 255))
+        self.apart_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.apartments_panel.SetSizer(self.apart_sizer)
+        # tx = wx.StaticText(self.apartments_panel, label="dsa;lkdlas", pos=(0, 0))
+
+        another_sizer.Add(self.apartments_panel, 1, wx.EXPAND|wx.LEFT, 1)
+
+        self.p.SetSizer(another_sizer)
         self.panel.SetSizer(self.box_sizer)
-        self.SetClientSize((750, 500))
+        self.SetClientSize((900, 500))
+        self.to_remove = []
 
     def on_close(self, event):
         self.Destroy()
-
-    def size(self, event):
-        print("sizing")
         
     def find(self):
         print("finding")
@@ -445,6 +490,82 @@ class PropertyHeatMap(wx.Frame):
         ans = json.loads(requests.get("http://127.0.0.1/api/search/string?text={}".format(s)).text)
         if ans["status"] == "found":
             self.map.center_on(ans)
+
+    def enter(self, event):
+        if event.KeyCode == 13:
+            Thread(target=self.find, daemon=True).start()
+            self.search_entry.SelectNone()
+            self.search_entry.SetInsertionPointEnd()
+            self.map.SetFocus()
+        event.Skip()
+
+    def show_address(self, addr):
+        self.choose_text.SetLabelText("Выбрано: " + addr)
+
+    def show_apartments(self, aparts):
+        # self.apart_sizer = wx.BoxSizer(wx.VERTICAL)
+        # self.apartments_panel.SetSizer(self.apart_sizer)
+        for i in range(self.apart_sizer.GetItemCount()):
+            self.apart_sizer.Remove(0)
+
+        for w in self.to_remove:
+            try:
+                w.Destroy()
+            except Exception:
+                pass
+        for ind in range(len(aparts)):
+            data = aparts[ind]["full data"]
+            curr_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            column1_sizer = wx.BoxSizer(wx.VERTICAL)
+
+            for w in ("Адрес", "url", "coords"):
+                if w in data.keys():
+                    del data[w]
+            for k in data.keys():
+
+                tx1 = wx.StaticText(self.apartments_panel, pos=(0, 0), label=str(k) + ":")
+                tx1.SetFont(wx.Font(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False)))
+                column1_sizer.Add(tx1, 1, wx.EXPAND|wx.ALIGN_LEFT|wx.LEFT, 5)
+                self.to_remove.append(tx1)
+
+            curr_sizer.Add(column1_sizer, 0)
+            column2_sizer = wx.BoxSizer(wx.VERTICAL)
+            for v in data.values():
+                if not v:
+                    v = "-"
+                tx2 = wx.StaticText(self.apartments_panel, pos=(0, 0), label=str(v))
+                tx2.SetFont(wx.Font(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False)))
+                column2_sizer.Add(tx2, 1, wx.EXPAND | wx.ALIGN_RIGHT | wx.LEFT, 5)
+                self.to_remove.append(tx2)
+
+            curr_sizer.Add(column2_sizer, 0)
+            self.apart_sizer.Add(curr_sizer, 0)
+            line = wx.StaticLine(self.apartments_panel, size=(300, 5))
+            self.apart_sizer.Add(line, 0, wx.TOP|wx.BOTTOM, 5)
+            self.to_remove.append(line)
+            self.apart_sizer.Layout()
+        size = self.apart_sizer.GetMinSize()
+        self.p.SetSize((300, size.Height+50))
+        self.sc.SetScrollbars(1, 1, 1, size.Height+50)
+        self.sc.Layout()
+
+    def price_turn_on(self, event=None):
+        self.button.SetLabel("Отключить")
+        self.button.Bind(wx.EVT_BUTTON, self.price_turn_off)
+        self.map.price = int(self.price.GetValue())
+        self.map.p_range = int(self.p_range.GetValue()[:-1])/100
+        self.map.turn_on_price()
+
+    def price_turn_off(self, event=None):
+        self.button.SetLabel("Включить")
+        self.button.Bind(wx.EVT_BUTTON, self.price_turn_on)
+        self.map.turn_off_price()
+
+    def foot_change(self, event):
+        if event.String == "Пешком":
+            self.map.foot = True
+        else:
+            self.map.foot = False
 
 
 def main():

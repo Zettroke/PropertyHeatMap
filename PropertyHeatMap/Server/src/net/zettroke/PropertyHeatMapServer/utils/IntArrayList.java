@@ -10,6 +10,9 @@ public class IntArrayList {
     private int size = 0;
 
     public void add(int i){
+        if (size > 10000){
+            //System.out.println();
+        }
         if (size < container.length){
             container[size] = i;
         }else{
@@ -25,6 +28,10 @@ public class IntArrayList {
             newSize = minSize;
         }
         container = Arrays.copyOf(container, newSize);
+    }
+
+    public void shrink(){
+        container = Arrays.copyOf(container, size);
     }
 
     public int size(){

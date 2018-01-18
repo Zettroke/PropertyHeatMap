@@ -9,6 +9,7 @@ import net.zettroke.PropertyHeatMapServer.utils.IntArrayList;
 import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.List;
 
@@ -116,12 +117,16 @@ public class PropertyMap {
                     t.add(rgn);
                 }
             }
-            //System.out.println(getName() + " Done with nodes!");
+            System.out.println(getName() + " Done with nodes!");
+            int cnt = 0;
             for (Way w: ways.values()){
                 if (w.data.containsKey("building") || w.data.containsKey("highway")){// || ways.get(i).data.containsKey("railway")) {
                     t.add(new MapShape(w));
                 }
-
+                cnt++;
+                if ((cnt +1) % 10000 == 0){
+                   System.out.println(getName() + ": Shape done " + cnt/(double)ways.values().size()*100);
+                }
             }
         }
     }
@@ -148,18 +153,30 @@ public class PropertyMap {
         start = System.nanoTime();
         public_transport_init();
         System.out.println("Public transport init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
+        for (IntArrayList iar: roadGraphConnections){
+            iar.shrink();
+        }
+        for (IntArrayList iar: roadGraphDistancesCar){
+            iar.shrink();
+        }
+        for (IntArrayList iar: roadGraphDistancesFoot){
+            iar.shrink();
+        }
         System.gc();
     }
 
-    void public_transport_init(){
+    private void public_transport_init(){
+        int cnt = 0;
+        System.out.println(relations.size());
         for (Relation rel: relations){
+            cnt++;
+            if ((cnt+1)%10000 == 0){
+                System.out.println("public transport " + cnt/(double)relations.size());
+            }
             if (rel.data.containsKey("route_master") && supportedRoutes.contains(rel.data.get("route_master"))){
-                if (rel.id == 1472548){
-                    System.out.println();
-                }
                 Relation r = null;// = rel.relations.get(0);// should be with max id
                 for (int i=0; i<rel.relations.size(); i++){
-                    if (rel.relations.get(i) != null){
+                    if (rel.relations.get(i) != null && rel.relations.get(i).data.containsKey("route")){
                         r = rel.relations.get(i);
                         break;
                     }
@@ -377,28 +394,18 @@ public class PropertyMap {
 
 
                             rgn_to_connect_indexes.add(ind);
-                            /*List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(rgn.n, 300); // 300 radius ~ 50m.
-                            for (RoadGraphNode toConnect: nodes){
-                                toConnect.types.add(roadType);
-                                roadGraphConnections.get(ind).add(roadGraphIndexes.get(toConnect.n.id));
-                                roadGraphConnections.get(roadGraphIndexes.get(toConnect.n.id)).add(ind);
-                                roadGraphConnectionsTypes.get(ind).add(roadType);
-                                roadGraphConnectionsTypes.get(roadGraphIndexes.get(toConnect.n.id)).add(roadType);
-                                dist = Math.round(calculateDistance(rgn.n, toConnect.n)/divider);
-                                roadGraphDistancesFoot.get(ind).add(dist);
-                                roadGraphDistancesFoot.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
-                                roadGraphDistancesCar.get(ind).add(dist);
-                                roadGraphDistancesCar.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
-                            }*/
                             prev_stop = rgn;
                             dist = 0;
                         }
                     }
                     prev_simple_node = way.nodes.get(i);
                 }
+                //ArrayList<IntArrayList> to_shrink = new ArrayList<>();
                 for (int ind: rgn_to_connect_indexes){
                     RoadGraphNode rgn = roadGraphNodes.get(ind);
-                    List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(roadGraphNodes.get(ind).n, 300);
+                    List<RoadGraphNode> nodes = findRoadGraphNodesInCircle(roadGraphNodes.get(ind).n, 100);
+                    //to_shrink.add(roadGraphDistancesCar.get(ind));
+                    //to_shrink.add( roadGraphDistancesFoot.get(ind));
                     for (RoadGraphNode toConnect: nodes){
                         toConnect.types.add(roadType);
                         roadGraphConnections.get(ind).add(roadGraphIndexes.get(toConnect.n.id));
@@ -410,18 +417,26 @@ public class PropertyMap {
                         roadGraphDistancesFoot.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
                         roadGraphDistancesCar.get(ind).add(dist);
                         roadGraphDistancesCar.get(roadGraphIndexes.get(toConnect.n.id)).add(dist);
+                        //to_shrink.add(roadGraphDistancesCar.get(roadGraphIndexes.get(toConnect.n.id)));
+
+                        //to_shrink.add(roadGraphDistancesFoot.get(roadGraphIndexes.get(toConnect.n.id)));
+
                     }
                 }
+
             }
         }
     }
 
-    void load_prices(){
+    private void load_prices(){
+        HashMap<String, String> deduplicator = new HashMap<>();
         int counter = 0;
         try {
             System.out.println("Loading prices...");
             BufferedReader reader = new BufferedReader(new FileReader("data_json"));
             String line = reader.readLine();
+            Field f = JsonObject.Member.class.getDeclaredField("name");
+            f.setAccessible(true);
             while (line != null) {
 
                 JsonObject jsonObject = Json.parse(line).asObject();
@@ -465,7 +480,15 @@ public class PropertyMap {
                             price = (int) pricel;
                         }
 
-                        way.apartments.add(new Apartment(price, area, Integer.parseInt(floors_string[0]), Integer.parseInt(floors_string[1])));
+                        //jsonObject optimize
+                        for (JsonObject.Member mem: jsonObject){
+                            if (deduplicator.containsKey(mem.getName())){
+                                f.set(mem, deduplicator.get(mem.getName()));
+                            }else{
+                                deduplicator.put(mem.getName(), mem.getName());
+                            }
+                        }
+                        way.apartments.add(new Apartment(price, area, Integer.parseInt(floors_string[0]), Integer.parseInt(floors_string[1]), jsonObject));
 
                         /*if ((int) Math.round(price / area) < 10000000) {
 
@@ -544,12 +567,17 @@ public class PropertyMap {
         HashMap<Long, RoadGraphNode> res = new HashMap<>();
         int cnt = 0;
         for (RoadGraphNode rgn: roadGraphNodes){
-            if (!(rgn.types.size() + rgn.road_types.size() == 1 && (rgn.types.iterator().hasNext() && exclude.contains(rgn.types.iterator().next())))){// || rgn.types.contains(RoadType.LIVING_STREET)))) {
-                RoadGraphNode clone = rgn.clone();
-                clone.index = cnt++;
-                res.put(rgn.n.id, clone);
+            for (RoadType t: rgn.types){
+                if (!exclude.contains(t)){
+                    RoadGraphNode clone = rgn.clone();
+                    clone.index = cnt++;
+                    res.put(rgn.n.id, clone);
+                    break;
+                }
             }
         }
+
+
         ArrayList<Integer> distances = new ArrayList<>(100);
         ArrayList<RoadGraphNode> ref_to = new ArrayList<>(100);
         for (int i=0; i<roadGraphNodes.size(); i++){
@@ -583,8 +611,13 @@ public class PropertyMap {
             for (Node n: nds){
                 if (n.isRoadNode){
                     if (res.keySet().contains(n.id)){
-                        start = n;
-                        found = true;
+                        for (RoadType type: res.get(n.id).types){
+                            if (!exclude.contains(type)){
+                                start = n;
+                                found = true;
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -609,20 +642,6 @@ public class PropertyMap {
 
         return res;
     }
-
-    void recCalculateDistances(RoadGraphNode rgn, final int max_dist){
-        for (int i=0; i<rgn.ref_to.length; i++){
-            RoadGraphNode to = rgn.ref_to[i];
-            int dist = rgn.distances[i];
-            if (rgn.dist + dist < to.dist){
-                to.dist = rgn.dist + dist;
-                if (to.dist <= max_dist) {
-                    recCalculateDistances(to, max_dist);
-                }
-            }
-        }
-    }
-
 
     void widthRecCalculateDistance(RoadGraphNode[] src, RoadGraphNode[] dest, final int max_dist){
         RoadGraphNode[] temp;
@@ -651,5 +670,20 @@ public class PropertyMap {
             dest = temp;
         }
     }
+    void recCalculateDistances(RoadGraphNode rgn, final int max_dist){
+        for (int i=0; i<rgn.ref_to.length; i++){
+            RoadGraphNode to = rgn.ref_to[i];
+            int dist = rgn.distances[i];
+            if (rgn.dist + dist < to.dist){
+                to.dist = rgn.dist + dist;
+                if (to.dist <= max_dist) {
+                    recCalculateDistances(to, max_dist);
+                }
+            }
+        }
+    }
+
+
+
 
 }

@@ -86,7 +86,7 @@ public class PriceTileHandler implements ShittyHttpHandler{
                             float color = (float) ((((price + price * range)-ap_price) / dist) * (24.0 / 36.0));
                             Color clr = Color.getHSBColor(color, 1.0f, 1.0f);
 
-                            g.setColor(new Color(clr.getRed(), clr.getGreen(), clr.getBlue(), 128));
+                            g.setColor(new Color(clr.getRed(), clr.getGreen(), clr.getBlue(), 192));
                         }else{
 
                             g.setColor(new Color(255,255, 255, 0));
@@ -95,8 +95,6 @@ public class PriceTileHandler implements ShittyHttpHandler{
                         g.setColor(new Color(255,255, 255, 0));
                     }
                     g.fill(poly);
-                //g.setColor(new Color(0, 0, 0));
-                //g.draw(poly);
             }
 
 

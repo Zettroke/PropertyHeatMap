@@ -8,6 +8,7 @@ public class CalculatedGraphKey {
     public CalculatedGraphKey(long id, boolean foot, int max_dist) {
         this.id = id;
         this.max_dist = max_dist;
+        this.foot = foot;
     }
 
     @Override

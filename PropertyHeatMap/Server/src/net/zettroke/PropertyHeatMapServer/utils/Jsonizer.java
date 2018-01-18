@@ -34,6 +34,7 @@ public class Jsonizer {
                 apartObj.add("area", apartment.area);
                 apartObj.add("floor", apartment.floor);
                 apartObj.add("max_floor", apartment.max_floor);
+                apartObj.add("full data", apartment.data);
                 apartments.add(apartObj);
             }
             data.add("apartments", apartments);
