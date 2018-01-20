@@ -528,6 +528,7 @@ public class PropertyMap {
         return tree.findRoadGraphNodesInCircle(center, radius);
     }
 
+
     public Way findShapeByPoint(MapPoint p) throws Exception{
         return tree.findShapeByPoint(p);
     }
