@@ -189,7 +189,6 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         g2.drawImage(imageTemp, 0, 0, null);
 
         ImageIO.write(image, "png", out);
-        //ImageIO.write(image, "png", new FileOutputStream("" + x + "." + y + ".png"));
 
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
 

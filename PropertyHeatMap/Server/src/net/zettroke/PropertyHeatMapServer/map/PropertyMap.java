@@ -117,16 +117,16 @@ public class PropertyMap {
                     t.add(rgn);
                 }
             }
-            System.out.println(getName() + " Done with nodes!");
-            int cnt = 0;
+            //System.out.println(getName() + " Done with nodes!");
+            //int cnt = 0;
             for (Way w: ways.values()){
                 if (w.data.containsKey("building") || w.data.containsKey("highway")){// || ways.get(i).data.containsKey("railway")) {
                     t.add(new MapShape(w));
                 }
-                cnt++;
+                /*cnt++;
                 if ((cnt +1) % 10000 == 0){
                    System.out.println(getName() + ": Shape done " + cnt/(double)ways.values().size()*100);
-                }
+                }*/
             }
         }
     }
@@ -134,6 +134,7 @@ public class PropertyMap {
     public void initParallel(){
         tree = new QuadTree(new int[]{0, 0, x_end-x_begin, y_end-y_begin});
         tree.root.split();
+        long start = System.nanoTime();
         ArrayList<ParallelInitThread> threads = new ArrayList<>();
         for (QuadTreeNode t: tree.root){
             ParallelInitThread p = new ParallelInitThread(t, this);
@@ -146,14 +147,16 @@ public class PropertyMap {
                 pit.join();
             }catch (InterruptedException e){}
         }
-        long start = System.nanoTime();
+        System.out.println("QuadTree created in " + (System.nanoTime()-start)/1000000.0 + " millis.");
+
+        start = System.nanoTime();
         load_prices();
         System.out.println("Loaded prices in " + (System.nanoTime()-start)/1000000.0 + " millis.");
 
         start = System.nanoTime();
         public_transport_init();
         System.out.println("Public transport init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
-        for (IntArrayList iar: roadGraphConnections){
+        /*for (IntArrayList iar: roadGraphConnections){
             iar.shrink();
         }
         for (IntArrayList iar: roadGraphDistancesCar){
@@ -162,7 +165,7 @@ public class PropertyMap {
         for (IntArrayList iar: roadGraphDistancesFoot){
             iar.shrink();
         }
-        System.gc();
+        System.gc();*/
     }
 
     private void public_transport_init(){
@@ -255,11 +258,11 @@ public class PropertyMap {
                 if (route_type.equals("bus") || route_type.equals("trolleybus")) {
                     roadType = route_type.equals("bus") ? RoadType.BUS: RoadType.TROLLEYBUS;
                     for (int i = relation_node_index_begin; i < relation_node_index_end; i++) {
-                        MiddleMapPoint mdmp = way.minDistToPoint(r.nodes.get(i));
+                        int mdmpind = way.minDistToPoint(r.nodes.get(i));
 
                         Node trn = r.nodes.get(i);
                         trn.publicTransportStop = true;
-                        way.nodes.add(mdmp.ind + 1, trn);
+                        way.nodes.add(mdmpind + 1, trn);
                     }
                 }else if(route_type.equals("subway") || route_type.equals("tram")){
                     if (route_type.equals("subway")) {
@@ -275,8 +278,8 @@ public class PropertyMap {
                             Node n = r.nodes.get(i);
                             n.publicTransportStop = true;
                             if (!ids.contains(n.id)){
-                                MiddleMapPoint mdmp = way.minDistToPoint(n);
-                                way.nodes.add(mdmp.ind + 1, n);
+                                int mdmpind = way.minDistToPoint(n);
+                                way.nodes.add(mdmpind + 1, n);
                             }
                         }
                     }else{
@@ -292,8 +295,8 @@ public class PropertyMap {
                             Node n = r.nodes.get(i);
                             n.publicTransportStop = true;
                             if (!ids.contains(n.id)){
-                                MiddleMapPoint mdmp = way.minDistToPoint(n);
-                                way.nodes.add(mdmp.ind + 1, n);
+                                int mdmpind = way.minDistToPoint(n);
+                                way.nodes.add(mdmpind + 1, n);
                             }
                         }
                     }

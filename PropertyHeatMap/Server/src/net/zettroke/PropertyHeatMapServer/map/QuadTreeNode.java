@@ -230,7 +230,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         -------------------
          */
 
-    int depth = 0;
+    public int depth = 0;
 
     int items = 0;
     public boolean isEndNode = true;

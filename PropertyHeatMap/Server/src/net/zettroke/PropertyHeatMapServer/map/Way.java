@@ -16,6 +16,8 @@ public class Way implements Serializable{
     public int[] legth;
     public ArrayList<Apartment> apartments;
 
+    //int[] bounds;
+
     public MapPoint getCenter(){
         long x = 0;
         long y = 0;
@@ -25,7 +27,7 @@ public class Way implements Serializable{
         }
         return new MapPoint(Math.round(x/(float)nodes.size()), Math.round(y/(float)nodes.size()));
     }
-    public MiddleMapPoint minDistToPoint(MapPoint p) {
+    public int minDistToPoint(MapPoint p) {
         MapPoint min = new MapPoint(Integer.MAX_VALUE, Integer.MAX_VALUE);
         MapPoint p1 = nodes.get(0);
         try{
@@ -67,17 +69,10 @@ public class Way implements Serializable{
             p1 = p2;
         }
         // TODO: lon lat Node init
-        return new MiddleMapPoint(new Node(min), min_ind);
+        return min_ind;
+    }
+    public void initBounds(){
+
     }
 
-
-}
-class MiddleMapPoint {
-    Node p;
-    int ind;
-
-    public MiddleMapPoint(Node p, int ind) {
-        this.p = p;
-        this.ind = ind;
-    }
 }

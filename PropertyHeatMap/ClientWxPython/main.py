@@ -316,17 +316,6 @@ class Map(wx.Panel):
 
                 dc.DrawBitmap(self.bitmaps[(x2, y2)], x - self.map_x, y - self.map_y)
 
-        '''mult = 2**(self.server_zoom-self.zoom)
-        for k, v in self.shapes_bitmaps.items():
-            bounds = self.shapes_dict[k][0]
-            dc.DrawBitmap(v, bounds[0]//mult-self.map_x, bounds[1]//mult-self.map_y)'''
-
-    def map_refresher(self):
-        while True:
-            self.loader_lock.acquire()
-            wx.PostEvent(self, RefreshEvent())
-            self.loader_lock.release()
-            time.sleep(0.5)
 
     def tile_loader(self):
         while True:
