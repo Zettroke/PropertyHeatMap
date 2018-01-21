@@ -11,6 +11,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 
 /**
@@ -36,6 +37,8 @@ public class PropertyMapLoaderOSM{
         HashMap<Long, Node> nodes = new HashMap<>();
         HashMap<Long, Way> ways = new HashMap<>();
         HashMap<Long, Relation> relations = new HashMap<>();
+
+        HashSet<Long> relation_nodes = new HashSet<>();
 
         XMLStreamReader streamReader = XMLInputFactory.newInstance().createXMLStreamReader(fileIn);
         long start = System.nanoTime();
@@ -104,12 +107,14 @@ public class PropertyMapLoaderOSM{
                                 case "node":
                                     Node n1 = nodes.get(id);
                                     tempRelation.nodes.add(n1);
+                                    if (n1 != null) {
+                                        relation_nodes.add(n1.id);
+                                    }
                                     break;
                                 case "way":
                                     tempRelation.ways.add(ways.get(id));
                                     break;
                                 case "relation":
-                                    // fixme: relations might be null
                                     tempRelation.relations.add(relations.get(id));
                                     break;
                             }
@@ -209,14 +214,14 @@ public class PropertyMapLoaderOSM{
         while (iter.hasNext()){
             HashMap.Entry<Long, Node> entry = iter.next();
             Node n = entry.getValue();
-            /*if (!m.roadGraphIndexes.containsKey(n.id) && n.data.size()){
+            if (!m.roadGraphIndexes.containsKey(n.id) && !relation_nodes.contains(n.id)){
                 iter.remove();
                 m.simpleNodes.add(new SimpleNode(n));
-            }else{*/
+            }else{
                 if (n.data.size() == 0) {
                     n.data = null;
                 }
-            //}
+            }
         }
         m.nodes = nodes;
         m.ways = ways;

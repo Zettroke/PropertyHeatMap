@@ -16,7 +16,7 @@ public class Way implements Serializable{
     public int[] legth;
     public ArrayList<Apartment> apartments;
 
-    //int[] bounds;
+    int[] bounds;
 
     public MapPoint getCenter(){
         long x = 0;
@@ -71,8 +71,32 @@ public class Way implements Serializable{
         // TODO: lon lat Node init
         return min_ind;
     }
-    public void initBounds(){
-
+    public synchronized void initBounds(){
+        if (bounds == null) {
+            bounds = new int[4];
+            for (SimpleNode n : nodes) {
+                bounds[0] = Math.min(bounds[0], n.x);
+                bounds[1] = Math.min(bounds[1], n.y);
+                bounds[2] = Math.max(bounds[2], n.x);
+                bounds[3] = Math.max(bounds[3], n.y);
+            }
+        }
+    }
+    public boolean inBounds(MapPoint p){
+        return (p.x >= bounds[0] && p.x <= bounds[2] && p.y >= bounds[1] && p.y <= bounds[3]);
+    }
+    public int minDistToBounds(MapPoint p){
+        if (inBounds(p)){
+            return -1;
+        }
+        if (p.y >= bounds[1] && p.y <= bounds[3]){
+            return Math.min(Math.abs(bounds[0]-p.x), Math.abs(bounds[2]-p.x));
+        }else if (p.x >= bounds[0] && p.x <= bounds[2]){
+            return Math.min(Math.abs(bounds[1]-p.y), Math.abs(bounds[3]-p.y));
+        }else{
+            return Math.min(Math.min(p.distTo(new MapPoint(bounds[0], bounds[1])), p.distTo(new MapPoint(bounds[0], bounds[3]))),
+                            Math.min(p.distTo(new MapPoint(bounds[2], bounds[1])), p.distTo(new MapPoint(bounds[2], bounds[3]))));
+        }
     }
 
 }

@@ -1,4 +1,4 @@
-import wx
+import wx, wx.lib.newevent
 from PIL import Image, ImageDraw
 import queue
 import io
@@ -12,6 +12,9 @@ import time
 
 EVT_REFRESH = wx.NewId()
 mx_dist = 12000
+
+
+# ShowApartmentsEvent, EVT_SHOW_APARTMENTS = wx.lib.newevent.NewEvent()
 
 
 class LoadTask:
@@ -88,7 +91,7 @@ class Map(wx.Panel):
         self.bitmaps = {}
         self.pressed = False
         self.missing_image = wx.Bitmap.FromBuffer(256, 256, Image.new("RGB", (256, 256), 0xCCCCCC).tobytes())
-        self.zoom = 10
+        self.zoom = 16
         self.available_zoom_levels = tuple(map(int, requests.get(self.base_server_url + "image/zoom_levels").text.split()))
         self.bounds = tuple(map(int, requests.get(self.base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
         self.tile_queue = queue.PriorityQueue()
@@ -137,6 +140,7 @@ class Map(wx.Panel):
 
                 if "apartments" in data.keys():
                     wx.CallAfter(self.parent.show_apartments, data["apartments"])
+                    # self.parent.show_apartments(data["apartments"])
                     # self.data.show_apartments()
             else:
                 del self.shapes_dict[ans["objects"][0]["id"]]
@@ -315,7 +319,6 @@ class Map(wx.Panel):
                     self.bitmaps[(x // 256, y // 256)] = self.missing_image
 
                 dc.DrawBitmap(self.bitmaps[(x2, y2)], x - self.map_x, y - self.map_y)
-
 
     def tile_loader(self):
         while True:
@@ -502,24 +505,22 @@ class PropertyHeatMap(wx.Frame):
                 w.Destroy()
             except Exception:
                 pass
+        self.to_remove.clear()
         for ind in range(len(aparts)):
             data = aparts[ind]["full data"]
             curr_sizer = wx.BoxSizer(wx.HORIZONTAL)
             column1_sizer = wx.BoxSizer(wx.VERTICAL)
-
+            column2_sizer = wx.BoxSizer(wx.VERTICAL)
             for w in ("Адрес", "url", "coords"):
                 if w in data.keys():
                     del data[w]
-            for k in data.keys():
+            for k, v in data.items():
 
                 tx1 = wx.StaticText(self.apartments_panel, pos=(0, 0), label=str(k) + ":")
                 tx1.SetFont(wx.Font(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False)))
                 column1_sizer.Add(tx1, 1, wx.EXPAND|wx.ALIGN_LEFT|wx.LEFT, 5)
                 self.to_remove.append(tx1)
 
-            curr_sizer.Add(column1_sizer, 0)
-            column2_sizer = wx.BoxSizer(wx.VERTICAL)
-            for v in data.values():
                 if not v:
                     v = "-"
                 tx2 = wx.StaticText(self.apartments_panel, pos=(0, 0), label=str(v))
@@ -527,16 +528,21 @@ class PropertyHeatMap(wx.Frame):
                 column2_sizer.Add(tx2, 1, wx.EXPAND | wx.ALIGN_RIGHT | wx.LEFT, 5)
                 self.to_remove.append(tx2)
 
+            curr_sizer.Add(column1_sizer, 0)
             curr_sizer.Add(column2_sizer, 0)
+
             self.apart_sizer.Add(curr_sizer, 0)
             line = wx.StaticLine(self.apartments_panel, size=(300, 5))
-            self.apart_sizer.Add(line, 0, wx.TOP|wx.BOTTOM, 5)
+            self.apart_sizer.Add(line, 0, wx.TOP|wx.BOTTOM|wx.EXPAND, 5)
             self.to_remove.append(line)
             self.apart_sizer.Layout()
+            self.Refresh()
         size = self.apart_sizer.GetMinSize()
-        self.p.SetSize((300, size.Height+50))
-        self.sc.SetScrollbars(1, 1, 1, size.Height+50)
+        self.p.SetSize((300, size.Height+200))
+        self.sc.SetScrollbars(1, 1, 1, size.Height+200)
+        self.sc.SetScrollRate(10, 10)
         self.sc.Layout()
+        self.Refresh()
 
     def price_turn_on(self, event=None):
         self.button.SetLabel("Отключить")
@@ -555,6 +561,7 @@ class PropertyHeatMap(wx.Frame):
             self.map.foot = True
         else:
             self.map.foot = False
+
 
 
 def main():

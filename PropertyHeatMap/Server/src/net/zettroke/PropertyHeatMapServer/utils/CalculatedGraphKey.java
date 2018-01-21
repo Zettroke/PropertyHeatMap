@@ -1,6 +1,8 @@
 package net.zettroke.PropertyHeatMapServer.utils;
 
-public class CalculatedGraphKey {
+import java.util.Objects;
+
+public class CalculatedGraphKey{
     long id;
     int max_dist;
     boolean foot;
@@ -12,12 +14,18 @@ public class CalculatedGraphKey {
     }
 
     @Override
-    public int hashCode() {
-        return (int)((id + max_dist ^ id) ^ (foot?0:1) << 31);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CalculatedGraphKey that = (CalculatedGraphKey) o;
+        return id == that.id &&
+                max_dist == that.max_dist &&
+                foot == that.foot;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return id == ((CalculatedGraphKey)obj).id && max_dist == ((CalculatedGraphKey)obj).max_dist && ((CalculatedGraphKey)obj).foot == foot;
+    public int hashCode() {
+        return Objects.hash(id, max_dist, foot);
     }
+
 }

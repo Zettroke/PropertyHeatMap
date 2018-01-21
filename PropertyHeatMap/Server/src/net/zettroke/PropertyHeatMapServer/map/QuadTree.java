@@ -1,8 +1,6 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
 
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
 import java.util.*;
 
 /**
@@ -104,7 +102,7 @@ public class QuadTree {
         if (treeNode.isEndNode){
             nodeToSearch.add(treeNode);
         }else {
-            rec_circle_tree_node_search(treeNode, nodeToSearch, center, radius);
+            rec_find_treenode_crossed_by_circle(treeNode, nodeToSearch, center, radius);
         }
 
         HashMap<Long, Way> result = new HashMap<>();
@@ -223,20 +221,25 @@ public class QuadTree {
 
     }
 
-    private void rec_circle_tree_node_search(QuadTreeNode node, ArrayList<QuadTreeNode> list, MapPoint p, int radius){
+    private void rec_find_treenode_crossed_by_circle(QuadTreeNode node, ArrayList<QuadTreeNode> list, MapPoint p, int radius){
         if (node.isEndNode){
             if (circle_contain_treeNode_or_cross(node, p, radius)){
                 list.add(node);
             }
         }else{
             for (QuadTreeNode treeNode: node) {
-                rec_circle_tree_node_search(treeNode, list, p, radius);
+                rec_find_treenode_crossed_by_circle(treeNode, list, p, radius);
             }
         }
 
     }
 
     private boolean circle_contain_shape_or_cross(MapShape shape, MapPoint center, int radius){
+
+        if (shape.way.minDistToBounds(center) > radius){
+            return false;
+        }
+
         if (shape.contain(center)){
             return true;
         }

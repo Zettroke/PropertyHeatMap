@@ -7,6 +7,7 @@ import com.eclipsesource.json.JsonValue;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
 import net.zettroke.PropertyHeatMapServer.utils.IntArrayList;
 import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
+import net.zettroke.PropertyHeatMapServer.utils.TimeMeasurer;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -47,7 +48,7 @@ public class PropertyMap {
     public StringPredictor predictor = new StringPredictor();
     public HashMap<String, Way> searchMap = new HashMap<>();
 
-    //ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
+    ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
     HashMap<Long, Node> nodes = new HashMap<>();
     HashMap<Long, Way> ways = new HashMap<>();
     ArrayList<Relation> relations = new ArrayList<>();
@@ -79,21 +80,6 @@ public class PropertyMap {
         propertyMap = this;
     }
 
-    public void init(){
-        tree = new QuadTree(new int[]{0, 0, x_end-x_begin, y_end-y_begin});
-        //t.split();
-        for (Node n: nodes.values()){
-            tree.add(n);
-        }
-        System.out.println("Done with nodes!");
-        for (Long i:ways.keySet()){
-            if (ways.get(i).data.containsKey("building") || ways.get(i).data.containsKey("highway")){// || ways.get(i).data.containsKey("railway") ) {
-                tree.add(new MapShape(ways.get(i)));
-            }
-
-        }
-    }
-
     class ParallelInitThread extends Thread{
 
         QuadTreeNode t;
@@ -123,10 +109,6 @@ public class PropertyMap {
                 if (w.data.containsKey("building") || w.data.containsKey("highway")){// || ways.get(i).data.containsKey("railway")) {
                     t.add(new MapShape(w));
                 }
-                /*cnt++;
-                if ((cnt +1) % 10000 == 0){
-                   System.out.println(getName() + ": Shape done " + cnt/(double)ways.values().size()*100);
-                }*/
             }
         }
     }
@@ -431,7 +413,8 @@ public class PropertyMap {
         }
     }
 
-    private void load_prices(){
+    //TODO: optimize circle search. use bounds.
+    public void load_prices(){
         HashMap<String, String> deduplicator = new HashMap<>();
         int counter = 0;
         try {
@@ -528,7 +511,6 @@ public class PropertyMap {
         return tree.findRoadGraphNodesInCircle(center, radius);
     }
 
-
     public Way findShapeByPoint(MapPoint p) throws Exception{
         return tree.findShapeByPoint(p);
     }
@@ -556,8 +538,7 @@ public class PropertyMap {
 
     public HashMap<Long, RoadGraphNode> getCalculatedRoadGraph(long id, boolean foot, final int max_dist){
         // TODO: Избавится от оторванных кусков графа.
-        // TODO: Доделать пешеходный режим.
-        //long start_t = System.nanoTime();
+        long start_t = System.nanoTime();
         HashSet<RoadType> exclude;
         ArrayList<IntArrayList> rgn_distances;
         if (foot){
@@ -604,6 +585,8 @@ public class PropertyMap {
                 ref_to.clear();
             }
         }
+
+        TimeMeasurer.printMeasure(start_t,"Copied graph in %t millis.");
 
         boolean found = false;
         MapPoint center = ways.get(id).getCenter();
@@ -674,6 +657,7 @@ public class PropertyMap {
             dest = temp;
         }
     }
+
     void recCalculateDistances(RoadGraphNode rgn, final int max_dist){
         for (int i=0; i<rgn.ref_to.length; i++){
             RoadGraphNode to = rgn.ref_to[i];

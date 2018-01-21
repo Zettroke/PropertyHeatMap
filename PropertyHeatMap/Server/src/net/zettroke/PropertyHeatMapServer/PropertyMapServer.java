@@ -32,13 +32,13 @@ public class PropertyMapServer {
 
         System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
 
-        int[] max_depth = new int[1];
-        int[] sum_depth = new int[1];
-        int[] count = new int[1];
+        int[] max_shapes = new int[1];
+        int[] sum_shapes = new int[1];
+        int[] count_shapes = new int[1];
 
-        rec(max_depth, sum_depth, count, propertyMap.tree.root);
+        rec(max_shapes, sum_shapes, count_shapes, propertyMap.tree.root);
 
-        System.out.println("Max depth is " + max_depth[0] + ". Average depth is " + sum_depth[0]/(double)count[0]);
+        System.out.println("Max num of shapes in node " + max_shapes[0] + ". Average num of shapes is " + sum_shapes[0]/(double)count_shapes[0]);
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup(8);
@@ -59,16 +59,16 @@ public class PropertyMapServer {
         }
     }
 
-    public void rec(int[] max_depth, int[] sum_depth, int[] count, QuadTreeNode treeNode){
+    public void rec(int[] max_shapes, int[] sum_shapes, int[] count, QuadTreeNode treeNode){
         if (treeNode.isEndNode){
-            if (treeNode.depth > max_depth[0]) {
-                max_depth[0] = treeNode.depth;
+            if (treeNode.shapes.size() > max_shapes[0]) {
+                max_shapes[0] = treeNode.shapes.size();
             }
-            sum_depth[0] += treeNode.depth;
+            sum_shapes[0] += treeNode.shapes.size();
             count[0]++;
         }else{
             for (QuadTreeNode tn: treeNode){
-                rec(max_depth, sum_depth, count, tn);
+                rec(max_shapes, sum_shapes, count, tn);
             }
         }
     }

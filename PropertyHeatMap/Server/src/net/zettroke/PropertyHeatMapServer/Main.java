@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Scanner;
 
 import com.eclipsesource.json.PrettyPrint;
@@ -18,6 +19,34 @@ import javax.imageio.ImageIO;
 
 
 //-XX:+UnlockCommercialFeatures -XX:+FlightRecorder
+class Key{
+    int a;
+    short b;
+    boolean c;
+
+    public Key(int a, short b, boolean c) {
+        this.a = a;
+        this.b = b;
+        this.c = c;
+    }
+
+    /*@Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Key key = (Key) o;
+        return a == key.a &&
+                b == key.b &&
+                c == key.c;
+    }*/
+
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(a, b, c);
+    }
+}
 
 public class Main {
 
@@ -46,10 +75,20 @@ public class Main {
 
         PropertyMapServer server = new PropertyMapServer(map_name);
         server.start();
+
         /*PropertyMap propertyMap = new PropertyMap();
         PropertyMapLoaderOSM.load(propertyMap, map_name);
+        propertyMap.initParallel();
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Start profiling:");
+        scanner.nextLine();
+        propertyMap.load_prices();
+        scanner.nextLine();
+        scanner.nextLine();
+        scanner.nextLine();*/
 
-        StringPredictor pred = propertyMap.predictor;
+
+        /*StringPredictor pred = propertyMap.predictor;
         pred.add("Zettroke", null);
         pred.add("Olleggerr", null);
         pred.add("Zettroker", null);

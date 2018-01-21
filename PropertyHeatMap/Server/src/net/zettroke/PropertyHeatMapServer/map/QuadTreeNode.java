@@ -684,14 +684,12 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     }
 
     private void addPoly_double(final MapShape m){
-        //int[] bounds = new int[]{this.bounds[0]*DMapPoint.n,this.bounds[1]*DMapPoint.n, this.bounds[2]*DMapPoint.n, this.bounds[3]*DMapPoint.n};
 
-
-        boolean containShape = true;
+        /*boolean containShape = true;
         for (MapPoint p : m.points){
             containShape &= inBounds(p);
-        }
-        if (containShape){
+        }*/
+        if (inBounds(new MapPoint(m.way.bounds[0], m.way.bounds[1])) && inBounds(new MapPoint(m.way.bounds[0], m.way.bounds[3])) && inBounds(new MapPoint(m.way.bounds[2], m.way.bounds[1])) && inBounds(new MapPoint(m.way.bounds[2], m.way.bounds[3]))){
             shapes.add(m);
             items++;
             return;

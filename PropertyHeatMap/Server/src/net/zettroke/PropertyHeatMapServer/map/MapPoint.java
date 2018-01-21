@@ -19,9 +19,6 @@ public class MapPoint implements Serializable{
         this.y = y;
     }
 
-
-
-
     public boolean equals(MapPoint p) {
         return x == p.x && y == p.y;
 

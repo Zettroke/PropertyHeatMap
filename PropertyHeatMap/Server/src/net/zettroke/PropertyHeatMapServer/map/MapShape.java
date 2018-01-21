@@ -31,6 +31,7 @@ public class MapShape {
 
     MapShape(Way w) {
         way = w;
+        w.initBounds();
         points = (ArrayList<MapPoint>) w.nodes.clone();
         isPoly = way.data.containsKey("building");
         if (isPoly) {
