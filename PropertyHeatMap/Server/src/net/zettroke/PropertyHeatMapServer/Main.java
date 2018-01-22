@@ -78,7 +78,7 @@ public class Main {
 
         /*PropertyMap propertyMap = new PropertyMap();
         PropertyMapLoaderOSM.load(propertyMap, map_name);
-        propertyMap.initParallel();
+        propertyMap.init();
         Scanner scanner = new Scanner(System.in);
         System.out.print("Start profiling:");
         scanner.nextLine();
@@ -120,7 +120,7 @@ public class Main {
 
         PropertyMap propertyMap = new PropertyMap();
         PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
-        propertyMap.initParallel();
+        propertyMap.init();
         System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
 
 

@@ -38,7 +38,7 @@ class LoadTask:
 
 class Map(wx.Panel):
 
-    ip = "178.140.109.241"
+    ip = "127.0.0.1"
 
     base_server_url = "http://" + ip + "/"
     map_tiles_url = "http://" + ip + "/image/z{z}/{x}.{y}.png"

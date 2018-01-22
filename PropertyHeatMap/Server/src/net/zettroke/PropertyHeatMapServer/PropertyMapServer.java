@@ -6,7 +6,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
-import net.zettroke.PropertyHeatMapServer.handlers.ErrorHandler;
 import net.zettroke.PropertyHeatMapServer.handlers.PathRouter;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMapLoaderOSM;
@@ -14,7 +13,6 @@ import net.zettroke.PropertyHeatMapServer.handlers.*;
 import net.zettroke.PropertyHeatMapServer.map.QuadTreeNode;
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class PropertyMapServer {
     String map_name;
@@ -23,11 +21,11 @@ public class PropertyMapServer {
     }
 
     public void start() throws Exception{
-        PropertyMap propertyMap = new PropertyMap();
-        PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
+        PropertyMap propertyMap = new PropertyMap(new PropertyMapLoaderOSM(map_name));
+        //PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
         //PropertyMapLoaderOSM.load(propertyMap, new File("C:/PropertyHeatMap/map.osm"));
         long start = System.nanoTime();
-        propertyMap.initParallel();
+        propertyMap.init();
         //propertyMap.init();
 
         System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");

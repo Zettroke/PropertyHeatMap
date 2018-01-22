@@ -1,11 +1,9 @@
 package net.zettroke.PropertyHeatMapServer.utils;
 
 
-import net.zettroke.PropertyHeatMapServer.map.RoadGraphNode;
+import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class CalculatedGraphCache {

@@ -1,7 +1,8 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
 
-import net.zettroke.PropertyHeatMapServer.utils.IntArrayList;
+import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
+import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNodeBuilder;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -17,7 +18,13 @@ import java.util.Iterator;
 /**
  * Created by Olleggerr on 15.10.2017.
  */
-public class PropertyMapLoaderOSM{
+public class PropertyMapLoaderOSM implements MapLoader{
+    private String filename;
+    private HashMap<Long, Node> nodes = new HashMap<>();
+    private ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
+    private HashMap<Long, Way> ways = new HashMap<>();
+    private HashMap<Long, Relation> relations = new HashMap<>();
+    ArrayList<String> names = new ArrayList<>();
 
     private static class Deduplicator{
         //before ~1823MB
@@ -32,20 +39,10 @@ public class PropertyMapLoaderOSM{
         }
     }
 
-    public static void load(PropertyMap m, FileInputStream fileIn) throws XMLStreamException, FileNotFoundException{
-        Deduplicator dedup = new Deduplicator();
-        HashMap<Long, Node> nodes = new HashMap<>();
-        HashMap<Long, Way> ways = new HashMap<>();
-        HashMap<Long, Relation> relations = new HashMap<>();
-
-        HashSet<Long> relation_nodes = new HashSet<>();
-
+    @Override
+    public double[] getDegreesBounds() throws Exception{
+        FileInputStream fileIn = new FileInputStream(filename);
         XMLStreamReader streamReader = XMLInputFactory.newInstance().createXMLStreamReader(fileIn);
-        long start = System.nanoTime();
-        Node tempNode = null;
-        Way tempWay = null;
-        Relation tempRelation = null;
-        int count = 0;
         while (true) {
             if (streamReader.hasName()) {
                 if (streamReader.isStartElement()) {
@@ -54,18 +51,64 @@ public class PropertyMapLoaderOSM{
                     }
                 }
             }
-
-        streamReader.next();
+            streamReader.next();
         }
-        //streamReader.next(); streamReader.next(); streamReader.next();
-        m.maxlat = Double.valueOf(streamReader.getAttributeValue("", "maxlat"));
-        m.maxlon = Double.valueOf(streamReader.getAttributeValue("", "maxlon"));
-        m.minlat = Double.valueOf(streamReader.getAttributeValue("", "minlat"));
-        m.minlon = Double.valueOf(streamReader.getAttributeValue("", "minlon"));
-        int[] coords = m.mercator(m.maxlon, m.maxlat);
-        int[] coords1 = m.mercator(m.minlon, m.minlat);
-        m.x_end = coords[0]; m.y_begin = coords[1];
-        m.x_begin = coords1[0]; m.y_end = coords1[1];
+
+        double[] res = new double[]{Double.parseDouble(streamReader.getAttributeValue("", "minlon")),
+                     Double.parseDouble(streamReader.getAttributeValue("", "minlat")),
+                     Double.parseDouble(streamReader.getAttributeValue("", "maxlon")),
+                     Double.parseDouble(streamReader.getAttributeValue("", "maxlat"))};
+        streamReader.close();
+        fileIn.close();
+        return res;
+
+    }
+
+    @Override
+    public int[] getCoordBounds(PropertyMap context) throws Exception{
+        double[] degrees = getDegreesBounds();
+
+        int[] coords = context.mercator(degrees[0], degrees[1]);
+        int[] coords1 = context.mercator(degrees[2], degrees[3]);
+
+        return new int[]{coords[0], coords1[1], coords1[0], coords[1]};
+    }
+
+    @Override
+    public HashMap<Long, Node> getNodes() {
+        return nodes;
+    }
+
+    @Override
+    public ArrayList<SimpleNode> getSimpleNodes() {
+        return simpleNodes;
+    }
+
+    @Override
+    public HashMap<Long, Relation> getRelations() {
+        return relations;
+    }
+
+    @Override
+    public HashMap<Long, Way> getWays() {
+        return ways;
+    }
+
+    @Override
+    public void load(RoadGraphBuilder builder, PropertyMap context) throws XMLStreamException, FileNotFoundException{
+        Deduplicator dedup = new Deduplicator();
+
+        HashSet<Long> relation_nodes = new HashSet<>();
+
+        FileInputStream fileIn = new FileInputStream(filename);
+        XMLStreamReader streamReader = XMLInputFactory.newInstance().createXMLStreamReader(fileIn);
+
+        long start = System.nanoTime();
+        Node tempNode = null;
+        Way tempWay = null;
+        Relation tempRelation = null;
+        int count = 0;
+        int[] coords;
 
         ArrayList<Node> tempNodeList = new ArrayList<>();
 
@@ -124,7 +167,7 @@ public class PropertyMapLoaderOSM{
                     switch (streamReader.getLocalName()) {
                         case "node":
 
-                            coords = m.mercator(tempNode.lon, tempNode.lat);
+                            coords = context.mercator(tempNode.lon, tempNode.lat);
                             tempNode.x = coords[0]; tempNode.y = coords[1];
                             nodes.put(tempNode.id, tempNode);
                             tempNode = null;
@@ -132,63 +175,14 @@ public class PropertyMapLoaderOSM{
                         case "way":
                             ways.put(tempWay.id, tempWay);
                             if (tempWay.data.containsKey("highway")){
-                                Node n1 = tempNodeList.get(0);
-                                int prev_index;
-                                if (!m.roadGraphIndexes.containsKey(n1.id)){
-                                    prev_index = m.roadGraphNodes.size();
-                                    m.roadGraphIndexes.put(n1.id, m.roadGraphNodes.size());
-                                    RoadGraphNode rgn = new RoadGraphNode(n1);
-                                    rgn.addWay(tempWay);
-                                    m.roadGraphNodes.add(rgn);
-                                    m.roadGraphConnections.add(new IntArrayList());
-                                    m.roadGraphDistancesCar.add(new IntArrayList());
-                                    m.roadGraphDistancesFoot.add(new IntArrayList());
-                                    m.roadGraphConnectionsTypes.add(new ArrayList<>());
-                                }else{
-                                    prev_index = m.roadGraphIndexes.get(n1.id);
-                                    m.roadGraphNodes.get(prev_index).addWay(tempWay);
-                                }
                                 RoadType roadType = RoadType.getType(tempWay.data);
-                                for (int i = 1; i < tempNodeList.size(); i++){
-                                    int index;
-                                    if (m.roadGraphIndexes.containsKey(tempNodeList.get(i).id)){
-                                        index = m.roadGraphIndexes.get(tempNodeList.get(i).id);
-                                    }else{
-                                        RoadGraphNode rgn = new RoadGraphNode(tempNodeList.get(i));
-                                        index = m.roadGraphNodes.size();
-                                        m.roadGraphIndexes.put(rgn.n.id, m.roadGraphNodes.size());
-                                        m.roadGraphNodes.add(rgn);
-                                        m.roadGraphConnections.add(new IntArrayList());
-                                        m.roadGraphDistancesCar.add(new IntArrayList());
-                                        m.roadGraphDistancesFoot.add(new IntArrayList());
-                                        m.roadGraphConnectionsTypes.add(new ArrayList<>());
 
-                                    }
-                                    //m.roadGraphNodes.get(index).addWay(tempWay);
-                                    int dst = PropertyMap.calculateDistance(m.roadGraphNodes.get(index).n, m.roadGraphNodes.get(prev_index).n);
-                                    int distCar = Math.round(dst/PropertyMap.car_speed);
-                                    int distFoot = Math.round(dst/PropertyMap.foot_speed);
-
-                                    m.roadGraphConnections.get(index).add(prev_index);
-                                    m.roadGraphDistancesCar.get(index).add(distCar);
-                                    m.roadGraphDistancesFoot.get(index).add(distFoot);
-                                    m.roadGraphNodes.get(index).addWay(tempWay);
-                                    m.roadGraphConnectionsTypes.get(index).add(roadType);
-
-                                    m.roadGraphConnections.get(prev_index).add(index);
-                                    m.roadGraphDistancesCar.get(prev_index).add(distCar);
-                                    m.roadGraphDistancesFoot.get(prev_index).add(distFoot);
-                                    m.roadGraphNodes.get(prev_index).addWay(tempWay);
-                                    m.roadGraphConnectionsTypes.get(prev_index).add(roadType);
-
-                                    prev_index = index;
+                                for (int i=1; i<tempNodeList.size(); i++){
+                                    builder.connect(tempNodeList.get(i-1), tempNodeList.get(i), roadType);
                                 }
+
                                 if (tempWay.data.containsKey("name") && tempWay.data.containsKey("highway") && !tempWay.data.get("highway").equals("trunk")){
-                                    m.predictor.add(tempWay.data.get("name"));
-                                    m.searchMap.put(tempWay.data.get("name").toLowerCase(), tempWay);
-                                    /*if (tempWay.data.get("name").toLowerCase().equals("«м-1 “беларусь” – крёкшино – троицк» – ильичёвка")){
-                                        System.out.println();
-                                    }*/
+                                    names.add(tempWay.data.get("name"));
                                 }
                             }
                             tempWay = null;
@@ -214,30 +208,23 @@ public class PropertyMapLoaderOSM{
         while (iter.hasNext()){
             HashMap.Entry<Long, Node> entry = iter.next();
             Node n = entry.getValue();
-            if (!m.roadGraphIndexes.containsKey(n.id) && !relation_nodes.contains(n.id)){
+            if (!builder.isRGN(n) && !relation_nodes.contains(n.id)){
                 iter.remove();
-                m.simpleNodes.add(new SimpleNode(n));
+                simpleNodes.add(new SimpleNode(n));
             }else{
                 if (n.data.size() == 0) {
                     n.data = null;
                 }
             }
         }
-        m.nodes = nodes;
-        m.ways = ways;
-        m.relations = new ArrayList<>(relations.values());
 
         //System.gc();
 
 
     }
 
-    public static void load(PropertyMap m, String name) throws XMLStreamException, FileNotFoundException{
-        load(m, new FileInputStream(name));
-    }
-
-    public static void load(PropertyMap m, File file) throws XMLStreamException, FileNotFoundException{
-        load(m, new FileInputStream(file));
+    public PropertyMapLoaderOSM(String filename){
+        this.filename = filename;
     }
 }
 

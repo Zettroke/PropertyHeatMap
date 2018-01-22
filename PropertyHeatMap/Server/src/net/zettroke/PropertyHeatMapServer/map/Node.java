@@ -15,10 +15,10 @@ public class Node extends SimpleNode{
     public Node(){}
 
     // TODO: lon lat Node init
-    public Node(MapPoint p){
+    public Node(MapPoint p, PropertyMap context){
         x = p.x;
         y = p.y;
-        double[] coords = PropertyMap.propertyMap.inverse_mercator(x, y);
+        double[] coords = context.inverse_mercator(x, y);
         lon = coords[0];
         lat = coords[1];
     }

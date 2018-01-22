@@ -5,9 +5,10 @@ import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import net.zettroke.PropertyHeatMapServer.map.RoadType;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.QuadTreeNode;
-import net.zettroke.PropertyHeatMapServer.map.RoadGraphNode;
+import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.BoolArrayPool;
 import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphCache;
 import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphKey;
@@ -15,9 +16,6 @@ import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphKey;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.concurrent.locks.Lock;
 import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -39,7 +37,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         return (int)Math.round(coefficent*n);
     }
 
-
+/*
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
 
@@ -116,7 +114,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
             if (treeNode.inBounds(rgn.n)){
                 visited[rgn.index] = true;
                 for (int i=0; i<rgn.ref_to.length; i++){
-                    RoadGraphNode ref = rgn.ref_to[i];
+                    //RoadGraphNode ref = rgn.ref_to[i];
                     if (!visited[ref.index]){
                         switch (rgn.ref_types.get(i)){
                             case SECONDARY:
@@ -176,9 +174,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                 }
             }
         }
-        /*for (RoadGraphNode rgn: to_clear) {
-            rgn.visited = false;
-        }*/
+
         BoolArrayPool.returnArray(visited);
         ByteBuf buf = ctx.alloc().buffer();
         ByteBufOutputStream out = new ByteBufOutputStream(buf);
@@ -194,6 +190,11 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
 
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 
+    }*/
+
+    @Override
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+        ctx.close();
     }
 
     public RoadGraphTileHandler(PropertyMap propertyMap){

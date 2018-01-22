@@ -1,9 +1,18 @@
-alaCarte build/
+alaCarte
+build/
+
 /map/
+
 *.7z
+
 /osm_map_medium/
+
 /osm_map_small/
+
 /osm_map_full_moscow/
+
 /osm_map_full_moscow_test/
+
 /osm_map_full_moscow_test2/
+
 build/

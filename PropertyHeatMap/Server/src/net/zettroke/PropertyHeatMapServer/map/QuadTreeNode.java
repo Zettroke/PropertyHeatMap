@@ -1,5 +1,7 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
+import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
+
 import java.util.*;
 
 public class QuadTreeNode implements Iterable<QuadTreeNode>{

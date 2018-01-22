@@ -57,5 +57,9 @@ public class IntArrayList {
         return container[ind];
     }
 
+    public int[] toArray(){
+        return Arrays.copyOf(container, size);
+    }
+
 
 }
