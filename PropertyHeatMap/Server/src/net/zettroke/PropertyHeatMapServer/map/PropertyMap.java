@@ -160,6 +160,8 @@ public class PropertyMap {
             public_transport_init();
             System.out.println("Public transport init in " + (System.nanoTime() - start) / 1000000.0 + " millis.");
             roadGraph = rgnBuilder.getRoadGraph();
+            rgnBuilder = null;
+            System.gc();
 
         /*for (IntArrayList iar: roadGraphConnections){
             iar.shrink();
@@ -609,7 +611,7 @@ public class PropertyMap {
             RoadGraphNode[] src = new RoadGraphNode[roadGraph.size()];
             RoadGraphNode[] res = new RoadGraphNode[roadGraph.size()];
             src[0] = start;
-            widthRecCalculateDistance();
+
             if (!found){
                 System.err.println("Doesnt found close road to building");
             }

@@ -10,10 +10,7 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * Created by Olleggerr on 15.10.2017.
@@ -21,7 +18,7 @@ import java.util.Iterator;
 public class PropertyMapLoaderOSM implements MapLoader{
     private String filename;
     private HashMap<Long, Node> nodes = new HashMap<>();
-    private ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
+    private ArrayList<SimpleNode> simpleNodes;
     private HashMap<Long, Way> ways = new HashMap<>();
     private HashMap<Long, Relation> relations = new HashMap<>();
     ArrayList<String> names = new ArrayList<>();
@@ -204,7 +201,7 @@ public class PropertyMapLoaderOSM implements MapLoader{
         System.out.println("Nodes: "+nodes.size());
         System.out.println("Ways: "+ways.size());
         System.out.println("Relations: "+relations.size());
-        Iterator<HashMap.Entry<Long, Node>> iter = nodes.entrySet().iterator();
+        /*Iterator<HashMap.Entry<Long, Node>> iter = nodes.entrySet().iterator();
         while (iter.hasNext()){
             HashMap.Entry<Long, Node> entry = iter.next();
             Node n = entry.getValue();
@@ -216,9 +213,35 @@ public class PropertyMapLoaderOSM implements MapLoader{
                     n.data = null;
                 }
             }
+        }*/
+        HashMap<Long, SimpleNode> simpleNodeHashMap = new HashMap<>();
+        for (Long l: new HashSet<>(nodes.keySet())){
+            Node n = nodes.get(l);
+            if (!builder.isRGN(n) && !relation_nodes.contains(n.id)){
+                nodes.remove(l);
+                simpleNodeHashMap.put(n.id, new SimpleNode(n));
+            }else{
+                if (n.data.size() == 0) {
+                    n.data = null;
+                }
+            }
         }
 
-        //System.gc();
+        for (Way w: ways.values()){
+            for (int i=0; i<w.nodes.size(); i++){
+                SimpleNode n = w.nodes.get(i);
+                if (simpleNodeHashMap.containsKey(n.id)){
+                    w.nodes.set(i, simpleNodeHashMap.get(n.id));
+                }
+            }
+        }
+        simpleNodes = new ArrayList<>(simpleNodeHashMap.values());
+        simpleNodeHashMap = null;
+        relation_nodes = null;
+        System.out.println("SimpleNodes: " + simpleNodes.size());
+        System.out.println("Complex Nodes: " + nodes.size());
+
+        System.gc();
 
 
     }

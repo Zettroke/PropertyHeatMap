@@ -77,17 +77,20 @@ public class Main {
         scanner.nextLine();*/
 
 
-        PropertyMapServer server = new PropertyMapServer(map_name);
-        server.start();
+        /*PropertyMapServer server = new PropertyMapServer(map_name);
+        server.start();*/
 
         /*System.out.println(VM.current().details());
         System.out.println(ClassLayout.parseClass(RoadGraphNode.class).toPrintable());*/
-        /*PropertyMap propertyMap = new PropertyMap(new PropertyMapLoaderOSM(map_name));
+        PropertyMap propertyMap = new PropertyMap(new PropertyMapLoaderOSM(map_name));
         propertyMap.init();
         Scanner scanner = new Scanner(System.in);
-        GraphLayout gl = GraphLayout.parseInstance(propertyMap.roadGraph.values().iterator().next());
-        System.out.println(gl.toPrintable());
-        System.out.println(gl.totalSize());*/
+
+        System.out.println(propertyMap.roadGraph.size());
+        scanner.nextLine();
+        //ClassLayout gl = ClassLayout.parseInstance(propertyMap.roadGraph.values().iterator().next());
+        //System.out.println(gl.toPrintable());
+        //System.out.println(gl.totalSize());
 
         /*StringPredictor pred = propertyMap.predictor;
         pred.add("Zettroke", null);
