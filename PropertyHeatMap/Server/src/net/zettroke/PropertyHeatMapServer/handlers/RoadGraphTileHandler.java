@@ -37,7 +37,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         return (int)Math.round(coefficent*n);
     }
 
-/*
+
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
 
@@ -62,7 +62,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         HashMap<Long, RoadGraphNode> graph = null;
 
-        global_rgn_lock.lock();
+        /*global_rgn_lock.lock();
         if (CalculatedGraphCache.contain(start_id, foot, max_dist)){
             graph = CalculatedGraphCache.get(start_id, foot,  max_dist);
             global_rgn_lock.unlock();
@@ -91,7 +91,9 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                 lck.unlock();
 
             }
-        }
+        }*/
+
+        graph = propertyMap.roadGraph;
 
         BasicStroke secondary_stroke = new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
         BasicStroke primary_stroke = new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
@@ -102,7 +104,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         BasicStroke default_stroke = new BasicStroke(20f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
         BasicStroke unknown_stroke = new BasicStroke(10f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
 
-
+        int mode = foot ? 0: 1;
 
         int offx = x*mult*256;
         int offy = y*mult*256;
@@ -113,10 +115,10 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         for (RoadGraphNode rgn : graph.values()){
             if (treeNode.inBounds(rgn.n)){
                 visited[rgn.index] = true;
-                for (int i=0; i<rgn.ref_to.length; i++){
-                    //RoadGraphNode ref = rgn.ref_to[i];
+                for (int i=0; i<rgn.ref_to[mode].length; i++){
+                    RoadGraphNode ref = rgn.ref_to[mode][i];
                     if (!visited[ref.index]){
-                        switch (rgn.ref_types.get(i)){
+                        switch (rgn.ref_types[mode][i]){
                             case SECONDARY:
                                 g.setStroke(secondary_stroke);
                                 break;
@@ -165,7 +167,8 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                                 break;
                         }
                         if (!dont_draw) {
-                            g.setPaint(new GradientPaint(coef(rgn.n.x - offx), coef(rgn.n.y - offy), rgn.getNodeColor(max_dist), coef(ref.n.x - offx), coef(ref.n.y - offy), ref.getNodeColor(max_dist)));
+                            g.setPaint(new GradientPaint(coef(rgn.n.x - offx), coef(rgn.n.y - offy), rgn.getNodeColor(max_dist, 0),
+                                                         coef(ref.n.x - offx), coef(ref.n.y - offy), ref.getNodeColor(max_dist, 0)));
                             g.drawLine(coef(rgn.n.x - offx), coef(rgn.n.y - offy), coef(ref.n.x - offx), coef(ref.n.y - offy));
                         }else{
                             dont_draw = false;
@@ -190,11 +193,6 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
 
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 
-    }*/
-
-    @Override
-    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        ctx.close();
     }
 
     public RoadGraphTileHandler(PropertyMap propertyMap){

@@ -12,8 +12,12 @@ import java.util.Scanner;
 import com.eclipsesource.json.PrettyPrint;
 import com.eclipsesource.json.WriterConfig;
 import net.zettroke.PropertyHeatMapServer.map.*;
+import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
 import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
+import org.openjdk.jol.info.ClassLayout;
+import org.openjdk.jol.info.GraphLayout;
+import org.openjdk.jol.vm.VM;
 
 import javax.imageio.ImageIO;
 
@@ -76,17 +80,14 @@ public class Main {
         PropertyMapServer server = new PropertyMapServer(map_name);
         server.start();
 
-        /*PropertyMap propertyMap = new PropertyMap();
-        PropertyMapLoaderOSM.load(propertyMap, map_name);
+        /*System.out.println(VM.current().details());
+        System.out.println(ClassLayout.parseClass(RoadGraphNode.class).toPrintable());*/
+        /*PropertyMap propertyMap = new PropertyMap(new PropertyMapLoaderOSM(map_name));
         propertyMap.init();
         Scanner scanner = new Scanner(System.in);
-        System.out.print("Start profiling:");
-        scanner.nextLine();
-        propertyMap.load_prices();
-        scanner.nextLine();
-        scanner.nextLine();
-        scanner.nextLine();*/
-
+        GraphLayout gl = GraphLayout.parseInstance(propertyMap.roadGraph.values().iterator().next());
+        System.out.println(gl.toPrintable());
+        System.out.println(gl.totalSize());*/
 
         /*StringPredictor pred = propertyMap.predictor;
         pred.add("Zettroke", null);

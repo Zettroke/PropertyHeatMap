@@ -213,9 +213,7 @@ public class QuadTree {
         }else{
             if (Math.abs(center.x-node.bounds[0]) < radius || Math.abs(center.x-node.bounds[2]) < radius ||
                     Math.abs(center.y-node.bounds[1]) < radius || Math.abs(center.y-node.bounds[3]) < radius){
-
                 return true;
-
             }else{
                 return false;
             }

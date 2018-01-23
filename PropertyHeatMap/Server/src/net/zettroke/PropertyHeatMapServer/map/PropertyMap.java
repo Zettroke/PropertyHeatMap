@@ -53,7 +53,7 @@ public class PropertyMap {
     HashMap<Long, Relation> relations = new HashMap<>();
 
     RoadGraphBuilder rgnBuilder;
-    HashMap<Long, RoadGraphNode> roadGraph;
+    public HashMap<Long, RoadGraphNode> roadGraph;
     HashMap<Long, RoadGraphNodeBuilder> rgnBuilders = new HashMap<>();
     HashMap<Long, Integer> roadGraphIndexes = new HashMap<>();
     ArrayList<RoadGraphNode> roadGraphNodes = new ArrayList<>();
@@ -582,6 +582,38 @@ public class PropertyMap {
 
         return res;
     }*/
+
+        void calcRoadGraph(long id, boolean foot){
+            HashSet<RoadType> exclude = foot ? RoadGraphNode.foot_exclude: RoadGraphNode.car_exclude;
+            int mode = foot ? 0: 1;
+            MapPoint center = ways.get(id).getCenter();
+            RoadGraphNode start = null;
+            boolean found = false;
+            for (int radius=100; radius<20000; radius+=100){
+                List<RoadGraphNode> nds = findRoadGraphNodesInCircle(center, radius);
+                for (RoadGraphNode n: nds){
+                    for (RoadType type: n.ref_types[mode]){
+                        if (!exclude.contains(type)){
+                            start = n;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                }
+                if (found) {
+                    break;
+                }
+            }
+
+            RoadGraphNode[] src = new RoadGraphNode[roadGraph.size()];
+            RoadGraphNode[] res = new RoadGraphNode[roadGraph.size()];
+            src[0] = start;
+            widthRecCalculateDistance();
+            if (!found){
+                System.err.println("Doesnt found close road to building");
+            }
+        }
 
     void widthRecCalculateDistance(RoadGraphNode[] src, RoadGraphNode[] dest, final int max_dist, final int mode, final int put){
         RoadGraphNode[] temp;

@@ -63,7 +63,11 @@ public class RoadGraphBuilder {
 
             rgn1.distancesCar.add(Math.round(dist/ PropertyMap.car_speed));
             rgn2.distancesCar.add(Math.round(dist/PropertyMap.car_speed));
-        }else if (!RoadGraphNode.foot_exclude.contains(connType)){
+
+            rgn1.roadTypesCar.add(connType);
+            rgn2.roadTypesCar.add(connType);
+        }
+        if (!RoadGraphNode.foot_exclude.contains(connType)){
             rgn1.connectionsFoot.add(rgn2.rgn);
             rgn2.connectionsFoot.add(rgn1.rgn);
             float divider;
@@ -80,13 +84,15 @@ public class RoadGraphBuilder {
                 case TROLLEYBUS:
                     divider = PropertyMap.bus_speed;
                     break;
-
                 default:
                     divider = PropertyMap.foot_speed;
                     break;
             }
             rgn1.distancesFoot.add(Math.round(dist/divider));
             rgn2.distancesFoot.add(Math.round(dist/divider));
+
+            rgn1.roadTypesFoot.add(connType);
+            rgn2.roadTypesFoot.add(connType);
         }
     }
 
