@@ -27,7 +27,7 @@ public class PropertyMap {
     public static int default_zoom = 19;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
     private final static HashSet<String> supportedRoutes = new HashSet<>(Arrays.asList("subway", "tram", "trolleybus", "bus"));
-    public int max_calculation_dist = 16000;
+    public int max_calculation_dist = 12000;
 
     // Speed in meters per 0.1 seconds.
     public static final float car_speed = 1.38888f;
@@ -161,6 +161,9 @@ public class PropertyMap {
             System.out.println("Public transport init in " + (System.nanoTime() - start) / 1000000.0 + " millis.");
             roadGraph = rgnBuilder.getRoadGraph();
             rgnBuilder = null;
+            for (RoadGraphNode rgn: roadGraph.values()){
+                tree.add(rgn);
+            }
             System.gc();
 
         /*for (IntArrayList iar: roadGraphConnections){
@@ -496,7 +499,7 @@ public class PropertyMap {
         return  null;
     }
 
-    void calcRoadGraph(long id, boolean foot) {
+    public void calcRoadGraph(long id, boolean foot, int max_dist) {
         HashSet<RoadType> exclude = foot ? RoadGraphNode.foot_exclude : RoadGraphNode.car_exclude;
         int mode = foot ? 0 : 1;
         MapPoint center = ways.get(id).getCenter();
@@ -518,11 +521,12 @@ public class PropertyMap {
                 break;
             }
         }
-
+        start.dist[0] = 0;
         RoadGraphNode[] src = new RoadGraphNode[roadGraph.size()];
         RoadGraphNode[] res = new RoadGraphNode[roadGraph.size()];
         src[0] = start;
-        widthRecCalculateDistance(src, res, max_calculation_dist, mode, 0);
+        widthRecCalculateDistance(src, res, max_dist, mode, 0);
+        System.out.println("Graph Calculated!");
         if (!found) {
             System.err.println("Doesnt found close road to building");
         }

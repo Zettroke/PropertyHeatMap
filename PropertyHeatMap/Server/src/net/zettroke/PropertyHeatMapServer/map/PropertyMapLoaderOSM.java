@@ -223,6 +223,11 @@ public class PropertyMapLoaderOSM implements MapLoader{
                 }
             }
         }
+
+        for (Way w: ways.values()){
+            w.initBounds();
+        }
+
         simpleNodes = new ArrayList<>(simpleNodeHashMap.values());
         simpleNodeHashMap = null;
         relation_nodes = null;

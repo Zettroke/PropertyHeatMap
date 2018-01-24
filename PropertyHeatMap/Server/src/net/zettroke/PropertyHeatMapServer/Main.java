@@ -120,10 +120,10 @@ public class Main {
 
         //TestPolygonClipping.test();
 
-        /*long start = System.nanoTime();
+       /* long start = System.nanoTime();
 
-        PropertyMap propertyMap = new PropertyMap();
-        PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
+        PropertyMap propertyMap = new PropertyMap(new PropertyMapLoaderOSM(map_name));
+        //PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
         propertyMap.init();
         System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
 
@@ -131,7 +131,7 @@ public class Main {
         //scanner.nextLine();
 
 
-        double size = 10000;
+        double size = 15000;
         int x_size = (int) size;
         coefficent = size/(propertyMap.x_end-propertyMap.x_begin);
         int y_size = coef(propertyMap.y_end-propertyMap.y_begin);

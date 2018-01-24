@@ -8,6 +8,8 @@ import net.zettroke.PropertyHeatMapServer.utils.IntArrayList;
 import java.util.ArrayList;
 
 public class RoadGraphNodeBuilder extends MapPoint {
+    static int curr_index = 0;
+    int index = 0;
     protected RoadGraphNode rgn;
     ArrayList<RoadGraphNode> connectionsCar = new ArrayList<>();
     ArrayList<RoadGraphNode> connectionsFoot = new ArrayList<>();
@@ -19,6 +21,8 @@ public class RoadGraphNodeBuilder extends MapPoint {
 
 
     public RoadGraphNodeBuilder(Node n){
+        index = curr_index++;
+
         rgn = new RoadGraphNode(n);
         x = n.x;
         y = n.y;
@@ -26,7 +30,7 @@ public class RoadGraphNodeBuilder extends MapPoint {
 
     public RoadGraphNode getRoadGraphNode() {
 
-        rgn.dist = new int[5];
+        rgn.dist = new int[]{Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE};
 
         rgn.distancesTo = new int[2][];
         rgn.distancesTo[0] = distancesFoot.toArray();
@@ -39,6 +43,8 @@ public class RoadGraphNodeBuilder extends MapPoint {
         rgn.ref_types = new RoadType[2][];
         rgn.ref_types[0] = roadTypesFoot.toArray(new RoadType[roadTypesFoot.size()]);
         rgn.ref_types[1] = roadTypesCar.toArray(new RoadType[roadTypesCar.size()]);
+
+        rgn.index = index;
 
         return rgn;
     }

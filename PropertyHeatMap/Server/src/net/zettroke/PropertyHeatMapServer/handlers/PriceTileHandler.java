@@ -90,8 +90,10 @@ public class PriceTileHandler implements ShittyHttpHandler{
                         }else{
 
                             g.setColor(new Color(255,255, 255, 0));
+                            //g.setColor(new Color(207, 22, 187));
                         }
                     }else{
+                        //g.setColor(new Color(207, 22, 187));
                         g.setColor(new Color(255,255, 255, 0));
                     }
                     g.fill(poly);

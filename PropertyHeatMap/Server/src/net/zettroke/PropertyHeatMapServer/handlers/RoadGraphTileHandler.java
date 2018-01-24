@@ -62,6 +62,8 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         HashMap<Long, RoadGraphNode> graph = null;
 
+        propertyMap.calcRoadGraph(start_id, true, max_dist);
+
         /*global_rgn_lock.lock();
         if (CalculatedGraphCache.contain(start_id, foot, max_dist)){
             graph = CalculatedGraphCache.get(start_id, foot,  max_dist);
