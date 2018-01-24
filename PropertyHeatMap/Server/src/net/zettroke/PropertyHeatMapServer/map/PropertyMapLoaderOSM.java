@@ -201,19 +201,7 @@ public class PropertyMapLoaderOSM implements MapLoader{
         System.out.println("Nodes: "+nodes.size());
         System.out.println("Ways: "+ways.size());
         System.out.println("Relations: "+relations.size());
-        /*Iterator<HashMap.Entry<Long, Node>> iter = nodes.entrySet().iterator();
-        while (iter.hasNext()){
-            HashMap.Entry<Long, Node> entry = iter.next();
-            Node n = entry.getValue();
-            if (!builder.isRGN(n) && !relation_nodes.contains(n.id)){
-                iter.remove();
-                simpleNodes.add(new SimpleNode(n));
-            }else{
-                if (n.data.size() == 0) {
-                    n.data = null;
-                }
-            }
-        }*/
+
         HashMap<Long, SimpleNode> simpleNodeHashMap = new HashMap<>();
         for (Long l: new HashSet<>(nodes.keySet())){
             Node n = nodes.get(l);

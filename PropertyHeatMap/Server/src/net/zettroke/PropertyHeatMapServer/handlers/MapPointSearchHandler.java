@@ -27,12 +27,6 @@ public class MapPointSearchHandler implements ShittyHttpHandler {
         return path;
     }
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        //System.out.println(Thread.currentThread().getName());
-        //System.out.println(request.uri());
-
-
-
-
 
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         if (!(decoder.parameters().containsKey("x")&&decoder.parameters().containsKey("y")&&decoder.parameters().containsKey("z"))){

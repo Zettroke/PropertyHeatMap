@@ -280,9 +280,11 @@ public class PropertyMap {
                         roadType = RoadType.SUBWAY;
                         HashSet<Long> ids = new HashSet<>();
                         for (SimpleNode sn: way.nodes){
-                            Node n = (Node) sn;
-                            if (n.data != null && n.data.containsKey("station") && n.data.get("station").equals("subway")){
-                                ids.add(n.id);
+                            if (sn instanceof Node) {
+                                Node n = (Node) sn;
+                                if (n.data != null && n.data.containsKey("station") && n.data.get("station").equals("subway")) {
+                                    ids.add(n.id);
+                                }
                             }
                         }
                         for (int i=relation_node_index_begin; i<relation_node_index_end; i++){
@@ -297,9 +299,11 @@ public class PropertyMap {
                         roadType = RoadType.TRAM;
                         HashSet<Long> ids = new HashSet<>();
                         for (SimpleNode sn: way.nodes){
-                            Node n = (Node) sn;
-                            if (n.data != null && n.data.containsKey("public_transport") && n.data.get("public_transport").equals("stop_position")){
-                                ids.add(n.id);
+                            if (sn instanceof Node) {
+                                Node n = (Node) sn;
+                                if (n.data != null && n.data.containsKey("public_transport") && n.data.get("public_transport").equals("stop_position")) {
+                                    ids.add(n.id);
+                                }
                             }
                         }
                         for (int i=relation_node_index_begin; i<relation_node_index_end; i++){
@@ -491,131 +495,38 @@ public class PropertyMap {
     public HashMap<Long, RoadGraphNode> getCalculatedRoadGraph(long id, boolean foot, final int max_dist){
         return  null;
     }
-        /*
-        // TODO: Избавится от оторванных кусков графа.
-        long start_t = System.nanoTime();
-        HashSet<RoadType> exclude;
-        ArrayList<IntArrayList> rgn_distances;
-        if (foot){
-            exclude = foot_exclude;
-            rgn_distances = roadGraphDistancesFoot;
-        }else{
-            exclude = car_exclude;
-            rgn_distances = roadGraphDistancesCar;
-        }
-        this.max_calculation_dist = max_dist;
-        HashMap<Long, RoadGraphNode> res = new HashMap<>();
-        int cnt = 0;
-        for (RoadGraphNode rgn: roadGraphNodes){
-            for (RoadType t: rgn.types){
-                if (!exclude.contains(t)){
-                    RoadGraphNode clone = rgn.clone();
-                    clone.index = cnt++;
-                    res.put(rgn.n.id, clone);
-                    break;
-                }
-            }
-        }
 
-
-        ArrayList<Integer> distances = new ArrayList<>(100);
-        ArrayList<RoadGraphNode> ref_to = new ArrayList<>(100);
-        for (int i=0; i<roadGraphNodes.size(); i++){
-            RoadGraphNode curr_node = res.get(roadGraphNodes.get(i).n.id);
-            if (curr_node != null) {
-                for (int j = 0; j<roadGraphConnections.get(i).size(); j++){
-                    if (!exclude.contains(roadGraphConnectionsTypes.get(i).get(j))){
-                        curr_node.ref_types.add(roadGraphConnectionsTypes.get(i).get(j));
-                        ref_to.add(res.get(roadGraphNodes.get(roadGraphConnections.get(i).get(j)).n.id));
-                        distances.add(rgn_distances.get(i).get(j));
-                    }
-                }
-                int[] distarr = new int[distances.size()];
-                for (int i1=0; i1<distances.size(); i1++){
-                    distarr[i1] = distances.get(i1);
-                }
-                curr_node.distances = distarr;
-                curr_node.ref_to = ref_to.toArray(new RoadGraphNode[ref_to.size()]);
-                distances.clear();
-                ref_to.clear();
-            }
-        }
-
-        TimeMeasurer.printMeasure(start_t,"Copied graph in %t millis.");
-
-        boolean found = false;
+    void calcRoadGraph(long id, boolean foot) {
+        HashSet<RoadType> exclude = foot ? RoadGraphNode.foot_exclude : RoadGraphNode.car_exclude;
+        int mode = foot ? 0 : 1;
         MapPoint center = ways.get(id).getCenter();
-        Node start = new Node();
-        start.x = Integer.MAX_VALUE; start.y = Integer.MAX_VALUE;
-
-        for (int radius=100; radius<20000; radius+=100){
-            List<Node> nds = findNodesInCircle(center, radius);
-            for (Node n: nds){
-                if (n.isRoadNode){
-                    if (res.keySet().contains(n.id)){
-                        for (RoadType type: res.get(n.id).types){
-                            if (!exclude.contains(type)){
-                                start = n;
-                                found = true;
-                                break;
-                            }
-                        }
+        RoadGraphNode start = null;
+        boolean found = false;
+        for (int radius = 100; radius < 20000; radius += 100) {
+            List<RoadGraphNode> nds = findRoadGraphNodesInCircle(center, radius);
+            for (RoadGraphNode n : nds) {
+                for (RoadType type : n.ref_types[mode]) {
+                    if (!exclude.contains(type)) {
+                        start = n;
+                        found = true;
+                        break;
                     }
                 }
+
             }
             if (found) {
                 break;
             }
         }
 
-        if (!found){
+        RoadGraphNode[] src = new RoadGraphNode[roadGraph.size()];
+        RoadGraphNode[] res = new RoadGraphNode[roadGraph.size()];
+        src[0] = start;
+        widthRecCalculateDistance(src, res, max_calculation_dist, mode, 0);
+        if (!found) {
             System.err.println("Doesnt found close road to building");
         }
-
-        RoadGraphNode start_rgn = res.get(start.id);
-        start_rgn.dist = 0;
-        //recCalculateDistances(start_rgn, max_dist);
-        System.out.println("Initial arrays size - " + res.size());
-
-        RoadGraphNode[] start_arr = new RoadGraphNode[res.size()];
-        RoadGraphNode[] dest_arr = new RoadGraphNode[res.size()];
-        start_arr[0] = start_rgn;
-        widthRecCalculateDistance(start_arr, dest_arr, max_dist);
-
-        return res;
-    }*/
-
-        void calcRoadGraph(long id, boolean foot){
-            HashSet<RoadType> exclude = foot ? RoadGraphNode.foot_exclude: RoadGraphNode.car_exclude;
-            int mode = foot ? 0: 1;
-            MapPoint center = ways.get(id).getCenter();
-            RoadGraphNode start = null;
-            boolean found = false;
-            for (int radius=100; radius<20000; radius+=100){
-                List<RoadGraphNode> nds = findRoadGraphNodesInCircle(center, radius);
-                for (RoadGraphNode n: nds){
-                    for (RoadType type: n.ref_types[mode]){
-                        if (!exclude.contains(type)){
-                            start = n;
-                            found = true;
-                            break;
-                        }
-                    }
-
-                }
-                if (found) {
-                    break;
-                }
-            }
-
-            RoadGraphNode[] src = new RoadGraphNode[roadGraph.size()];
-            RoadGraphNode[] res = new RoadGraphNode[roadGraph.size()];
-            src[0] = start;
-
-            if (!found){
-                System.err.println("Doesnt found close road to building");
-            }
-        }
+    }
 
     void widthRecCalculateDistance(RoadGraphNode[] src, RoadGraphNode[] dest, final int max_dist, final int mode, final int put){
         RoadGraphNode[] temp;
