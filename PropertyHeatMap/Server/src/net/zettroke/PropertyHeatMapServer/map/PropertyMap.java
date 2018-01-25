@@ -8,6 +8,7 @@ import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNodeBuilder;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
+import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphCache;
 import net.zettroke.PropertyHeatMapServer.utils.IntArrayList;
 import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
 
@@ -25,6 +26,7 @@ public class PropertyMap {
     static final int earthRadius = 6371000;
 
     public static int default_zoom = 19;
+    public static int cache_size = 10;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
     private final static HashSet<String> supportedRoutes = new HashSet<>(Arrays.asList("subway", "tram", "trolleybus", "bus"));
     public int max_calculation_dist = 12000;
@@ -54,15 +56,7 @@ public class PropertyMap {
 
     RoadGraphBuilder rgnBuilder;
     public HashMap<Long, RoadGraphNode> roadGraph;
-    HashMap<Long, RoadGraphNodeBuilder> rgnBuilders = new HashMap<>();
-    HashMap<Long, Integer> roadGraphIndexes = new HashMap<>();
-    ArrayList<RoadGraphNode> roadGraphNodes = new ArrayList<>();
-    ArrayList<IntArrayList> roadGraphConnections = new ArrayList<>();
-    ArrayList<ArrayList<RoadType>> roadGraphConnectionsTypes = new ArrayList<>();
-
-    // Дистанция в 0.1 секундах.
-    ArrayList<IntArrayList> roadGraphDistancesCar = new ArrayList<>();
-    ArrayList<IntArrayList> roadGraphDistancesFoot = new ArrayList<>();
+    public CalculatedGraphCache cache;
 
     public QuadTree tree;
 
@@ -100,11 +94,6 @@ public class PropertyMap {
                     t.add(n);
                 }
             }
-            for (RoadGraphNode rgn: m.roadGraphNodes){
-                if (t.inBounds(rgn.n)) {
-                    t.add(rgn);
-                }
-            }
             //System.out.println(getName() + " Done with nodes!");
             //int cnt = 0;
             for (Way w: ways.values()){
@@ -125,7 +114,7 @@ public class PropertyMap {
 
             x_begin = coords[0]; y_begin = coords[1]; x_end = coords[2]; y_end = coords[3];
 
-            rgnBuilder = new RoadGraphBuilder(new int[]{0, 0, x_end - x_begin, y_end - y_begin});
+            rgnBuilder = new RoadGraphBuilder(new int[]{0, 0, x_end - x_begin, y_end - y_begin}, cache_size);
 
             loader.load(rgnBuilder, this);
 
@@ -164,6 +153,7 @@ public class PropertyMap {
             for (RoadGraphNode rgn: roadGraph.values()){
                 tree.add(rgn);
             }
+            cache = new CalculatedGraphCache(roadGraph, cache_size);
             System.gc();
 
         /*for (IntArrayList iar: roadGraphConnections){
@@ -499,7 +489,7 @@ public class PropertyMap {
         return  null;
     }
 
-    public void calcRoadGraph(long id, boolean foot, int max_dist) {
+    public void calcRoadGraph(long id, boolean foot, int max_dist, int put) {
         HashSet<RoadType> exclude = foot ? RoadGraphNode.foot_exclude : RoadGraphNode.car_exclude;
         int mode = foot ? 0 : 1;
         MapPoint center = ways.get(id).getCenter();
@@ -521,11 +511,11 @@ public class PropertyMap {
                 break;
             }
         }
-        start.dist[0] = 0;
+        start.dist[put] = 0;
         RoadGraphNode[] src = new RoadGraphNode[roadGraph.size()];
         RoadGraphNode[] res = new RoadGraphNode[roadGraph.size()];
         src[0] = start;
-        widthRecCalculateDistance(src, res, max_dist, mode, 0);
+        widthRecCalculateDistance(src, res, max_dist, mode, put);
         System.out.println("Graph Calculated!");
         if (!found) {
             System.err.println("Doesnt found close road to building");

@@ -107,10 +107,10 @@ class Map(wx.Panel):
         self.Refresh()
 
     def request_location(self, x, y):
-
+        print("request")
         ans = json.loads(requests.get(self.point_search_url.format(x=x, y=y, z=self.zoom)).text, encoding="utf-8")
         if ans["status"] == "success":
-
+            
             if ans["objects"][0]["id"] not in self.shapes_dict:
                 print(json.dumps(ans, ensure_ascii=False, indent=2))
                 max_x, max_y = 0, 0

@@ -11,10 +11,12 @@ public class RoadGraphBuilder {
     int[] bounds;
     HashMap<Long, RoadGraphNodeBuilder> nodes = new HashMap<>();
     TinyQuadTree nodesTree;
+    int cache_size;
 
-    public RoadGraphBuilder(int[] bounds){
+    public RoadGraphBuilder(int[] bounds, int cache_size){
         this.bounds = bounds;
         nodesTree = new TinyQuadTree(bounds);
+        this.cache_size = cache_size;
     }
 
     public void add(Node n){
@@ -106,7 +108,7 @@ public class RoadGraphBuilder {
         HashMap<Long, RoadGraphNode> res = new HashMap<>();
 
         for (Map.Entry<Long, RoadGraphNodeBuilder> entry: nodes.entrySet()){
-            res.put(entry.getKey(), entry.getValue().getRoadGraphNode());
+            res.put(entry.getKey(), entry.getValue().getRoadGraphNode(cache_size));
         }
 
         return res;

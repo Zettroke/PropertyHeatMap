@@ -28,9 +28,9 @@ public class RoadGraphNodeBuilder extends MapPoint {
         y = n.y;
     }
 
-    public RoadGraphNode getRoadGraphNode() {
+    public RoadGraphNode getRoadGraphNode(int cache_size) {
 
-        rgn.dist = new int[]{Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE};
+        rgn.dist = new int[cache_size];
 
         rgn.distancesTo = new int[2][];
         rgn.distancesTo[0] = distancesFoot.toArray();

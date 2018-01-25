@@ -12,6 +12,7 @@ import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.BoolArrayPool;
 import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphCache;
 import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphKey;
+import net.zettroke.PropertyHeatMapServer.utils.TimeMeasurer;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -61,8 +62,20 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         Graphics2D g = (Graphics2D) imageTemp.getGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         HashMap<Long, RoadGraphNode> graph = null;
+        int ind=0;
+        synchronized (propertyMap) {
+            long start = System.nanoTime();
+            CalculatedGraphKey key = new CalculatedGraphKey(start_id, foot, max_dist);
+            if (propertyMap.cache.contains(key)){
+                ind = propertyMap.cache.getCachedIndex(key);
+            }else {
 
-        propertyMap.calcRoadGraph(start_id, true, max_dist);
+                ind = propertyMap.cache.getNewIndexForGraph(key);
+                propertyMap.calcRoadGraph(start_id, true, max_dist, ind);
+                TimeMeasurer.printMeasure(start, "Graph calculated in %t millis.");
+            }
+
+        }
 
         /*global_rgn_lock.lock();
         if (CalculatedGraphCache.contain(start_id, foot, max_dist)){
@@ -169,8 +182,8 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                                 break;
                         }
                         if (!dont_draw) {
-                            g.setPaint(new GradientPaint(coef(rgn.n.x - offx), coef(rgn.n.y - offy), rgn.getNodeColor(max_dist, 0),
-                                                         coef(ref.n.x - offx), coef(ref.n.y - offy), ref.getNodeColor(max_dist, 0)));
+                            g.setPaint(new GradientPaint(coef(rgn.n.x - offx), coef(rgn.n.y - offy), rgn.getNodeColor(max_dist, ind),
+                                                         coef(ref.n.x - offx), coef(ref.n.y - offy), ref.getNodeColor(max_dist, ind)));
                             g.drawLine(coef(rgn.n.x - offx), coef(rgn.n.y - offy), coef(ref.n.x - offx), coef(ref.n.y - offy));
                         }else{
                             dont_draw = false;

@@ -7,34 +7,45 @@ import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class CalculatedGraphCache {
-
-    public static HashMap<CalculatedGraphKey, ReentrantLock> current_processing = new HashMap<>();
-
-    static int max_cache_size = 10;
-
-    static Map<CalculatedGraphKey, HashMap<Long, RoadGraphNode>> storage = Collections.synchronizedMap(new LinkedHashMap<CalculatedGraphKey, HashMap<Long, RoadGraphNode>>(){
+    HashMap<Long, RoadGraphNode> roadGraph;
+    LinkedHashMap<CalculatedGraphKey, Integer> cached = new LinkedHashMap<CalculatedGraphKey, Integer>(){
         @Override
-        protected boolean removeEldestEntry(Map.Entry eldest) {
-            return this.size() > max_cache_size;
+        protected boolean removeEldestEntry(Map.Entry<CalculatedGraphKey, Integer> eldest) {
+            if (size() > capacity){
+                free_indexes.add(eldest.getValue());
+                return true;
+            }
+            return false;
         }
-    });
+    };
 
+    public ArrayList<Integer> free_indexes = new ArrayList<>();
+    public int capacity = 0;
 
-
-    public static HashMap<Long, RoadGraphNode> get(long id, boolean foot, int max_dist){
-        CalculatedGraphKey key = new CalculatedGraphKey(id, foot, max_dist);
-        HashMap<Long, RoadGraphNode> res = storage.get(key);
-        storage.put(key, res);
-        return res;
+    public CalculatedGraphCache(HashMap<Long, RoadGraphNode> roadGraph, int initialCapacity){
+        this.roadGraph = roadGraph;
+        capacity = initialCapacity;
+        for (int i=0; i<initialCapacity; i++){
+            free_indexes.add(i);
+        }
     }
 
-    public synchronized static void store(long id, boolean foot, int max_dist, HashMap<Long, RoadGraphNode> graph){
-        CalculatedGraphKey key = new CalculatedGraphKey(id, foot, max_dist);
-        storage.put(key, graph);
+    public int getNewIndexForGraph(CalculatedGraphKey key){
+        int ind = free_indexes.get(free_indexes.size()-1);
+        free_indexes.remove(free_indexes.size()-1);
+        cached.put(key, ind);
+        for (RoadGraphNode rgn: roadGraph.values()){
+            rgn.dist[ind] = Integer.MAX_VALUE;
+        }
+        return ind;
     }
 
-    public static boolean contain(long id, boolean foot, int max_dist){
-        return storage.containsKey(new CalculatedGraphKey(id, foot, max_dist));
+    public int getCachedIndex(CalculatedGraphKey key){
+        return cached.get(key);
+
+    }
+    public boolean contains(CalculatedGraphKey key){
+        return cached.containsKey(key);
     }
 
 }
