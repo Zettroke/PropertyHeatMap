@@ -343,8 +343,9 @@ public class QuadTree {
             }
         }else{
             for (RoadGraphNode rgn: source.roadGraphNodes){
-                res.add(rgn);
-
+                if (res.inBounds(rgn.n)) {
+                    res.roadGraphNodes.add(rgn);
+                }
             }
         }
     }

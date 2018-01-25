@@ -26,6 +26,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
 
     static Lock global_rgn_lock = new ReentrantLock();
 
+    static final int zoom_level = 13; 
 
     final String path = "tile/road";
     @Override
@@ -41,7 +42,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
 
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-
+        long st = System.nanoTime();
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         int z = Integer.decode(decoder.parameters().get("z").get(0));
         int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
@@ -55,6 +56,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         coefficent = 1.0/mult;
 
         QuadTreeNode treeNode = new QuadTreeNode(new int[]{(x-1)*mult*256, (y-1)*mult*256, (x+2)*mult*256, (y+2)*mult*256});
+        propertyMap.fillTreeNodeWithRoadGraphNodes(treeNode);
         //QuadTreeNode treeNode = new QuadTreeNode(new int[]{(x)*mult*256, (y)*mult*256, (x+1)*mult*256, (y+1)*mult*256});
         //QuadTreeNode treeNode = propertyMap.tree.root;
         BufferedImage imageTemp = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
@@ -63,54 +65,21 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         HashMap<Long, RoadGraphNode> graph = null;
         int ind=0;
-        synchronized (propertyMap) {
+        global_rgn_lock.lock();
             long start = System.nanoTime();
             CalculatedGraphKey key = new CalculatedGraphKey(start_id, foot, max_dist);
             if (propertyMap.cache.contains(key)){
                 ind = propertyMap.cache.getCachedIndex(key);
             }else {
-
                 ind = propertyMap.cache.getNewIndexForGraph(key);
                 propertyMap.calcRoadGraph(start_id, true, max_dist, ind);
                 TimeMeasurer.printMeasure(start, "Graph calculated in %t millis.");
             }
-
-        }
-
-        /*global_rgn_lock.lock();
-        if (CalculatedGraphCache.contain(start_id, foot, max_dist)){
-            graph = CalculatedGraphCache.get(start_id, foot,  max_dist);
-            global_rgn_lock.unlock();
-        }else {
-            //System.out.println("Start calculating roadgraph - " + Thread.currentThread().getName());
-            CalculatedGraphKey key = new CalculatedGraphKey(start_id, foot, max_dist);
-            if (!CalculatedGraphCache.current_processing.containsKey(key)) {
-                ReentrantLock lck = new ReentrantLock();
-                CalculatedGraphCache.current_processing.put(key, lck);
-                lck.lock();
-                global_rgn_lock.unlock();
-
-                long start = System.nanoTime();
-                graph = propertyMap.getCalculatedRoadGraph(start_id, foot, max_dist);
-                CalculatedGraphCache.store(start_id, foot, max_dist, graph);
-                System.out.println("Graph Calculated in " + ((System.nanoTime()-start) / 1000000.0) + "millis.");
-                lck.unlock();
-            }else{
-                ReentrantLock lck = CalculatedGraphCache.current_processing.get(key);
-                global_rgn_lock.unlock();
-                lck.lock();
-                graph = CalculatedGraphCache.get(start_id, foot, max_dist);
-                if (!lck.hasQueuedThreads()){
-                    CalculatedGraphCache.current_processing.remove(key);
-                }
-                lck.unlock();
-
-            }
-        }*/
+        global_rgn_lock.unlock();
 
         graph = propertyMap.roadGraph;
 
-        BasicStroke secondary_stroke = new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke secondary_stroke = new BasicStroke(65f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
         BasicStroke primary_stroke = new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
         BasicStroke tertiary_stroke = new BasicStroke(60f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
         BasicStroke service_stroke = new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
@@ -125,38 +94,66 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         int offy = y*mult*256;
         boolean dont_draw = false;
         boolean[] visited = BoolArrayPool.getArray(graph.size());
-        //HashSet<Integer> visited = new HashSet<>();
         g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        for (RoadGraphNode rgn : graph.values()){
-            if (treeNode.inBounds(rgn.n)){
+        for (RoadGraphNode rgn : treeNode.roadGraphNodes){
+            //if (treeNode.inBounds(rgn.n)){
                 visited[rgn.index] = true;
                 for (int i=0; i<rgn.ref_to[mode].length; i++){
                     RoadGraphNode ref = rgn.ref_to[mode][i];
                     if (!visited[ref.index]){
                         switch (rgn.ref_types[mode][i]){
                             case SECONDARY:
-                                g.setStroke(secondary_stroke);
+                                if (z > zoom_level) {
+                                    g.setStroke(secondary_stroke);
+                                }else{
+                                    g.setStroke(new BasicStroke(120f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                }
                                 break;
                             case RESIDENTIAL:
-                                g.setStroke(residential_stroke);
+                                if (z > zoom_level) {
+                                    g.setStroke(residential_stroke);
+                                }else{
+                                    dont_draw = true;
+                                }
                                 break;
                             case SERVICE:
-                                g.setStroke(service_stroke);
+                                if (z > zoom_level) {
+                                    g.setStroke(service_stroke);
+                                }else{
+                                    dont_draw = true;
+                                }
                                 break;
                             case TERTIARY:
-                                g.setStroke(tertiary_stroke);
+                                if (z > zoom_level) {
+                                    g.setStroke(tertiary_stroke);
+                                }else{
+                                    g.setStroke(tertiary_stroke);
+                                    //dont_draw = true;
+                                }
                                 break;
                             case PRIMARY:
-                                g.setStroke(primary_stroke);
+                                if (z > zoom_level) {
+                                    g.setStroke(primary_stroke);
+                                }else{
+                                    g.setStroke(new BasicStroke(120f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                                }
                                 break;
                             case TRUNK:
                                 g.setStroke(new BasicStroke(80f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                                 break;
                             case DEFAULT:
-                                g.setStroke(default_stroke);
+                                if (z > zoom_level) {
+                                    g.setStroke(default_stroke);
+                                }else{
+                                    dont_draw = true;
+                                }
                                 break;
                             case LIVING_STREET:
-                                g.setStroke(living_stroke);
+                                if (z > zoom_level) {
+                                    g.setStroke(living_stroke);
+                                }else{
+                                    dont_draw = true;
+                                }
                                 break;
                             case SUBWAY:
                                 dont_draw = true;
@@ -174,7 +171,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                                 dont_draw = true;
                                 break;
                             default:
-                                if (z > 14) {
+                                if (z > zoom_level) {
                                     g.setStroke(unknown_stroke);
                                 }else{
                                     dont_draw = true;
@@ -182,6 +179,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                                 break;
                         }
                         if (!dont_draw) {
+
                             g.setPaint(new GradientPaint(coef(rgn.n.x - offx), coef(rgn.n.y - offy), rgn.getNodeColor(max_dist, ind),
                                                          coef(ref.n.x - offx), coef(ref.n.y - offy), ref.getNodeColor(max_dist, ind)));
                             g.drawLine(coef(rgn.n.x - offx), coef(rgn.n.y - offy), coef(ref.n.x - offx), coef(ref.n.y - offy));
@@ -190,7 +188,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                         }
                     }
                 }
-            }
+            //}
         }
 
         BoolArrayPool.returnArray(visited);
@@ -207,7 +205,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
 
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-
+        TimeMeasurer.printMeasure(st, "Tile done in %t millis");
     }
 
     public RoadGraphTileHandler(PropertyMap propertyMap){
