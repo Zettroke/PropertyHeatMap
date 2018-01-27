@@ -15,6 +15,7 @@ import net.zettroke.PropertyHeatMapServer.map.*;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
 import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
+import net.zettroke.PropertyHeatMapServer.utils.TimeMeasurer;
 import org.openjdk.jol.info.ClassLayout;
 import org.openjdk.jol.info.GraphLayout;
 import org.openjdk.jol.vm.VM;
@@ -79,6 +80,17 @@ public class Main {
 
         PropertyMapServer server = new PropertyMapServer(map_name);
         server.start();
+        /*long start = System.nanoTime();
+        for (int i=0; i<10000; i++){
+            TestJNI.call(i);
+        }
+        System.out.println("1 call in " + (System.nanoTime()-start)/1000.0/10000.0 + " microseconds.");
+
+        start = System.nanoTime();
+        for (int i=0; i<10000; i++){
+            TestJNI.call(i);
+        }
+        System.out.println("1 call in " + (System.nanoTime()-start)/1000.0/10000.0 + " microseconds.");*/
 
         /*System.out.println(VM.current().details());
         System.out.println(ClassLayout.parseClass(RoadGraphNode.class).toPrintable());*/

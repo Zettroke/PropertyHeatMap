@@ -112,7 +112,8 @@ class Map(wx.Panel):
         if ans["status"] == "success":
             
             if ans["objects"][0]["id"] not in self.shapes_dict:
-                print(json.dumps(ans, ensure_ascii=False, indent=2))
+                print(ans["objects"][0]["id"])
+                # print(json.dumps(ans, ensure_ascii=False, indent=2))
                 max_x, max_y = 0, 0
                 min_x, min_y = 2 ** 32 - 1, 2 ** 32 - 1
                 for p in ans["objects"][0]["points"]:

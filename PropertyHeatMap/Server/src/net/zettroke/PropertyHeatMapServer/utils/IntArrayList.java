@@ -22,6 +22,12 @@ public class IntArrayList {
         size++;
     }
 
+    public void addAll(int... ints){
+        for (int i: ints){
+            add(i);
+        }
+    }
+
     private void grow(int minSize){
         int newSize = container.length + (container.length >> 1);
         if (newSize < minSize){
