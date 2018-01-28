@@ -20,12 +20,15 @@ public class RoadGraphDrawer{
 
     private RoadGraphDrawer(){
         try {
-            //System.setProperty("java.library.path", "native_libs");
+            System.setProperty("java.library.path", System.getProperty("java.library.path") + ";./native_libs");
+
             System.loadLibrary("JNI-CairoDrawer");
             isNativeAvailable = true;
         }catch (UnsatisfiedLinkError e){
             System.err.println("Cairo draw not available");
+	    e.printStackTrace();
             isNativeAvailable = false;
+	    System.out.println(System.getProperty("java.library.path"));
         }
     }
 

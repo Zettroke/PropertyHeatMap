@@ -5,8 +5,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
-import javafx.util.Pair;
-import jdk.nashorn.internal.ir.debug.JSONWriter;
 import net.zettroke.PropertyHeatMapServer.map.MapPoint;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.Way;

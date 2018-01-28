@@ -16,9 +16,9 @@ import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
 import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
 import net.zettroke.PropertyHeatMapServer.utils.TimeMeasurer;
-import org.openjdk.jol.info.ClassLayout;
+/*import org.openjdk.jol.info.ClassLayout;
 import org.openjdk.jol.info.GraphLayout;
-import org.openjdk.jol.vm.VM;
+import org.openjdk.jol.vm.VM;*/
 
 import javax.imageio.ImageIO;
 
