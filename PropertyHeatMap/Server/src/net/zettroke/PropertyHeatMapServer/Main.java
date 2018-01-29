@@ -14,6 +14,7 @@ import com.eclipsesource.json.WriterConfig;
 import net.zettroke.PropertyHeatMapServer.map.*;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
+import net.zettroke.PropertyHeatMapServer.utils.RoadGraphDrawer;
 import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
 import net.zettroke.PropertyHeatMapServer.utils.TimeMeasurer;
 /*import org.openjdk.jol.info.ClassLayout;
@@ -22,36 +23,6 @@ import org.openjdk.jol.vm.VM;*/
 
 import javax.imageio.ImageIO;
 
-
-//-XX:+UnlockCommercialFeatures -XX:+FlightRecorder
-class Key{
-    int a;
-    short b;
-    boolean c;
-
-    public Key(int a, short b, boolean c) {
-        this.a = a;
-        this.b = b;
-        this.c = c;
-    }
-
-    /*@Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Key key = (Key) o;
-        return a == key.a &&
-                b == key.b &&
-                c == key.c;
-    }*/
-
-
-    @Override
-    public int hashCode() {
-
-        return Objects.hash(a, b, c);
-    }
-}
 
 public class Main {
 
@@ -76,7 +47,21 @@ public class Main {
         //ab -n 5000 -c 8 "http://178.140.109.241:24062/tile?x=6&y=0&z=16"
         /*Scanner scanner = new Scanner(System.in);
         scanner.nextLine();*/
-
+        if (args.length != 0){
+            for (String s: args){
+                if (s.contains("-draw=")){
+                    if (s.substring(6).equals("native")){
+                        RoadGraphDrawer.isGlobalSet = true;
+                        RoadGraphDrawer.isNative = true;
+                        //System.out.println("set drawer to native");
+                    }else if(s.substring(6).equals("java")){
+                        RoadGraphDrawer.isGlobalSet = true;
+                        RoadGraphDrawer.isNative = false;
+                        //System.out.println("set drawer to java");
+                    }
+                }
+            }
+        }
 
         PropertyMapServer server = new PropertyMapServer(map_name);
         server.start();

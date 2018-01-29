@@ -11,7 +11,7 @@ import time
 # 2k18 yaaaay
 
 EVT_REFRESH = wx.NewId()
-mx_dist = 12000
+mx_dist = 18000
 
 
 # ShowApartmentsEvent, EVT_SHOW_APARTMENTS = wx.lib.newevent.NewEvent()
@@ -329,13 +329,11 @@ class Map(wx.Panel):
             image = image.convert("RGBA")
             self.loader_lock.acquire()
             to_load.place[to_load.key] = image
-            # self.loaded_tiles_set.add(to_load)
+
             self.bitmaps_to_update.add(to_load.key)
 
-            # wx.PostEvent(self, wx.EVT_PAINT())
             self.Refresh()
 
-            # time.sleep(0.01)
             self.loader_lock.release()
             
     def center_on(self, obj):

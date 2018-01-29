@@ -14,21 +14,29 @@ import java.io.IOException;
 
 public class RoadGraphDrawer{
 
-    private boolean isNativeAvailable;
+    public static boolean isGlobalSet = false;
+    public static boolean isNative;
+
+    private final boolean isNativeAvailable;
     final static int zoom_level = 13;
     static RoadGraphDrawer instance = null;
 
     private RoadGraphDrawer(){
-        try {
-            System.setProperty("java.library.path", System.getProperty("java.library.path") + ";./native_libs");
+        boolean temp;
+        if (!isGlobalSet || isNative) {
+            try {
+                //System.setProperty("java.library.path", System.getProperty("java.library.path") + ";./native_libs");
+                System.loadLibrary("JNI-CairoDrawer");
 
-            System.loadLibrary("JNI-CairoDrawer");
-            isNativeAvailable = true;
-        }catch (UnsatisfiedLinkError e){
-            System.err.println("Cairo draw not available");
-	    e.printStackTrace();
+                temp = true;
+            } catch (UnsatisfiedLinkError e) {
+                System.err.println("Cairo draw not available");
+                e.printStackTrace();
+                temp = false;
+            }
+            isNativeAvailable = temp;
+        }else{
             isNativeAvailable = false;
-	    System.out.println(System.getProperty("java.library.path"));
         }
     }
 
@@ -71,7 +79,7 @@ public class RoadGraphDrawer{
                             if (z > zoom_level) {
                                 stroke = secondary_stroke;
                             }else{
-                                stroke = Math.round(120f/mult*100);
+                                stroke = Math.round(160f/mult*100);
                             }
                             break;
                         case RESIDENTIAL:
@@ -100,11 +108,11 @@ public class RoadGraphDrawer{
                             if (z > zoom_level) {
                                 stroke = primary_stroke;
                             }else{
-                                stroke = Math.round(120f/mult*100);
+                                stroke = Math.round(160f/mult*100);
                             }
                             break;
                         case TRUNK:
-                            stroke = Math.round(80f/mult*100);
+                            stroke = Math.round(160f/mult*100);
                             break;
                         case DEFAULT:
                             if (z > zoom_level) {

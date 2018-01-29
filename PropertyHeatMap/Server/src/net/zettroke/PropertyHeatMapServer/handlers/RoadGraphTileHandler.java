@@ -50,7 +50,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         //System.out.println("Id - " + id + " Thread - " + Thread.currentThread().getName());
         coefficent = 1.0/mult;
 
-        QuadTreeNode treeNode = new QuadTreeNode(new int[]{(x-1)*mult*256, (y-1)*mult*256, (x+2)*mult*256, (y+2)*mult*256});
+        QuadTreeNode treeNode = new QuadTreeNode(new int[]{x*mult*256 - 4*256, y*mult*256 - 4*256, (x+1)*mult*256 + 4*256, (y+1)*mult*256 + 4*256});
         propertyMap.fillTreeNodeWithRoadGraphNodes(treeNode);
         //QuadTreeNode treeNode = new QuadTreeNode(new int[]{(x)*mult*256, (y)*mult*256, (x+1)*mult*256, (y+1)*mult*256});
         //QuadTreeNode treeNode = propertyMap.tree.root;
