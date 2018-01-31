@@ -1,16 +1,24 @@
-from multiprocessing import Process
+from multiprocessing import Process, Value
+import socks
+import socket
 import requests
 import math
+import threading
 import os
 
 # from 10 to 17 zoom
 UPDATE = True
-PROC_NUM = 1
+PROC_NUM = 8
 
-map_folder = "C:/PropertyHeatMap/osm_map_full_moscow_test2/"
+map_folder = "C:/PropertyHeatMap/osm_map_full_moscow/"
 
 zoom_start = 10
 zoom_end = 17
+
+# socks.set_default_proxy(socks.SOCKS5, "localhost", 9150)
+# socket.socket = socks.socksocket
+
+
 
 
 def mercator(lat, lon, z):
@@ -18,11 +26,12 @@ def mercator(lat, lon, z):
            (2**(z-1)/math.pi)*(math.pi-math.log(math.tan(math.radians(lon)/2+math.pi/4)))
 
 
-def tiles_loader(ind, server, bounds, exclude):
+def tiles_loader(ind, server, bounds, exclude, counter):
+
     # url = "http://" + server + ".maps.yandex.net/tiles?l=map&v=17.10.01-0&x={}&y={}&z={}&scale=1&lang=ru_RU"
-    # url = "http://" + server + ".tile.openstreetmap.org/{z}/{x}/{y}.png"
-    #url = "https://" + server + ".tiles.mapbox.com/v4/mapquest.streets-mb/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwcXVlc3QiLCJhIjoiY2Q2N2RlMmNhY2NiZTRkMzlmZjJmZDk0NWU0ZGJlNTMifQ.mPRiEubbajc6a5y9ISgydg"
-    url = "https://" + server + ".tiles.mapbox.com/v3/foursquare.qhb8olxr/{z}/{x}/{y}.png"
+    url = "http://" + server + ".tile.openstreetmap.org/{z}/{x}/{y}.png"
+    # url = "https://" + server + ".tiles.mapbox.com/v4/mapquest.streets-mb/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwcXVlc3QiLCJhIjoiY2Q2N2RlMmNhY2NiZTRkMzlmZjJmZDk0NWU0ZGJlNTMifQ.mPRiEubbajc6a5y9ISgydg"
+    # url = "https://" + server + ".tiles.mapbox.com/v3/foursquare.qhb8olxr/{z}/{x}/{y}.png"
     tmp = mercator(bounds[0], bounds[1], zoom_start)
     offset_tile_x, offset_tile_y = round(tmp[0]), round(tmp[1])
     tmp = mercator(bounds[2], bounds[3], zoom_start)
@@ -65,6 +74,10 @@ def tiles_loader(ind, server, bounds, exclude):
                                 "Referer": "http://www.openstreetmap.org/",
                                 "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"})
                             open(map_folder + zoom_folder + "{}.{}.png".format(x, y), "wb").write(r.content)
+
+                            with counter.get_lock():
+                                counter.value += 1
+
                             break
                         except Exception as e:
                             print(e)
@@ -75,6 +88,8 @@ def tiles_loader(ind, server, bounds, exclude):
 
 
 if __name__ == '__main__':
+    counter = Value('i', 0, lock=True)
+
     import time
 
     start_time = time.clock()
@@ -90,8 +105,8 @@ if __name__ == '__main__':
     bounds = [start_x, start_y, end_x, end_y]
 
     # servers = ["vec01", "vec02", "vec03", "vec04"]*max((PROC_NUM//4), 1)
-    servers = ["a", "b", "c", "d"]
-    servers = servers*max((PROC_NUM//len(servers)), 1)
+    servers = ["a", "b", "c"]
+    servers = servers*max(round(PROC_NUM/len(servers) + 0.5), 1)
     import os
     exclude = []
     for i in range(zoom_start, zoom_end+1):
@@ -101,13 +116,35 @@ if __name__ == '__main__':
             exclude.append(i)
 
     processes = []
+    stop_counter = False
+    meter_time = 10
+    speeds = []
+    def speed_meter():
+        old_val = counter.value
+        seconds = 0
+        while not stop_counter:
+            seconds += meter_time
+            new_val = counter.value
+            speeds.append((new_val-old_val)/meter_time)
+            if len(speeds) > 10:
+                del speeds[0]
+            print(sum(speeds)/len(speeds), "tiles per second.")
+            old_val = new_val
+            time.sleep(meter_time)
+
+            if seconds % 100 == 0:
+                threading.Thread(target=lambda: print("ip is", requests.get("https://api.ipify.org/?format=plain").content), daemon=True).start()
+
     for i in range(PROC_NUM):
-        p = Process(target=tiles_loader, args=(i, servers[i], bounds, exclude))
+        p = Process(target=tiles_loader, args=(i, servers[i], bounds, exclude, counter))
         p.start()
         processes.append(p)
+    threading.Thread(target=speed_meter, daemon=True).start()
     for i in processes:
         i.join()
+    stop_counter = True
     print("done in {}sec.".format(time.clock()-start_time))
+
 
     '''import assemble
     assemble.assemble()'''
