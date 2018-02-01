@@ -68,6 +68,7 @@ public class PriceTileHandler implements ShittyHttpHandler{
 
     void drawTreeNode(Graphics2D g, QuadTreeNode treeNode, int x_offset, int y_offset, int price, double range){
         double dist = price*range*2;
+        g.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         for (MapShape mh: treeNode.shapes){
             if (mh.isPoly && mh.way.data.containsKey("building")) {
                     g.setStroke(new BasicStroke(1f));
@@ -84,9 +85,11 @@ public class PriceTileHandler implements ShittyHttpHandler{
                         }
                         if (ap_price > price - price*range && ap_price < price+price*range) {
                             float color = (float) ((((price + price * range)-ap_price) / dist) * (24.0 / 36.0));
-                            Color clr = Color.getHSBColor(color, 1.0f, 1.0f);
+                            Color clr = Color.getHSBColor(color, 1.0f, 0.95f);
 
-                            g.setColor(new Color(clr.getRed(), clr.getGreen(), clr.getBlue(), 192));
+                            g.setColor(new Color(clr.getRed(), clr.getGreen(), clr.getBlue(), 200));
+
+
                         }else{
 
                             g.setColor(new Color(255,255, 255, 0));
@@ -97,6 +100,31 @@ public class PriceTileHandler implements ShittyHttpHandler{
                         g.setColor(new Color(255,255, 255, 0));
                     }
                     g.fill(poly);
+                    if (g.getColor().getAlpha() != 0) {
+                        g.setColor(new Color(g.getColor().getRGB()));
+                    }else{
+                        g.setColor(new Color(255, 255, 255, 0));
+                    }
+                    Path2D.Float path2D = new Path2D.Float();
+
+                    MapPoint p1 = mh.points.get(0);
+                    MapPoint p2 = mh.points.get(1);
+                    path2D.moveTo(coef(p1.x)-x_offset, coef(p1.y)-y_offset);
+                    for (int i=2; i<mh.points.size(); i++){
+                        if (!treeNode.onBounds(p1) || !treeNode.onBounds(p2)){
+                            path2D.lineTo(coef(p2.x)-x_offset, coef(p2.y)-y_offset);
+                        }else{
+                            path2D.moveTo(coef(p2.x)-x_offset, coef(p2.y)-y_offset);
+                        }
+                        p1 = p2;
+                        p2 = mh.points.get(i);
+                    }
+                    p1 = mh.points.get(0);
+                    p2 = mh.points.get(mh.points.size()-1);
+                    if (!treeNode.onBounds(p1) || !treeNode.onBounds(p2)){
+                        path2D.lineTo(coef(p2.x)-x_offset, coef(p2.y)-y_offset);
+                    }
+                    g.draw(path2D);
             }
 
 

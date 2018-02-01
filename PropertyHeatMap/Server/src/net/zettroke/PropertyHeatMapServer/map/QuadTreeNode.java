@@ -250,16 +250,16 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         this.bounds = bounds;
     }
 
-    public boolean inBounds(MapPoint p){
-        return inBounds(p, false);
+    public boolean inBounds(MapPoint p, boolean super_sampled){
+        return (p.x >= bounds[0]*SuperSampledMapPoint.n && p.x <= bounds[2]*SuperSampledMapPoint.n && p.y >= bounds[1]*SuperSampledMapPoint.n && p.y <= bounds[3]*SuperSampledMapPoint.n);
     }
 
-    boolean inBounds(MapPoint p, boolean super_sampled){
-        if (super_sampled){
-            return (p.x >= bounds[0]*SuperSampledMapPoint.n && p.x <= bounds[2]*SuperSampledMapPoint.n && p.y >= bounds[1]*SuperSampledMapPoint.n && p.y <= bounds[3]*SuperSampledMapPoint.n);
-        }else {
-            return (p.x >= bounds[0] && p.x <= bounds[2] && p.y >= bounds[1] && p.y <= bounds[3]);
-        }
+    public boolean inBounds(MapPoint p){
+        return (p.x >= bounds[0] && p.x <= bounds[2] && p.y >= bounds[1] && p.y <= bounds[3]);
+    }
+
+    public boolean onBounds(MapPoint p){
+        return p.x == bounds[0] || p.x == bounds[2] || p.y == bounds[1] || p.y == bounds[3];
     }
 
     boolean inBounds(DMapPoint p){

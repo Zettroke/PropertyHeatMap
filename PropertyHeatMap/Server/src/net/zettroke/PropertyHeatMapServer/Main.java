@@ -4,11 +4,14 @@ import java.awt.*;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Scanner;
 
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.PrettyPrint;
 import com.eclipsesource.json.WriterConfig;
 import net.zettroke.PropertyHeatMapServer.map.*;
@@ -47,7 +50,7 @@ public class Main {
         //ab -n 5000 -c 8 "http://178.140.109.241:24062/tile?x=6&y=0&z=16"
         /*Scanner scanner = new Scanner(System.in);
         scanner.nextLine();*/
-        if (args.length != 0){
+        /*if (args.length != 0){
             for (String s: args){
                 if (s.contains("-draw=")){
                     if (s.substring(6).equals("native")){
@@ -64,7 +67,51 @@ public class Main {
         }
 
         PropertyMapServer server = new PropertyMapServer(map_name);
-        server.start();
+        server.start();*/
+        BufferedImage img = new BufferedImage(1280, 128, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = (Graphics2D) img.getGraphics();
+
+        for (int i=0; i<img.getWidth(); i++){
+            g.setColor(Color.getHSBColor((i/(float)img.getWidth())*(240f/360f), 1, 1));
+            g.drawRect(i, 0, 1, img.getHeight());
+        }
+        BufferedReader reader = new BufferedReader(new FileReader("data_json"));
+        String line = reader.readLine();
+        int size = 100;
+        double[] min_price = new double[size];
+        double[] max_price = new double[size];
+        for (int i=0; i<size; i++){
+            min_price[i] = Double.MAX_VALUE;
+            max_price[i] = 0;
+        }
+        int cnt = 0;
+        while (line != null) {
+            try {
+                JsonObject jsonObject = Json.parse(line).asObject();
+
+                double area = Double.valueOf(jsonObject.get("Общая площадь").asString().replace("м2", "").replace(',', '.'));
+                long pricel = jsonObject.get("Цена").asLong();
+                double price = pricel/area;
+                for (int i=0; i<size; i++) {
+                    if (price < min_price[i]){
+                        min_price[i] = price;
+                        break;
+                    }
+                }
+
+                for (int i=0; i<size; i++) {
+                    if (price > max_price[i]){
+                        max_price[i] = price;
+                        break;
+                    }
+                }
+                cnt++;
+            }catch (Exception e){}
+            line = reader.readLine();
+        }
+        ImageIO.write(img, "png", new File("gradient.png"));
+        //System.out.println(Math.round(min_price) + " " + Math.round(max_price));
+
         /*long start = System.nanoTime();
         for (int i=0; i<10000; i++){
             TestJNI.call(i);
