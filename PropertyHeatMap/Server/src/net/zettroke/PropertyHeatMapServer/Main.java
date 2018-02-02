@@ -50,7 +50,7 @@ public class Main {
         //ab -n 5000 -c 8 "http://178.140.109.241:24062/tile?x=6&y=0&z=16"
         /*Scanner scanner = new Scanner(System.in);
         scanner.nextLine();*/
-        /*if (args.length != 0){
+        if (args.length != 0){
             for (String s: args){
                 if (s.contains("-draw=")){
                     if (s.substring(6).equals("native")){
@@ -67,8 +67,8 @@ public class Main {
         }
 
         PropertyMapServer server = new PropertyMapServer(map_name);
-        server.start();*/
-        BufferedImage img = new BufferedImage(1280, 128, BufferedImage.TYPE_INT_RGB);
+        server.start();
+        /*BufferedImage img = new BufferedImage(1280, 128, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = (Graphics2D) img.getGraphics();
 
         for (int i=0; i<img.getWidth(); i++){
@@ -110,6 +110,7 @@ public class Main {
             line = reader.readLine();
         }
         ImageIO.write(img, "png", new File("gradient.png"));
+        */
         //System.out.println(Math.round(min_price) + " " + Math.round(max_price));
 
         /*long start = System.nanoTime();
