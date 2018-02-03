@@ -43,6 +43,7 @@ JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadG
 	cairo_set_line_width(cr, 10);
 	cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 	cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 	int x1, y1, x2, y2, color1, color2, width;
 	jboolean copy = false;
 	jint* params = env->GetIntArrayElements(arr, &copy);
@@ -57,8 +58,8 @@ JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadG
 		
 
 		cairo_pattern_t *gradient = cairo_pattern_create_linear(x1, y1, x2, y2);
-		cairo_pattern_add_color_stop_rgb(gradient, 0, (color1 >> 16 & 0xFF) / 255.0f, (color1 >> 8 & 0xFF) / 255.0f, (color1 & 0xFF) / 255.0f);
-		cairo_pattern_add_color_stop_rgb(gradient, 1, (color2 >> 16 & 0xFF) / 255.0f, (color2 >> 8 & 0xFF) / 255.0f, (color2 & 0xFF) / 255.0f);
+		cairo_pattern_add_color_stop_rgba(gradient, 0, (color1 >> 16 & 0xFF) / 255.0, (color1 >> 8 & 0xFF) / 255.0, (color1 & 0xFF) / 255.0, 0.85);
+		cairo_pattern_add_color_stop_rgba(gradient, 1, (color2 >> 16 & 0xFF) / 255.0, (color2 >> 8 & 0xFF) / 255.0, (color2 & 0xFF) / 255.0, 0.85);
 		cairo_set_source(cr, gradient);
 		cairo_set_line_width(cr, width / 100.0f);
 		cairo_move_to(cr, x1, y1);
@@ -70,7 +71,6 @@ JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadG
 	}
 	
 	cairo_surface_flush(surface);
-
 	unsigned char *c = cairo_image_surface_get_data(surface);
 	for (int j = 0; j < 262144; j += 1024) {
 		for (int i = 0; i < 1024; i += 4) {

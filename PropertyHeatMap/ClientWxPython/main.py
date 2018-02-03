@@ -142,6 +142,7 @@ class Map(wx.Panel):
                 if "apartments" in data.keys():
                     wx.CallAfter(self.parent.show_apartments, data["apartments"])
                     # self.parent.show_apartments(data["apartments"])
+                    # self.parent.show_apartments(data["apartments"])
                     # self.data.show_apartments()
             else:
                 del self.shapes_dict[ans["objects"][0]["id"]]
@@ -323,8 +324,9 @@ class Map(wx.Panel):
 
     def tile_loader(self):
         while True:
-
+            self.loader_lock.acquire()
             to_load = self.tile_queue.get()
+            self.loader_lock.release()
             image = Image.open(io.BytesIO(requests.get(to_load.url.format(**to_load.params), stream=False).content))
             image = image.convert("RGBA")
             self.loader_lock.acquire()
@@ -534,8 +536,8 @@ class PropertyHeatMap(wx.Frame):
             line = wx.StaticLine(self.apartments_panel, size=(300, 5))
             self.apart_sizer.Add(line, 0, wx.TOP|wx.BOTTOM|wx.EXPAND, 5)
             self.to_remove.append(line)
-            self.apart_sizer.Layout()
-            self.Refresh()
+            # self.apart_sizer.Layout()
+            # self.Refresh()
         size = self.apart_sizer.GetMinSize()
         self.p.SetSize((300, size.Height+200))
         self.sc.SetScrollbars(1, 1, 1, size.Height+200)
