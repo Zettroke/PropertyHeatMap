@@ -50,6 +50,7 @@ public class Main {
         //ab -n 5000 -c 8 "http://178.140.109.241:24062/tile?x=6&y=0&z=16"
         /*Scanner scanner = new Scanner(System.in);
         scanner.nextLine();*/
+
         if (args.length != 0){
             for (String s: args){
                 if (s.contains("-draw=")){
@@ -68,49 +69,31 @@ public class Main {
 
         PropertyMapServer server = new PropertyMapServer(map_name);
         server.start();
-        /*BufferedImage img = new BufferedImage(1280, 128, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g = (Graphics2D) img.getGraphics();
 
+        /*BufferedImage img = new BufferedImage(2500, 128, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = (Graphics2D) img.getGraphics();
+        int w = 2300;
+        float target_low_b = 0.7f;
         for (int i=0; i<img.getWidth(); i++){
-            g.setColor(Color.getHSBColor((i/(float)img.getWidth())*(240f/360f), 1, 1));
+            if (i <= w) {
+                float b = 1;
+                float hue = (float) Math.pow((1 - (i / (double) w)), 0.7);
+                if (hue < 0.15) {
+                    b = target_low_b + hue * (1-target_low_b)/0.15f;
+                }
+                Color c = Color.getHSBColor(hue * (120f / 360f), 1, b);
+                g.setColor(c);
+            }else{
+                g.setColor(Color.getHSBColor(0, 1, target_low_b));
+            }
             g.drawRect(i, 0, 1, img.getHeight());
         }
-        BufferedReader reader = new BufferedReader(new FileReader("data_json"));
-        String line = reader.readLine();
-        int size = 100;
-        double[] min_price = new double[size];
-        double[] max_price = new double[size];
-        for (int i=0; i<size; i++){
-            min_price[i] = Double.MAX_VALUE;
-            max_price[i] = 0;
-        }
-        int cnt = 0;
-        while (line != null) {
-            try {
-                JsonObject jsonObject = Json.parse(line).asObject();
+        g.setColor(Color.BLACK);
+        g.drawRect(w, img.getHeight()-1, 1, 1);
 
-                double area = Double.valueOf(jsonObject.get("Общая площадь").asString().replace("м2", "").replace(',', '.'));
-                long pricel = jsonObject.get("Цена").asLong();
-                double price = pricel/area;
-                for (int i=0; i<size; i++) {
-                    if (price < min_price[i]){
-                        min_price[i] = price;
-                        break;
-                    }
-                }
 
-                for (int i=0; i<size; i++) {
-                    if (price > max_price[i]){
-                        max_price[i] = price;
-                        break;
-                    }
-                }
-                cnt++;
-            }catch (Exception e){}
-            line = reader.readLine();
-        }
-        ImageIO.write(img, "png", new File("gradient.png"));
-        */
+        ImageIO.write(img, "png", new File("gradientRoad.png"));*/
+
         //System.out.println(Math.round(min_price) + " " + Math.round(max_price));
 
         /*long start = System.nanoTime();
