@@ -10,7 +10,6 @@ public class MapShape {
 
 
     public Way way;
-    public int index;
     public boolean isPoly;
 
     MapShape() {
@@ -20,7 +19,6 @@ public class MapShape {
         MapShape m = new MapShape();
         m.points = (ArrayList<MapPoint>) points.clone();
         m.way = way;
-        m.index = index;
         m.isPoly = isPoly;
         return m;
     }
@@ -44,7 +42,6 @@ public class MapShape {
 
     void copyParams(MapShape m) {
         way = m.way;
-        index = m.index;
         isPoly = m.isPoly;
     }
 

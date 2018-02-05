@@ -82,11 +82,8 @@ class ServerInitializer extends ChannelInitializer<SocketChannel> {
         ChannelPipeline p = socketChannel.pipeline();
 
         p.addLast(new HttpRequestDecoder());
-        // Uncomment the following line if you don't want to handle HttpChunks.
         p.addLast(new HttpObjectAggregator(1048576));
         p.addLast(new HttpResponseEncoder());
-        // Remove the following line if you don't want automatic content compression.
-        //p.addLast(new HttpContentCompressor());
         p.addLast(new RouteHandler(PathRouter.getPathRouter(propertyMap)));
 
     }

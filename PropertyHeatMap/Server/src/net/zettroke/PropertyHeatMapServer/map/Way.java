@@ -9,11 +9,10 @@ import java.util.HashMap;
 /**
  * Created by Olleggerr on 15.10.2017.
  */
-public class Way implements Serializable{
+public class Way{
     public long id;
     public ArrayList<SimpleNode> nodes = new ArrayList<>();
     public HashMap<String, String> data = new HashMap<>();
-    public int[] legth;
     public ArrayList<Apartment> apartments;
 
     int[] bounds;

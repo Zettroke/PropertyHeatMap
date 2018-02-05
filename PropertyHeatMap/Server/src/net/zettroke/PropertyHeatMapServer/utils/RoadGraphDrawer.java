@@ -48,7 +48,7 @@ public class RoadGraphDrawer{
 
     }
     //[x1, y1, color1, x2, y2, color2, width]
-    private native byte[] drawNativeCall(int[] data, int len);
+    public native byte[] drawNativeCall(int[] data, int len);
 
     private byte[] drawNative(PropertyMap propertyMap, QuadTreeNode treeNode, int x, int y, int z, int mult, int mode, int max_dist, int ind){
         IntArrayList bundle = new IntArrayList();
@@ -170,7 +170,7 @@ public class RoadGraphDrawer{
 
         BoolArrayPool.returnArray(visited);
 
-
+        System.out.println("Calling native draw!");
         return drawNativeCall(bundle.toArray(), bundle.size());
     }
 

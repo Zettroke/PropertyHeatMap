@@ -1,6 +1,5 @@
 #include "cairo.h"
-#include <string>
-//#include <cstdio>
+#include <memory>
 
 #include "jni.h"
 #include "net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer.h"
@@ -30,9 +29,8 @@ cairo_status_t my_write_func(void* closure, const unsigned char* data, unsigned 
 }
 
 JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer_drawNativeCall(JNIEnv *env, jobject obj, jintArray arr, jint len) {
-	/*const int r = 0xFF0000;
-	const int g = 0x00FF00;
-	const int b = 0x0000FF;*/
+
+	printf("drawing %d lines\n", len / 14);
 
 	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 256, 256);
 	cairo_t *cr = cairo_create(surface);
@@ -58,8 +56,8 @@ JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadG
 		
 
 		cairo_pattern_t *gradient = cairo_pattern_create_linear(x1, y1, x2, y2);
-		cairo_pattern_add_color_stop_rgba(gradient, 0, (color1 >> 16 & 0xFF) / 255.0, (color1 >> 8 & 0xFF) / 255.0, (color1 & 0xFF) / 255.0, 0.85);
-		cairo_pattern_add_color_stop_rgba(gradient, 1, (color2 >> 16 & 0xFF) / 255.0, (color2 >> 8 & 0xFF) / 255.0, (color2 & 0xFF) / 255.0, 0.85);
+		cairo_pattern_add_color_stop_rgba(gradient, 0, (color1 >> 16 & 0xFF) / 255.0, (color1 >> 8 & 0xFF) / 255.0, (color1 & 0xFF) / 255.0, 0.9);
+		cairo_pattern_add_color_stop_rgba(gradient, 1, (color2 >> 16 & 0xFF) / 255.0, (color2 >> 8 & 0xFF) / 255.0, (color2 & 0xFF) / 255.0, 0.9);
 		cairo_set_source(cr, gradient);
 		cairo_set_line_width(cr, width / 100.0f);
 		cairo_move_to(cr, x1, y1);
@@ -112,14 +110,14 @@ void print_data(unsigned char *c, unsigned int len) {
 	printf("\n");
 }
 
-std::string show_data(unsigned char *c, unsigned int off, unsigned int len) {
+/*std::string show_data(unsigned char *c, unsigned int off, unsigned int len) {
 	std::string res;
 	for (unsigned int i = off; i < off+len; i++) {
 		res.append(std::to_string(c[i]));
 		res.append(" ");
 	}
 	return res;
-}
+}*/
 
 int main() {
 	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 256, 256);
