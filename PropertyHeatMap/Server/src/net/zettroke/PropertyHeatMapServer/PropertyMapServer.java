@@ -8,11 +8,9 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
 import net.zettroke.PropertyHeatMapServer.handlers.PathRouter;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
-import net.zettroke.PropertyHeatMapServer.map.PropertyMapLoaderOSM;
+import net.zettroke.PropertyHeatMapServer.map.MapLoaderOSM;
 import net.zettroke.PropertyHeatMapServer.handlers.*;
 import net.zettroke.PropertyHeatMapServer.map.QuadTreeNode;
-
-import java.io.File;
 
 public class PropertyMapServer {
     String map_name;
@@ -21,7 +19,7 @@ public class PropertyMapServer {
     }
 
     public void start() throws Exception{
-        PropertyMap propertyMap = new PropertyMap(new PropertyMapLoaderOSM(map_name));
+        PropertyMap propertyMap = new PropertyMap(new MapLoaderOSM(map_name));
         //PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
         //PropertyMapLoaderOSM.load(propertyMap, new File("C:/PropertyHeatMap/map.osm"));
         long start = System.nanoTime();

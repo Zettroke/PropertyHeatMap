@@ -249,6 +249,15 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     public QuadTreeNode(int[] bounds){
         this.bounds = bounds;
     }
+    
+    boolean can_contain_shape(MapShape m) {
+        if (inBounds(new MapPoint(m.way.bounds[0], m.way.bounds[1])) || inBounds(new MapPoint(m.way.bounds[0], m.way.bounds[3])) || inBounds(new MapPoint(m.way.bounds[2], m.way.bounds[1])) || inBounds(new MapPoint(m.way.bounds[2], m.way.bounds[3]))){
+            return true;
+        }else{
+            QuadTreeNode temp = new QuadTreeNode(m.way.bounds);
+            return temp.inBounds(new MapPoint(bounds[0], bounds[1])) || temp.inBounds(new MapPoint(bounds[0], bounds[3])) || temp.inBounds(new MapPoint(bounds[2], bounds[1])) || temp.inBounds(new MapPoint(bounds[2], bounds[3]));
+        }
+    }
 
     public boolean inBounds(MapPoint p, boolean super_sampled){
         return (p.x >= bounds[0]*SuperSampledMapPoint.n && p.x <= bounds[2]*SuperSampledMapPoint.n && p.y >= bounds[1]*SuperSampledMapPoint.n && p.y <= bounds[3]*SuperSampledMapPoint.n);
@@ -712,6 +721,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         shape.add(p1);
         int total_intersec = 0;
         boolean flag = true;
+        boolean kostyl = false;
 
         for (int i=1; i<m.points.size(); i++){
             DMapPoint p2 = new DMapPoint(m.points.get(i));
@@ -719,7 +729,18 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             DMapPoint h2 = DHorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
             DMapPoint v1 = DVertCross(bounds[0], bounds[1], bounds[3], p1, p2);
             DMapPoint v2 = DVertCross(bounds[2], bounds[1], bounds[3], p1, p2);
-
+            /*if (kostyl){
+                if (p1.x == bounds[0]){
+                    v1 = null;
+                }else if (p1.x == bounds[2]){
+                    v2 = null;
+                }else if (p1.y == bounds[1]){
+                    h1 = null;
+                }else if (p1.y == bounds[3]){
+                    h2 = null;
+                }
+                kostyl = false;
+            }*/
             DMapPoint[] lul = new DMapPoint[]{h1, h2, v1, v2};
             int intersections = 0;
             for (int z=0; z<4; z++){
@@ -735,22 +756,22 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
                         }
                         switch (z) {
                             case 0:
-                                if (pc.y >= bounds[1] && pp.y >= bounds[1] || pc.y <= bounds[1] && pp.y <= bounds[1]) {
+                                if ((pc.y >= bounds[1] && pp.y >= bounds[1] || pc.y <= bounds[1] && pp.y <= bounds[1]) && !kostyl) {
                                     lul[z] = null;
                                 }
                                 break;
                             case 1:
-                                if (pc.y >= bounds[3] && pp.y >= bounds[3] || pc.y <= bounds[3] && pp.y <= bounds[3]) {
+                                if ((pc.y >= bounds[3] && pp.y >= bounds[3] || pc.y <= bounds[3] && pp.y <= bounds[3]) && !kostyl) {
                                     lul[z] = null;
                                 }
                                 break;
                             case 2:
-                                if (pc.x >= bounds[0] && pp.x >= bounds[0] || pc.x <= bounds[0] && pp.x <= bounds[0]) {
+                                if ((pc.x >= bounds[0] && pp.x >= bounds[0] || pc.x <= bounds[0] && pp.x <= bounds[0]) && !kostyl) {
                                     lul[z] = null;
                                 }
                                 break;
                             case 3:
-                                if (pc.x >= bounds[2] && pp.x >= bounds[2] || pc.x <= bounds[2] && pp.x <= bounds[2]) {
+                                if ((pc.x >= bounds[2] && pp.x >= bounds[2] || pc.x <= bounds[2] && pp.x <= bounds[2]) && !kostyl) {
                                     lul[z] = null;
                                 }
                                 break;
@@ -785,7 +806,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
                     //intersec_debug.add(lul[z].p);
                 }
             }
-
+            kostyl = onBounds(p1.p) && onBounds(p2.p);
             total_intersec += intersections;
             if (intersections == 1){
                 DMapPoint pt = (lul[0] != null ? lul[0]: (lul[1] != null? lul[1]: (lul[2] != null ? lul[2]: lul[3])));
@@ -996,7 +1017,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
 
     private int _DfindFineStartIndex(final List<DMapPoint> m, final ArrayList<Boolean> avail){
         for (int i=0; i<m.size()-1; i++){
-            if (avail.get(i) && m.get((i+1)%m.size()).intersec){
+            if (avail.get(i) && m.get((i+1)%m.size()).intersec && avail.get((i+1)%m.size())){
                 return i;
                 /*MapPoint p = m.get(i+1);
                 if (p.intersec && inBounds(m.get((i+2)%m.size()))){//if (inBounds(m.get(i+1)))
@@ -1015,10 +1036,11 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
                 addRoad(m);
             }
         }else{
-            nw.add(m);
-            ne.add(m);
-            sw.add(m);
-            se.add(m);
+            for (QuadTreeNode node: this) {
+                if (node.can_contain_shape(m)) {
+                    node.add(m);
+                }
+            }
         }
 
     }

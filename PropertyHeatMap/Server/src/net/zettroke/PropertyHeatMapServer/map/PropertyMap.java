@@ -40,9 +40,6 @@ public class PropertyMap {
 
     MapLoader loader;
 
-    double minlat, minlon;
-    double maxlat, maxlon;
-
     public int x_begin=0, y_begin=0;
     public int x_end=0, y_end=0;
 
@@ -106,10 +103,6 @@ public class PropertyMap {
 
     public void init(){
         try {
-            double[] degrees = loader.getDegreesBounds();
-
-            minlon = degrees[0]; minlat = degrees[1]; maxlon = degrees[2]; maxlat = degrees[3];
-
             int[] coords = loader.getCoordBounds(this);
 
             x_begin = coords[0]; y_begin = coords[1]; x_end = coords[2]; y_end = coords[3];
@@ -122,6 +115,8 @@ public class PropertyMap {
             ways = loader.getWays();
             simpleNodes = loader.getSimpleNodes();
             relations = loader.getRelations();
+
+            new ObjectOutputStream(new FileOutputStream("way.obj")).writeObject(ways.get(349540100L));
 
             tree = new QuadTree(new int[]{0, 0, x_end - x_begin, y_end - y_begin});
             tree.root.split();

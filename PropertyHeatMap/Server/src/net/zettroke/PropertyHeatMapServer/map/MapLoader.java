@@ -8,8 +8,6 @@ import java.util.HashMap;
 public interface MapLoader {
     void load(RoadGraphBuilder builder, PropertyMap context) throws Exception;
 
-    double[] getDegreesBounds() throws Exception;
-
     int[] getCoordBounds(PropertyMap context) throws Exception;
 
     HashMap<Long, Node> getNodes() throws Exception;

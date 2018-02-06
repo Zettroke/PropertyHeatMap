@@ -70,6 +70,8 @@ public class Main {
         PropertyMapServer server = new PropertyMapServer(map_name);
         server.start();
 
+        //TestPolygonClipping.test();
+
         /*BufferedImage img = new BufferedImage(2500, 128, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = (Graphics2D) img.getGraphics();
         int w = 2300;
@@ -96,17 +98,6 @@ public class Main {
 
         //System.out.println(Math.round(min_price) + " " + Math.round(max_price));
 
-        /*long start = System.nanoTime();
-        for (int i=0; i<10000; i++){
-            TestJNI.call(i);
-        }
-        System.out.println("1 call in " + (System.nanoTime()-start)/1000.0/10000.0 + " microseconds.");
-
-        start = System.nanoTime();
-        for (int i=0; i<10000; i++){
-            TestJNI.call(i);
-        }
-        System.out.println("1 call in " + (System.nanoTime()-start)/1000.0/10000.0 + " microseconds.");*/
 
         /*System.out.println(VM.current().details());
         System.out.println(ClassLayout.parseClass(RoadGraphNode.class).toPrintable());*/
@@ -148,9 +139,9 @@ public class Main {
 
         //TestPolygonClipping.test();
 
-       /* long start = System.nanoTime();
+        /*long start = System.nanoTime();
 
-        PropertyMap propertyMap = new PropertyMap(new PropertyMapLoaderOSM(map_name));
+        PropertyMap propertyMap = new PropertyMap(new MapLoaderOSM(map_name));
         //PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
         propertyMap.init();
         System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
@@ -159,7 +150,7 @@ public class Main {
         //scanner.nextLine();
 
 
-        double size = 15000;
+        double size = 20000;
         int x_size = (int) size;
         coefficent = size/(propertyMap.x_end-propertyMap.x_begin);
         int y_size = coef(propertyMap.y_end-propertyMap.y_begin);
@@ -201,7 +192,7 @@ public class Main {
             g.setColor(new Color(0, 0, 0));
             for (MapShape mh: t.shapes){
                 if (mh.isPoly && mh.way.data.containsKey("building")) {
-                    g.setStroke(new BasicStroke(1.5f));
+                    g.setStroke(new BasicStroke(1f));
                     Polygon poly = new Polygon();
                     for (MapPoint p : mh.points) {
                         poly.addPoint(coef(p.x), coef(p.y));
@@ -215,7 +206,7 @@ public class Main {
                 } else{// if (!(mh.way.data.get("highway").equals("footway") || mh.way.data.get("highway").equals("path"))){
                     g.setColor(new Color(0, 0, 0));
 
-                    g.setStroke(new BasicStroke(6f));
+                    g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     Path2D path2D = new Path2D.Float();
                     path2D.moveTo(coef(mh.points.get(0).x), coef(mh.points.get(0).y));
                     for (MapPoint p : mh.points) {

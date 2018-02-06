@@ -2,12 +2,10 @@ package net.zettroke.PropertyHeatMapServer.map;
 
 
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNodeBuilder;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.*;
@@ -15,7 +13,7 @@ import java.util.*;
 /**
  * Created by Olleggerr on 15.10.2017.
  */
-public class PropertyMapLoaderOSM implements MapLoader{
+public class MapLoaderOSM implements MapLoader{
     private String filename;
     private HashMap<Long, Node> nodes = new HashMap<>();
     private ArrayList<SimpleNode> simpleNodes;
@@ -37,7 +35,7 @@ public class PropertyMapLoaderOSM implements MapLoader{
     }
 
     @Override
-    public double[] getDegreesBounds() throws Exception{
+    public int[] getCoordBounds(PropertyMap context) throws Exception{
         FileInputStream fileIn = new FileInputStream(filename);
         XMLStreamReader streamReader = XMLInputFactory.newInstance().createXMLStreamReader(fileIn);
         while (true) {
@@ -51,19 +49,12 @@ public class PropertyMapLoaderOSM implements MapLoader{
             streamReader.next();
         }
 
-        double[] res = new double[]{Double.parseDouble(streamReader.getAttributeValue("", "minlon")),
-                     Double.parseDouble(streamReader.getAttributeValue("", "minlat")),
-                     Double.parseDouble(streamReader.getAttributeValue("", "maxlon")),
-                     Double.parseDouble(streamReader.getAttributeValue("", "maxlat"))};
+        double[] degrees = new double[]{Double.parseDouble(streamReader.getAttributeValue("", "minlon")),
+                Double.parseDouble(streamReader.getAttributeValue("", "minlat")),
+                Double.parseDouble(streamReader.getAttributeValue("", "maxlon")),
+                Double.parseDouble(streamReader.getAttributeValue("", "maxlat"))};
         streamReader.close();
         fileIn.close();
-        return res;
-
-    }
-
-    @Override
-    public int[] getCoordBounds(PropertyMap context) throws Exception{
-        double[] degrees = getDegreesBounds();
 
         int[] coords = context.mercator(degrees[0], degrees[1]);
         int[] coords1 = context.mercator(degrees[2], degrees[3]);
@@ -239,7 +230,7 @@ public class PropertyMapLoaderOSM implements MapLoader{
 
     }
 
-    public PropertyMapLoaderOSM(String filename){
+    public MapLoaderOSM(String filename){
         this.filename = filename;
     }
 }

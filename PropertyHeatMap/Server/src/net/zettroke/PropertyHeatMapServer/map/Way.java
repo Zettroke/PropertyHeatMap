@@ -9,7 +9,7 @@ import java.util.HashMap;
 /**
  * Created by Olleggerr on 15.10.2017.
  */
-public class Way{
+public class Way implements Serializable{
     public long id;
     public ArrayList<SimpleNode> nodes = new ArrayList<>();
     public HashMap<String, String> data = new HashMap<>();
