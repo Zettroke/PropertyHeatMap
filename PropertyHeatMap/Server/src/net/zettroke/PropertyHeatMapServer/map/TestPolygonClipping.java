@@ -17,7 +17,7 @@ import java.util.Scanner;
 public class TestPolygonClipping {
     public static void test() throws Exception{
         //int[] bounds = new int[]{20736, 23040, 23040, 25344};
-        int[] bounds = new int[]{163837, 344068, 180221, 360452};;
+        int[] bounds = new int[]{221181, 331780, 225277, 335876};
         //BufferedImage image = new BufferedImage(600, 600, BufferedImage.TYPE_INT_RGB);
         BufferedImage image = new BufferedImage(bounds[2]-bounds[0]+500, bounds[3]-bounds[1]+500, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = (Graphics2D) image.getGraphics();

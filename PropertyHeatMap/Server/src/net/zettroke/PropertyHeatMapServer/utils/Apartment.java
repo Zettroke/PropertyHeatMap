@@ -2,7 +2,9 @@ package net.zettroke.PropertyHeatMapServer.utils;
 
 import com.eclipsesource.json.JsonObject;
 
-public class Apartment {
+import java.io.Serializable;
+
+public class Apartment implements Serializable{
     public int price;
     public double area;
     public int floor;

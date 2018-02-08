@@ -5,7 +5,7 @@ import net.zettroke.PropertyHeatMapServer.map.MapPoint;
 import java.util.ArrayList;
 
 public class TinyQuadTree {
-    static final int THRESHOLD = 500;
+    static final int THRESHOLD = 100;
 
     TinyQuadTreeNode root;
 

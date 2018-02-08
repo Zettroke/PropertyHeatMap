@@ -32,6 +32,7 @@ public class RoadGraphBuilder {
     }
 
     public void connect(Node n1, Node n2, RoadType connectType){
+        //fixme: Где деление на скорость?
         int dist = PropertyMap.calculateDistance(n1, n2);
         connect(n1, n2, connectType, dist);
     }
@@ -63,7 +64,7 @@ public class RoadGraphBuilder {
             rgn1.connectionsCar.add(rgn2.rgn);
             rgn2.connectionsCar.add(rgn1.rgn);
 
-            rgn1.distancesCar.add(Math.round(dist/ PropertyMap.car_speed));
+            rgn1.distancesCar.add(Math.round(dist/PropertyMap.car_speed));
             rgn2.distancesCar.add(Math.round(dist/PropertyMap.car_speed));
 
             rgn1.roadTypesCar.add(connType);
@@ -100,6 +101,7 @@ public class RoadGraphBuilder {
 
     public void connectNodeToNodesInRadius(Node n, int radius, RoadType roadType){
         for (RoadGraphNodeBuilder b: nodesTree.findRgnBuildersInCircle(n, radius)){
+            int dist = Math.round(PropertyMap.calculateDistance(n, b.rgn.n)/PropertyMap.foot_speed);
             connect(n, b.rgn.n, roadType);
         }
     }

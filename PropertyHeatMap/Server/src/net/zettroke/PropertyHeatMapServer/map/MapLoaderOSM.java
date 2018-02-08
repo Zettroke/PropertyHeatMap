@@ -225,7 +225,7 @@ public class MapLoaderOSM implements MapLoader{
         System.out.println("SimpleNodes: " + simpleNodes.size());
         System.out.println("Complex Nodes: " + nodes.size());
 
-        System.gc();
+        //System.gc();
 
 
     }

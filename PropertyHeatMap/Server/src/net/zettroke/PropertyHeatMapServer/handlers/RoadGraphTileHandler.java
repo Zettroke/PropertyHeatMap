@@ -54,32 +54,6 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
 
         QuadTreeNode treeNode = new QuadTreeNode(new int[]{x*mult*256 - around*256, y*mult*256 - around*256, (x+1)*mult*256 + around*256, (y+1)*mult*256 + around*256});
         propertyMap.fillTreeNodeWithRoadGraphNodes(treeNode);
-        //QuadTreeNode treeNode = new QuadTreeNode(new int[]{(x)*mult*256, (y)*mult*256, (x+1)*mult*256, (y+1)*mult*256});
-        //QuadTreeNode treeNode = propertyMap.tree.root;
-        /*BufferedImage imageTemp = new BufferedImage(256, 256, BufferedImage.TYPE_INT_RGB);
-
-        Graphics2D g = (Graphics2D) imageTemp.getGraphics();
-
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        HashMap<Long, RoadGraphNode> graph = null;
-
-
-        graph = propertyMap.roadGraph;
-
-
-
-
-
-        drawJava(g, treeNode, mult, x, y, z, mode, max_dist, ind);
-        ByteBuf buf = ctx.alloc().buffer();
-        ByteBufOutputStream out = new ByteBufOutputStream(buf);
-        BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
-
-        Graphics2D g2 = (Graphics2D)image.getGraphics();
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.85f));
-        g2.drawImage(imageTemp, 0, 0, null);
-
-        ImageIO.write(image, "png", out);*/
         int ind=0;
         global_rgn_lock.lock();
         long start = System.nanoTime();

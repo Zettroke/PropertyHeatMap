@@ -152,14 +152,8 @@ public class RoadGraphDrawer{
                             break;
                     }
                     if (!dont_draw) {
-                        /*if (rgn.getNodeColor(max_dist, ind).getRGB() != -5767146){
-                            System.out.println();
-                        }*/
-                        /*g.setPaint(new GradientPaint(coef(rgn.n.x - offx, cf), coef(rgn.n.y - offy, cf), rgn.getNodeColor(max_dist, ind),
-                                coef(ref.n.x - offx, cf), coef(ref.n.y - offy, cf), ref.getNodeColor(max_dist, ind)));*/
                         bundle.addAll(coef(rgn.n.x - offx, cf), coef(rgn.n.y - offy, cf), rgn.getNodeColor(max_dist, ind).getRGB(),
                                             coef(ref.n.x - offx, cf), coef(ref.n.y - offy, cf), ref.getNodeColor(max_dist, ind).getRGB(), stroke);
-                        //g.drawLine(coef(rgn.n.x - offx, cf), coef(rgn.n.y - offy, cf), coef(ref.n.x - offx, cf), coef(ref.n.y - offy, cf));
                     }else{
                         dont_draw = false;
                     }
@@ -170,7 +164,7 @@ public class RoadGraphDrawer{
 
         BoolArrayPool.returnArray(visited);
 
-        System.out.println("Calling native draw!");
+        //System.out.println("Calling native draw!");
         return drawNativeCall(bundle.toArray(), bundle.size());
     }
 

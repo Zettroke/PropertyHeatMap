@@ -38,6 +38,8 @@ public class PropertyMap {
     public static final float bus_speed = 0.8333f;
     public static final float tram_speed = 0.55555f;
 
+    public boolean test = true;
+
     MapLoader loader;
 
     public int x_begin=0, y_begin=0;
@@ -93,6 +95,7 @@ public class PropertyMap {
             }
             //System.out.println(getName() + " Done with nodes!");
             //int cnt = 0;
+            int cnt = 0;
             for (Way w: ways.values()){
                 if (w.data.containsKey("building") || w.data.containsKey("highway")){// || ways.get(i).data.containsKey("railway")) {
                     t.add(new MapShape(w));
@@ -116,7 +119,7 @@ public class PropertyMap {
             simpleNodes = loader.getSimpleNodes();
             relations = loader.getRelations();
 
-            new ObjectOutputStream(new FileOutputStream("way.obj")).writeObject(ways.get(349540100L));
+            new ObjectOutputStream(new FileOutputStream("way.obj")).writeObject(ways.get(119052101L));
 
             tree = new QuadTree(new int[]{0, 0, x_end - x_begin, y_end - y_begin});
             tree.root.split();
@@ -480,12 +483,11 @@ public class PropertyMap {
 
     }
 
-    public HashMap<Long, RoadGraphNode> getCalculatedRoadGraph(long id, boolean foot, final int max_dist){
-        return  null;
-    }
-
     public void calcRoadGraph(long id, boolean foot, int max_dist, int put) {
         HashSet<RoadType> exclude = foot ? RoadGraphNode.foot_exclude : RoadGraphNode.car_exclude;
+        for (RoadGraphNode rgn: roadGraph.values()){
+            rgn.dist[put] = Integer.MAX_VALUE;
+        }
         int mode = foot ? 0 : 1;
         MapPoint center = ways.get(id).getCenter();
         RoadGraphNode start = null;
@@ -510,8 +512,12 @@ public class PropertyMap {
         RoadGraphNode[] src = new RoadGraphNode[roadGraph.size()];
         RoadGraphNode[] res = new RoadGraphNode[roadGraph.size()];
         src[0] = start;
-        widthRecCalculateDistance(src, res, max_dist, mode, put);
-        System.out.println("Graph Calculated!");
+        if (test) {
+            widthRecCalculateDistance(src, res, max_dist, mode, put);
+        }else {
+            recCalculateDistances(start, max_dist, mode, put);
+        }
+        //System.out.println("Graph Calculated!");
         if (!found) {
             System.err.println("Doesnt found close road to building");
         }

@@ -275,6 +275,11 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         return (p.x >= bounds[0] && p.x <= bounds[2] && p.y >= bounds[1] && p.y <= bounds[3]);
     }
 
+    boolean StrictInBounds(DMapPoint p){
+        return (p.x > bounds[0] && p.x < bounds[2] && p.y > bounds[1] && p.y < bounds[3]);
+    }
+
+
     void split(){
         if (isEndNode) {
             this.isEndNode = false;
@@ -389,6 +394,27 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
                 this.split();
             }
         }
+    }
+
+    void add(final MapShape m){
+        if (this.isEndNode){
+            if (m.isPoly){
+                addPoly_double(new MapShape(m.way));
+                //addPoly_double(m);
+            }else {
+                addRoad(m);
+            }
+            if (shapes.size() > QuadTree.THRESHOLD_SHAPE){
+                split();
+            }
+        }else{
+            for (QuadTreeNode node: this) {
+                if (node.can_contain_shape(m)) {
+                    node.add(m);
+                }
+            }
+        }
+
     }
 
     private void addRoad(final MapShape m){
@@ -729,18 +755,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             DMapPoint h2 = DHorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
             DMapPoint v1 = DVertCross(bounds[0], bounds[1], bounds[3], p1, p2);
             DMapPoint v2 = DVertCross(bounds[2], bounds[1], bounds[3], p1, p2);
-            /*if (kostyl){
-                if (p1.x == bounds[0]){
-                    v1 = null;
-                }else if (p1.x == bounds[2]){
-                    v2 = null;
-                }else if (p1.y == bounds[1]){
-                    h1 = null;
-                }else if (p1.y == bounds[3]){
-                    h2 = null;
-                }
-                kostyl = false;
-            }*/
+
             DMapPoint[] lul = new DMapPoint[]{h1, h2, v1, v2};
             int intersections = 0;
             for (int z=0; z<4; z++){
@@ -946,11 +961,15 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
 
     }
 
+    private void addPoly_another(final MapShape m){
+
+    }
+
     static DMapPoint DHorzCross(int horz, int x1, int x2, DMapPoint p1, DMapPoint p2){
         if ((p1.y > horz && p2.y > horz) || (p1.y < horz && p2.y < horz)){
             return null;
         }else{
-            double x = p1.x + ((horz-p1.y)/(double)(p2.y-p1.y))*(p2.x-p1.x);
+            double x = p1.x + ((horz-p1.y)/(p2.y-p1.y))*(p2.x-p1.x);
             if (x >= Math.min(x1, x2) && x <= Math.max(x1, x2)) {
                 DMapPoint p = new DMapPoint(x, horz);
                 p.intersec = true;
@@ -965,7 +984,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         if ((p1.x > vert && p2.x > vert) || (p1.x < vert && p2.x < vert)){
             return null;
         }else{
-            double y = p1.y + ((vert-p1.x)/(double)(p2.x-p1.x))*(p2.y-p1.y);
+            double y = p1.y + ((vert-p1.x)/(p2.x-p1.x))*(p2.y-p1.y);
             if (y >= Math.min(y1, y2) && y <= Math.max(y1, y2)) {
                 DMapPoint p = new DMapPoint(vert, y);
                 p.intersec = true;
@@ -1017,7 +1036,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
 
     private int _DfindFineStartIndex(final List<DMapPoint> m, final ArrayList<Boolean> avail){
         for (int i=0; i<m.size()-1; i++){
-            if (avail.get(i) && m.get((i+1)%m.size()).intersec && avail.get((i+1)%m.size())){
+            if (StrictInBounds(m.get(i)) && avail.get(i) || (m.get(i).intersec && m.get(i+1%m.size()).intersec && avail.get(i) && avail.get(i+1%avail.size()))){
                 return i;
                 /*MapPoint p = m.get(i+1);
                 if (p.intersec && inBounds(m.get((i+2)%m.size()))){//if (inBounds(m.get(i+1)))
@@ -1028,22 +1047,6 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         return -1;
     }
 
-    void add(final MapShape m){
-        if (this.isEndNode){
-            if (m.isPoly){
-                addPoly_double(m);
-            }else {
-                addRoad(m);
-            }
-        }else{
-            for (QuadTreeNode node: this) {
-                if (node.can_contain_shape(m)) {
-                    node.add(m);
-                }
-            }
-        }
-
-    }
 
     public Iterator<QuadTreeNode> iterator(){
         return new Iterator<QuadTreeNode>() {

@@ -5,10 +5,7 @@ import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.Scanner;
+import java.util.*;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
@@ -16,10 +13,8 @@ import com.eclipsesource.json.PrettyPrint;
 import com.eclipsesource.json.WriterConfig;
 import net.zettroke.PropertyHeatMapServer.map.*;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
-import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
-import net.zettroke.PropertyHeatMapServer.utils.RoadGraphDrawer;
-import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
-import net.zettroke.PropertyHeatMapServer.utils.TimeMeasurer;
+import net.zettroke.PropertyHeatMapServer.utils.*;
+import org.openjdk.jol.info.ClassLayout;
 /*import org.openjdk.jol.info.ClassLayout;
 import org.openjdk.jol.info.GraphLayout;
 import org.openjdk.jol.vm.VM;*/
@@ -39,19 +34,27 @@ public class Main {
     static int coef(int n){
         return (int)Math.round(n*coefficent);
     }
-
+    public static void rec(int[] max_shapes, int[] sum_shapes, int[] count, QuadTreeNode treeNode){
+        if (treeNode.isEndNode){
+            if (treeNode.shapes.size() > max_shapes[0]) {
+                max_shapes[0] = treeNode.shapes.size();
+            }
+            sum_shapes[0] += treeNode.shapes.size();
+            count[0]++;
+        }else{
+            for (QuadTreeNode tn: treeNode){
+                rec(max_shapes, sum_shapes, count, tn);
+            }
+        }
+    }
     public static void main(String[] args) throws Exception{
         String map_name = new Scanner(new FileInputStream("current_map_file.conf")).nextLine();
         ImageIO.setUseCache(false);
-        //ab -n 5000 -c 8 "http://localhost:24062/draw?text=Zettroke"
-        //ab -n 5000 -c 4 "http://127.0.0.1:24062/search/circle/?x=730&y=1432&z=14&r=551"
-        //ab -n 50000 -c 8 "http://192.168.1.150:24062/search/circle/?x=300&y=300&r=200&z=16"
-        //ab -n 50000 -c 8 "http://178.140.109.241:24062/search/circle/?x=1769&y=203&z=16&r=280"
-        //ab -n 5000 -c 8 "http://178.140.109.241:24062/tile?x=6&y=0&z=16"
+
         /*Scanner scanner = new Scanner(System.in);
         scanner.nextLine();*/
-
-        if (args.length != 0){
+        //System.out.println(ClassLayout.parseClass(int[].class).toPrintable());
+        /*if (args.length != 0){
             for (String s: args){
                 if (s.contains("-draw=")){
                     if (s.substring(6).equals("native")){
@@ -68,7 +71,8 @@ public class Main {
         }
 
         PropertyMapServer server = new PropertyMapServer(map_name);
-        server.start();
+        server.start();*/
+
 
         //TestPolygonClipping.test();
 
@@ -145,12 +149,18 @@ public class Main {
         //PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
         propertyMap.init();
         System.out.println("Init in " + (System.nanoTime()-start)/1000000.0 + " millis.");
+        int[] max_shapes = new int[1];
+        int[] sum_shapes = new int[1];
+        int[] count_shapes = new int[1];
 
+        rec(max_shapes, sum_shapes, count_shapes, propertyMap.tree.root);
+
+        System.out.println("Max num of shapes in node " + max_shapes[0] + ". Average num of shapes is " + sum_shapes[0]/(double)count_shapes[0]);
 
         //scanner.nextLine();
 
 
-        double size = 20000;
+        double size = 25000;
         int x_size = (int) size;
         coefficent = size/(propertyMap.x_end-propertyMap.x_begin);
         int y_size = coef(propertyMap.y_end-propertyMap.y_begin);
@@ -164,8 +174,13 @@ public class Main {
         g.setColor(new Color(255, 255, 255));
         g.fillRect(0, 0, x_size, y_size);
         g.setColor(new Color(0, 0, 0));
-        draw(g, propertyMap.tree.root);
-
+        ArrayList<int[]> rects = new ArrayList<>();
+        draw(g, propertyMap.tree.root, rects);
+        g.setColor(new Color(7, 228, 0, 75));
+        g.setStroke(new BasicStroke(8f));
+        for (int[] arr: rects){
+            g.drawRect(arr[0], arr[1], arr[2], arr[3]);
+        }
         g.setColor(new Color(255, 0, 0));
         //for (MapPoint p: propertyMap.lost_price){
         //    g.fillRect(coef(p.x)-4, coef(p.y)-4, 8, 8);
@@ -179,15 +194,16 @@ public class Main {
 
     }
 
-    static void draw(Graphics2D g, QuadTreeNode t){
+
+    static void draw(Graphics2D g, QuadTreeNode t, ArrayList<int[]> rects){
+
         if (!t.isEndNode){
             for (QuadTreeNode tn: t){
-                draw(g, tn);
+                draw(g, tn, rects);
             }
         }else{
-            g.setColor(new Color(7, 228, 0, 75));
-            g.setStroke(new BasicStroke(8f));
-            g.drawRect(coef(t.bounds[0]), coef(t.bounds[1]), coef(t.bounds[2]-t.bounds[0]), coef(t.bounds[3]-t.bounds[1]));
+
+            rects.add(new int[]{coef(t.bounds[0]), coef(t.bounds[1]), coef(t.bounds[2]-t.bounds[0]), coef(t.bounds[3]-t.bounds[1])});
             //g.setColor(new Color(255, 238, 192));
             g.setColor(new Color(0, 0, 0));
             for (MapShape mh: t.shapes){
@@ -217,8 +233,6 @@ public class Main {
                 }
 
             }
-
-
         }
     }
 

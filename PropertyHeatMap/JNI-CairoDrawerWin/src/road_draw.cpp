@@ -30,7 +30,7 @@ cairo_status_t my_write_func(void* closure, const unsigned char* data, unsigned 
 
 JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer_drawNativeCall(JNIEnv *env, jobject obj, jintArray arr, jint len) {
 
-	printf("drawing %d lines\n", len / 14);
+	//printf("drawing %d lines\n", len / 14);
 
 	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 256, 256);
 	cairo_t *cr = cairo_create(surface);

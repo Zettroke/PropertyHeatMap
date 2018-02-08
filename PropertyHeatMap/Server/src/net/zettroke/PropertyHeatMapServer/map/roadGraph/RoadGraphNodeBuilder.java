@@ -44,6 +44,7 @@ public class RoadGraphNodeBuilder extends MapPoint {
         rgn.ref_types[0] = roadTypesFoot.toArray(new RoadType[roadTypesFoot.size()]);
         rgn.ref_types[1] = roadTypesCar.toArray(new RoadType[roadTypesCar.size()]);
 
+
         rgn.index = index;
 
         return rgn;

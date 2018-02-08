@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 public class RoadGraphNode {
-    public int index;
+    public int index; // индекс нужен для массива булев в котором отмечается visited.
     public Node n;
     public int dist[];
     public RoadGraphNode[][] ref_to;
