@@ -11,7 +11,7 @@ public class CalculatedGraphCache {
     LinkedHashMap<CalculatedGraphKey, Integer> cached = new LinkedHashMap<CalculatedGraphKey, Integer>(){
         @Override
         protected boolean removeEldestEntry(Map.Entry<CalculatedGraphKey, Integer> eldest) {
-            if (size() > capacity){
+            if (free_indexes.size() == 0){
                 free_indexes.add(eldest.getValue());
                 return true;
             }

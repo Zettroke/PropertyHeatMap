@@ -17,6 +17,8 @@ public class RoadGraphDrawer{
     public static boolean isGlobalSet = false;
     public static boolean isNative;
 
+    public static boolean test = false;
+
     private final boolean isNativeAvailable;
     final static int zoom_level = 13;
     static RoadGraphDrawer instance = null;
@@ -65,6 +67,7 @@ public class RoadGraphDrawer{
         int offx = x*mult*256;
         int offy = y*mult*256;
         boolean dont_draw = false;
+        int lines = 0;
         boolean[] visited = BoolArrayPool.getArray(propertyMap.roadGraph.size());
         //g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         for (RoadGraphNode rgn : treeNode.roadGraphNodes){
@@ -154,6 +157,7 @@ public class RoadGraphDrawer{
                     if (!dont_draw) {
                         bundle.addAll(coef(rgn.n.x - offx, cf), coef(rgn.n.y - offy, cf), rgn.getNodeColor(max_dist, ind).getRGB(),
                                             coef(ref.n.x - offx, cf), coef(ref.n.y - offy, cf), ref.getNodeColor(max_dist, ind).getRGB(), stroke);
+                        //lines++;
                     }else{
                         dont_draw = false;
                     }
@@ -165,6 +169,7 @@ public class RoadGraphDrawer{
         BoolArrayPool.returnArray(visited);
 
         //System.out.println("Calling native draw!");
+       // System.out.println(lines);
         return drawNativeCall(bundle.toArray(), bundle.size());
     }
 
@@ -192,6 +197,7 @@ public class RoadGraphDrawer{
         int offx = x*mult*256;
         int offy = y*mult*256;
         boolean dont_draw = false;
+        int lines = 0;
         boolean[] visited = BoolArrayPool.getArray(propertyMap.roadGraph.size());
         g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         for (RoadGraphNode rgn : treeNode.roadGraphNodes){
@@ -282,6 +288,7 @@ public class RoadGraphDrawer{
                         g.setPaint(new GradientPaint(coef(rgn.n.x - offx, cf), coef(rgn.n.y - offy, cf), rgn.getNodeColor(max_dist, ind),
                                 coef(ref.n.x - offx, cf), coef(ref.n.y - offy, cf), ref.getNodeColor(max_dist, ind)));
                         g.drawLine(coef(rgn.n.x - offx, cf), coef(rgn.n.y - offy, cf), coef(ref.n.x - offx, cf), coef(ref.n.y - offy, cf));
+                        //lines++;
                     }else{
                         dont_draw = false;
                     }
@@ -296,6 +303,7 @@ public class RoadGraphDrawer{
         gBackground.drawImage(image, 0, 0, null);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ImageIO.write(imageBackground, "png", out);
+        //System.out.println(lines);
         return out.toByteArray();
     }
 

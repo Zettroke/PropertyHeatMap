@@ -2,6 +2,7 @@ package net.zettroke.PropertyHeatMapServer.map;
 
 
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
+import net.zettroke.PropertyHeatMapServer.utils.TimeMeasurer;
 
 import java.util.*;
 
@@ -9,8 +10,8 @@ import java.util.*;
  * Created by Zettroke on 19.10.2017.
  */
 public class QuadTree {
-    static int THRESHOLD = 4000;
-    static int THRESHOLD_SHAPE = 2000;
+    static int THRESHOLD = 3000;
+    static int THRESHOLD_SHAPE = 40000;
 
 
     public QuadTreeNode root;
@@ -333,21 +334,27 @@ public class QuadTree {
                 treeNode = treeNode.parent;
             }
         }
-
         rec_add_rgn_from_nodes_to_node(n, treeNode);
     }
 
     private void rec_add_rgn_from_nodes_to_node(QuadTreeNode res, QuadTreeNode source){
         if (!source.isEndNode){
             for (QuadTreeNode node: source){
-                rec_add_rgn_from_nodes_to_node(res, node);
-            }
-        }else{
-            for (RoadGraphNode rgn: source.roadGraphNodes){
-                if (res.inBounds(rgn.n)) {
-                    res.roadGraphNodes.add(rgn);
+                if (res.intersec_with_tree_node(node)) {
+                    rec_add_rgn_from_nodes_to_node(res, node);
                 }
             }
+        }else{
+            if (res.contain_tree_node(source)) {
+                res.roadGraphNodes.addAll(source.roadGraphNodes);
+            }else {
+                for (RoadGraphNode rgn : source.roadGraphNodes) {
+                    if (res.inBounds(rgn.n)) {
+                        res.roadGraphNodes.add(rgn);
+                    }
+                }
+            }
+
         }
     }
 

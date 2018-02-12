@@ -153,17 +153,6 @@ public class PropertyMap {
             }
             cache = new CalculatedGraphCache(roadGraph, cache_size);
             System.gc();
-
-        /*for (IntArrayList iar: roadGraphConnections){
-            iar.shrink();
-        }
-        for (IntArrayList iar: roadGraphDistancesCar){
-            iar.shrink();
-        }
-        for (IntArrayList iar: roadGraphDistancesFoot){
-            iar.shrink();
-        }
-        System.gc();*/
         }catch (Exception e){
             System.err.println("PropertyMapInit Failed!!!");
             e.printStackTrace();
@@ -429,8 +418,8 @@ public class PropertyMap {
                             min_price_per_metr = Math.min(min_price_per_metr, (int) Math.round(price / area));
                         }*/
                     } catch (Exception e) {
-                        System.err.println("LoadPrices Exception");
-                        e.printStackTrace();
+                        //System.err.println("LoadPrices Exception");
+                        //e.printStackTrace();
                     }
 
                 }

@@ -258,6 +258,25 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             return temp.inBounds(new MapPoint(bounds[0], bounds[1])) || temp.inBounds(new MapPoint(bounds[0], bounds[3])) || temp.inBounds(new MapPoint(bounds[2], bounds[1])) || temp.inBounds(new MapPoint(bounds[2], bounds[3]));
         }
     }
+    
+    boolean contain_tree_node(QuadTreeNode t){
+        return inBounds(new MapPoint(t.bounds[0], t.bounds[1])) && inBounds(new MapPoint(t.bounds[0], t.bounds[3])) && inBounds(new MapPoint(t.bounds[2], t.bounds[1])) && inBounds(new MapPoint(t.bounds[2], t.bounds[3]));
+    }
+    
+    boolean intersec_with_tree_node(QuadTreeNode t){
+        /*if (inBounds(new MapPoint(t.bounds[0], t.bounds[1])) || inBounds(new MapPoint(t.bounds[0], t.bounds[3])) || inBounds(new MapPoint(t.bounds[2], t.bounds[1]))
+                || inBounds(new MapPoint(t.bounds[2], t.bounds[3])) || t.contain_tree_node(this)){
+
+            return true;
+
+        }else{
+
+        }*/
+        return !((t.bounds[0] < bounds[0] && t.bounds[2] < bounds[0]) || (t.bounds[0] > bounds[2] && t.bounds[2] > bounds[2]) ||
+                 (t.bounds[1] < bounds[1] && t.bounds[3] < bounds[1]) || (t.bounds[1] > bounds[3] && t.bounds[3] > bounds[3]));
+
+
+    }
 
     public boolean inBounds(MapPoint p, boolean super_sampled){
         return (p.x >= bounds[0]*SuperSampledMapPoint.n && p.x <= bounds[2]*SuperSampledMapPoint.n && p.y >= bounds[1]*SuperSampledMapPoint.n && p.y <= bounds[3]*SuperSampledMapPoint.n);
@@ -366,9 +385,9 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
                 }
             }
         } else {
-            this.roadGraphNodes.add(rgn);
-            if (this.roadGraphNodes.size() > QuadTree.THRESHOLD) {
-                this.split();
+            roadGraphNodes.add(rgn);
+            if (roadGraphNodes.size() > QuadTree.THRESHOLD) {
+                split();
             }
         }
     }
@@ -404,9 +423,9 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }else {
                 addRoad(m);
             }
-            if (shapes.size() > QuadTree.THRESHOLD_SHAPE){
+            /*if (shapes.size() > QuadTree.THRESHOLD_SHAPE){
                 split();
-            }
+            }*/
         }else{
             for (QuadTreeNode node: this) {
                 if (node.can_contain_shape(m)) {

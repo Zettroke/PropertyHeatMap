@@ -63,17 +63,21 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         }else {
             ind = propertyMap.cache.getNewIndexForGraph(key);
             propertyMap.calcRoadGraph(start_id, true, max_dist, ind);
-            TimeMeasurer.printMeasure(start, "Graph calculated in %t millis.");
+            TimeMeasurer.printMeasure("Graph calculated in %t millis.", start);
         }
         global_rgn_lock.unlock();
         int mode = foot ? 0: 1;
+        st = System.nanoTime();
         byte[] img = RoadGraphDrawer.getInstance().draw(propertyMap, treeNode, x, y, z, mult, mode, max_dist, ind);
+        //TimeMeasurer.printMeasure("Tile done in %t", st);
         ByteBuf buf = ctx.alloc().buffer();
         buf.writeBytes(img);
 
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
 
-        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        ctx.writeAndFlush(response).sync();
+        System.out.println(response.refCnt());
+        buf.release();
         //TimeMeasurer.printMeasure(st, "Tile done in %t millis");
     }
 

@@ -14,7 +14,6 @@ import com.eclipsesource.json.WriterConfig;
 import net.zettroke.PropertyHeatMapServer.map.*;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.*;
-import org.openjdk.jol.info.ClassLayout;
 /*import org.openjdk.jol.info.ClassLayout;
 import org.openjdk.jol.info.GraphLayout;
 import org.openjdk.jol.vm.VM;*/
@@ -54,7 +53,7 @@ public class Main {
         /*Scanner scanner = new Scanner(System.in);
         scanner.nextLine();*/
         //System.out.println(ClassLayout.parseClass(int[].class).toPrintable());
-        /*if (args.length != 0){
+        if (args.length != 0){
             for (String s: args){
                 if (s.contains("-draw=")){
                     if (s.substring(6).equals("native")){
@@ -71,7 +70,7 @@ public class Main {
         }
 
         PropertyMapServer server = new PropertyMapServer(map_name);
-        server.start();*/
+        server.start();
 
 
         //TestPolygonClipping.test();
@@ -176,7 +175,7 @@ public class Main {
         g.setColor(new Color(0, 0, 0));
         ArrayList<int[]> rects = new ArrayList<>();
         draw(g, propertyMap.tree.root, rects);
-        g.setColor(new Color(7, 228, 0, 75));
+        g.setColor(new Color(7, 228, 0, 150));
         g.setStroke(new BasicStroke(8f));
         for (int[] arr: rects){
             g.drawRect(arr[0], arr[1], arr[2], arr[3]);
@@ -187,8 +186,8 @@ public class Main {
         //    g.drawRect(coef(p.x)-16, coef(p.y)-16, 32, 32);
         //}
 
-        ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));*/
-
+        ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));
+        System.out.println((System.nanoTime()-start)/1000000.0 + " millis.");*/
 
         //TestPolyContain.test();
 

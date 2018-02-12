@@ -38,16 +38,12 @@ public class RoadGraphNode {
     public Color getNodeColor(int max_dist, int val){
         float target_low_b = 0.6f;
         if (this.dist[val] <= max_dist) {
-            float b = 1;
+            float b = 0.93f;
             float hue = (float) Math.pow((1 - (this.dist[val] / (double) max_dist)), 0.7);
             if (hue < 0.15) {
                 b = target_low_b + hue * (1-target_low_b)/0.15f;
             }
             Color cl = Color.getHSBColor(hue * (120f / 360f), 1, b);
-            /*double c = Math.pow(this.dist[val]/(double)max_dist, 2);
-            //double hue = (240-Math.pow(c-0.5, 5)*480*7.3333333+10*c+120)/360.0;
-            Color cl = Color.getHSBColor((float)((1-c)*120.0/360.0), 0.9f, 0.9f);*/
-            //Color cl = Color.getHSBColor((float)hue, 0.9f, 0.9f);
             return cl;
 
         }else{

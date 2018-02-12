@@ -35,7 +35,7 @@ public class PropertyMapServer {
         rec(max_shapes, sum_shapes, count_shapes, propertyMap.tree.root);
 
         System.out.println("Max num of shapes in node " + max_shapes[0] + ". Average num of shapes is " + sum_shapes[0]/(double)count_shapes[0]);
-
+        System.out.println("init finished");
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup(8);
         try {
