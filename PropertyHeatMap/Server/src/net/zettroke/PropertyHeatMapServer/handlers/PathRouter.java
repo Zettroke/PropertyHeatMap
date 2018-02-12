@@ -85,6 +85,7 @@ public class PathRouter {
         pr.addPath(new RoadGraphTileHandler(propertyMap));
         pr.addPath(new StringSearchHandler(propertyMap));
         pr.addPath(new StringPredictHandler(propertyMap));
+        pr.addPath(new CloseObjectsHandler(propertyMap));
         setErrorHandler(new ErrorHandler());
 
         return pr;

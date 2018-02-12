@@ -7,6 +7,8 @@ import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class CalculatedGraphCache {
+
+    public ReentrantLock lock = new ReentrantLock();
     HashMap<Long, RoadGraphNode> roadGraph;
     LinkedHashMap<CalculatedGraphKey, Integer> cached = new LinkedHashMap<CalculatedGraphKey, Integer>(){
         @Override

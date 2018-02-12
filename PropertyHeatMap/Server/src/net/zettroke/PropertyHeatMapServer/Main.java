@@ -97,7 +97,7 @@ public class Main {
         g.drawRect(w, img.getHeight()-1, 1, 1);
 
 
-        ImageIO.write(img, "png", new File("gradientRoad.png"));*/
+        ImageIO.write(img, "png", new File("gradientRoad.png"));
 
         //System.out.println(Math.round(min_price) + " " + Math.round(max_price));
 
