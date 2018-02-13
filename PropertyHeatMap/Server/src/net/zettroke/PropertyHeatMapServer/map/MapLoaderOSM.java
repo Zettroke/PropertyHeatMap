@@ -6,6 +6,7 @@ import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.*;
@@ -36,7 +37,7 @@ public class MapLoaderOSM implements MapLoader{
 
     @Override
     public int[] getCoordBounds(PropertyMap context) throws Exception{
-        FileInputStream fileIn = new FileInputStream(filename);
+        BufferedInputStream fileIn = new BufferedInputStream(new FileInputStream(filename));
         XMLStreamReader streamReader = XMLInputFactory.newInstance().createXMLStreamReader(fileIn);
         while (true) {
             if (streamReader.hasName()) {
