@@ -380,7 +380,7 @@ class Completer(wx.TextCompleterSimple):
         print("Completion for", prefix)
         self.ind = 0
         s = self.app.search_entry.GetValue()
-        resp = requests.get("http://127.0.0.1/api/search/predict?text={}&suggestions=10".format(s)).text
+        resp = requests.get("http://" + server_address + "/api/search/predict?text={}&suggestions=10".format(s)).text
         ans = json.loads(resp)
         self.s = ans["suggestions"]
         return True

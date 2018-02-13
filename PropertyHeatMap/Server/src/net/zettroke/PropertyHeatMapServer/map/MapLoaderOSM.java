@@ -170,6 +170,7 @@ public class MapLoaderOSM implements MapLoader{
                                 }
 
                                 if (tempWay.data.containsKey("name") && tempWay.data.containsKey("highway") && !tempWay.data.get("highway").equals("trunk")){
+                                    context.predictor.add(tempWay.data.get("name"));
                                     names.add(tempWay.data.get("name"));
                                 }
                             }
