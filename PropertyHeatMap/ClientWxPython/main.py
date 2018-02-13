@@ -15,7 +15,7 @@ mx_dist = 18000
 
 server_address = "127.0.0.1"
 try:
-    server_address = requests.get("https://pastebin.com/raw/jkUmzJZ0", timeout=2).text
+    # server_address = requests.get("https://pastebin.com/raw/jkUmzJZ0", timeout=2).text
     print("ip set to " + server_address)
 except Exception:
     pass
@@ -515,6 +515,7 @@ class PropertyHeatMap(wx.Frame):
         s = self.search_entry.GetValue()
         ans = json.loads(requests.get("http://"+server_address+"/api/search/string?text={}".format(s)).text)
         if ans["status"] == "found":
+            print("found")
             self.map.center_on(ans)
 
     def test(self, event):

@@ -10,7 +10,7 @@ import net.zettroke.PropertyHeatMapServer.utils.TimeMeasurer;
 public class CloseObjectsHandler implements ShittyHttpHandler{
 
     PropertyMap propertyMap;
-    static final String path = "";
+    static final String path = "search/close_objects";
 
     @Override
     public String getPath() {
