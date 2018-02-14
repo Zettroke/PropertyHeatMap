@@ -61,7 +61,7 @@ public class QuadTree {
         }
     }
 
-    Way findShapeByPoint(MapPoint p) throws Exception{
+    Way findShapeByPoint(MapPoint p) {
 
         QuadTreeNode treeNode = getEndNode(p);
         int count = 0;
@@ -216,12 +216,8 @@ public class QuadTree {
             return true;
 
         }else{
-            if (Math.abs(center.x-node.bounds[0]) < radius || Math.abs(center.x-node.bounds[2]) < radius ||
-                    Math.abs(center.y-node.bounds[1]) < radius || Math.abs(center.y-node.bounds[3]) < radius){
-                return true;
-            }else{
-                return false;
-            }
+            return Math.abs(center.x - node.bounds[0]) < radius || Math.abs(center.x - node.bounds[2]) < radius ||
+                    Math.abs(center.y - node.bounds[1]) < radius || Math.abs(center.y - node.bounds[3]) < radius;
         }
 
     }

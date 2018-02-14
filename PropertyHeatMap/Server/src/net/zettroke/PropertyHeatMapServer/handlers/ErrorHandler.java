@@ -11,7 +11,7 @@ public class ErrorHandler implements ShittyHttpHandler {
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         System.out.println("Error!!");
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
 

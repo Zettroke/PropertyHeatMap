@@ -25,7 +25,7 @@ public class MapCircleSearchHandler implements ShittyHttpHandler{
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         int z = Integer.decode(decoder.parameters().get("z").get(0));

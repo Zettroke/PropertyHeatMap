@@ -24,7 +24,7 @@ public class StringSearchHandler implements ShittyHttpHandler{
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
 
         String text = decoder.parameters().get("text").get(0);

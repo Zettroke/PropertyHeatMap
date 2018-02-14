@@ -6,10 +6,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
-import javafx.util.Pair;
 import net.zettroke.PropertyHeatMapServer.map.Node;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
-import net.zettroke.PropertyHeatMapServer.map.Way;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphKey;
 import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
@@ -42,7 +40,7 @@ public class CloseObjectsHandler implements ShittyHttpHandler{
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         long id = Long.decode(decoder.parameters().get("id").get(0));
         int max_dist =  Integer.decode(decoder.parameters().get("max_dist").get(0));

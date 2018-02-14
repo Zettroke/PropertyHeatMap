@@ -76,7 +76,7 @@ class ServerInitializer extends ChannelInitializer<SocketChannel> {
 
 
     @Override
-    protected void initChannel(SocketChannel socketChannel) throws Exception {
+    protected void initChannel(SocketChannel socketChannel) {
         ChannelPipeline p = socketChannel.pipeline();
 
         p.addLast(new HttpRequestDecoder());

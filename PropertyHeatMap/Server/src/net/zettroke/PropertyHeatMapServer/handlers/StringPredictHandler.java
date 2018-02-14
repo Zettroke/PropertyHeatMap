@@ -21,7 +21,7 @@ public class StringPredictHandler implements ShittyHttpHandler{
         return path;
     }
     @Override
-    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         String req = decoder.parameters().get("text").get(0);
         int num = Integer.parseInt(decoder.parameters().get("suggestions").get(0));
