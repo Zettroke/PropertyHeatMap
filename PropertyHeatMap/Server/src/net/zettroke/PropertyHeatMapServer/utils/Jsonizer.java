@@ -3,6 +3,7 @@ package net.zettroke.PropertyHeatMapServer.utils;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import net.zettroke.PropertyHeatMapServer.map.MapPoint;
+import net.zettroke.PropertyHeatMapServer.map.Node;
 import net.zettroke.PropertyHeatMapServer.map.Way;
 
 import java.util.Map;
@@ -45,5 +46,28 @@ public class Jsonizer {
 
 
         return answer;
+    }
+
+    public static JsonObject toJson(Node n){
+        JsonObject res = new JsonObject();
+
+        res.add("id", n.id);
+        res.add("lat", n.lat);
+        res.add("lon", n.lon);
+
+        JsonObject data = new JsonObject();
+        if (n.data != null) {
+            for (Map.Entry<String, String> p : n.data.entrySet()) {
+                data.add(p.getKey(), p.getValue());
+            }
+        }
+
+        res.add("data", data);
+
+        res.add("x", n.x);
+        res.add("y", n.y);
+
+        return res;
+
     }
 }

@@ -15,7 +15,7 @@ mx_dist = 18000
 
 server_address = "127.0.0.1"
 try:
-    # server_address = requests.get("https://pastebin.com/raw/jkUmzJZ0", timeout=2).text
+    server_address = requests.get("https://pastebin.com/raw/jkUmzJZ0", timeout=2).text
     print("ip set to " + server_address)
 except Exception:
     pass

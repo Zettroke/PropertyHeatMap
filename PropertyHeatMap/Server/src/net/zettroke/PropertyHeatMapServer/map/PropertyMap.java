@@ -29,7 +29,7 @@ public class PropertyMap {
     public static int cache_size = 10;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
     private final static HashSet<String> supportedRoutes = new HashSet<>(Arrays.asList("subway", "tram", "trolleybus", "bus"));
-    public int max_calculation_dist = 12000;
+    public final static HashSet<String> keysInfrastructureObject = new HashSet<>(Arrays.asList("shop"));
 
     // Speed in meters per 0.1 seconds.
     public static final float car_speed = 1.38888f;
@@ -49,9 +49,12 @@ public class PropertyMap {
     public HashMap<String, Way> searchMap = new HashMap<>();
 
     ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
-    HashMap<Long, Node> nodes = new HashMap<>();
-    HashMap<Long, Way> ways = new HashMap<>();
-    HashMap<Long, Relation> relations = new HashMap<>();
+    public HashMap<Long, Node> nodes = new HashMap<>();
+    public HashMap<Long, Way> ways = new HashMap<>();
+    public HashMap<Long, Relation> relations = new HashMap<>();
+
+    // Что бы каждый раз при запросе инфраструктуры не нужно было искать бижайшие ноды, я нахожу их во время инициализации.
+    public HashMap<Long, RoadGraphNode[]> infrastructure_connections = new HashMap<>();
 
     RoadGraphBuilder rgnBuilder;
     public HashMap<Long, RoadGraphNode> roadGraph;
@@ -152,6 +155,21 @@ public class PropertyMap {
                 tree.add(rgn);
             }
             cache = new CalculatedGraphCache(roadGraph, cache_size);
+
+            for (Node n: nodes.values()){
+                if (n.data != null){
+                    if (n.data.size() != 0){
+                        if (n.data.containsKey("shop") || n.data.containsKey("amenity")){
+                            List<RoadGraphNode> temp = findRoadGraphNodesInCircle(n, 300);
+                            if (temp.size() < 4){
+                                temp = findRoadGraphNodesInCircle(n, 600);
+                            }
+                            infrastructure_connections.put(n.id, temp.toArray(new RoadGraphNode[temp.size()]));
+                        }
+                    }
+                }
+            }
+
             System.gc();
         }catch (Exception e){
             System.err.println("PropertyMapInit Failed!!!");

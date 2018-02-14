@@ -11,8 +11,8 @@ import java.util.HashMap;
 public class SimpleNode extends MapPoint{
 
     public long id;
-    double lon;
-    double lat;
+    public double lon;
+    public double lat;
 
 
 

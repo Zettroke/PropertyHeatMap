@@ -409,7 +409,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }
         } else {
             this.nodes.add(n);
-            if (this.nodes.size() > QuadTree.THRESHOLD) {
+            if (this.nodes.size() > QuadTree.NODE_THRESHOLD) {
                 this.split();
             }
         }

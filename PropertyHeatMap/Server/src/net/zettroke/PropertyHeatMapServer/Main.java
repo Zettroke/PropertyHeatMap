@@ -18,7 +18,12 @@ import net.zettroke.PropertyHeatMapServer.utils.*;
 import org.openjdk.jol.info.GraphLayout;
 import org.openjdk.jol.vm.VM;*/
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.FileImageOutputStream;
+import javax.imageio.stream.ImageOutputStream;
 
 
 public class Main {
@@ -142,7 +147,7 @@ public class Main {
 
         //TestPolygonClipping.test();
 
-        /*long start = System.nanoTime();
+        long start = System.nanoTime();
 
         PropertyMap propertyMap = new PropertyMap(new MapLoaderOSM(map_name));
         //PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
@@ -186,7 +191,17 @@ public class Main {
         //    g.drawRect(coef(p.x)-16, coef(p.y)-16, 32, 32);
         //}
 
-        ImageIO.write(image, "png", new FileOutputStream("QuadTreeSubdivision.png"));
+        ImageWriter jpgWriter = ImageIO.getImageWritersByFormatName("jpg").next();
+        ImageWriteParam jpgWriteParam = jpgWriter.getDefaultWriteParam();
+        jpgWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        jpgWriteParam.setCompressionQuality(0.7f);
+
+        ImageOutputStream outputStream = new FileImageOutputStream(new File("QuadTreeSubdivision1.jpg")); // For example implementations see below
+        jpgWriter.setOutput(outputStream);
+        IIOImage outputImage = new IIOImage(image, null, null);
+        jpgWriter.write(null, outputImage, jpgWriteParam);
+        jpgWriter.dispose();
+        /*ImageIO.write(image, "jpg", new FileOutputStream("QuadTreeSubdivision.jpg"));
         System.out.println((System.nanoTime()-start)/1000000.0 + " millis.");*/
 
         //TestPolyContain.test();

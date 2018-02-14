@@ -3,7 +3,7 @@ package net.zettroke.PropertyHeatMapServer.map;
 import java.util.HashMap;
 
 public class Node extends SimpleNode{
-    HashMap<String, String> data = new HashMap<>();
+    public HashMap<String, String> data = new HashMap<>();
     boolean isRoadNode = false;
     boolean publicTransportStop = false;
 
