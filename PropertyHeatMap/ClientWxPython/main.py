@@ -12,10 +12,11 @@ import time
 
 EVT_REFRESH = wx.NewId()
 mx_dist = 18000
+mx_dist_stuff = 6000
 
 server_address = "127.0.0.1"
 try:
-    # server_address = requests.get("https://pastebin.com/raw/jkUmzJZ0", timeout=2).text
+    server_address = requests.get("https://pastebin.com/raw/jkUmzJZ0", timeout=2).text
     print("ip set to " + server_address)
 except Exception:
     pass
@@ -26,8 +27,7 @@ price_tiles_url = "http://" + server_address + "/api/tile/price?z={z}&x={x}&y={y
 road_tiles_url = "http://" + server_address + "/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}&foot={foot}"
 point_search_url = "http://" + server_address + "/api/search/point?z={z}&x={x}&y={y}"
 suggestion_url = "http://" + server_address + "/api/search/predict?text={}&suggestions=10"
-close_stuff_url = "http://" + server_address + "/api/search/close_objects?id={id}&max_dist={max_dist}&foot={foot}&max_num={max_num}http://127.0.0.1/api/search/close_objects?id=62186199&max_dist=18000&foot=true&max_num=150"
-
+close_things_url = "http://" + server_address + "/api/search/close_objects?id={id}&max_dist={max_dist}&foot={foot}&max_num={max_num}"
 class LoadTask:
 
     def __init__(self, url, priority, key, place, **kwargs):
@@ -48,8 +48,6 @@ class LoadTask:
 
 
 class Map(wx.Panel):
-
-
 
     def __init__(self, *args, **kwargs):
         self.parent = kwargs["parent"]
@@ -122,7 +120,7 @@ class Map(wx.Panel):
             
             if ans["objects"][0]["id"] not in self.shapes_dict:
                 print(ans["objects"][0]["id"])
-                stuff_close = json.loads(requests.get(point_search_url.format(x=x, y=y, z=self.zoom)).text, encoding="utf-8")
+                stuff_close = json.loads(requests.get(close_things_url.format(id=ans["objects"][0]["id"], max_dist=mx_dist_stuff, max_num=300, foot=True)).text, encoding="utf-8")
                 # print(json.dumps(ans, ensure_ascii=False, indent=2))
                 max_x, max_y = 0, 0
                 min_x, min_y = 2 ** 32 - 1, 2 ** 32 - 1
@@ -151,6 +149,7 @@ class Map(wx.Panel):
 
                 if "apartments" in data.keys():
                     wx.CallAfter(self.parent.show_apartments, data["apartments"])
+                    wx.CallAfter(self.parent.show_close_things, stuff_close["objects"])
             else:
                 del self.shapes_dict[ans["objects"][0]["id"]]
                 # del self.shapes_bitmaps[ans["objects"][0]["id"]]
@@ -417,7 +416,7 @@ class PropertyHeatMap(wx.Frame):
         self.data_panel_size = wx.BoxSizer(wx.VERTICAL)
 
         self.apart_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.close_things_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.close_things_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.apartments_panel = wx.Panel(self.p)
         self.close_things_panel = wx.Panel(self.p)
@@ -494,8 +493,8 @@ class PropertyHeatMap(wx.Frame):
         self.apartments_panel.SetBackgroundColour(wx.Colour(255, 255, 255))
         self.apartments_panel.SetSizer(self.apart_sizer)
 
-        self.data_panel_size.Add(self.apartments_panel, 1, wx.EXPAND | wx.LEFT, 1)
-        self.data_panel_size.Add(self.close_things_panel, 1, wx.EXPAND | wx.LEFT, 1)
+        self.data_panel_size.Add(self.apartments_panel, 1, wx.EXPAND | wx.LEFT, 2)
+        self.data_panel_size.Add(self.close_things_panel, 1, wx.EXPAND | wx.LEFT, 2)
 
         self.p.SetSizer(self.data_panel_size)
         self.panel.SetSizer(self.box_sizer)
@@ -528,11 +527,15 @@ class PropertyHeatMap(wx.Frame):
                 self.apartments_panel.Hide()
                 self.data_panel_size.Layout()
                 self.apart_sizer.Layout()
+                self.p.SetSize(self.p.GetSize()[0], self.close_things_sizer.GetMinSize()[1] + 175)
+                self.sc.SetScrollbars(1, 1, 1, self.close_things_sizer.GetMinSize()[1] + 175)
             else:
                 print("showing")
                 self.apartments_panel.Show()
                 self.data_panel_size.Layout()
                 self.apart_sizer.Layout()
+                self.p.SetSize((300, self.apart_sizer.GetMinSize().Height+170))
+                self.sc.SetScrollbars(1, 1, 1, self.apart_sizer.GetMinSize().Height+170)
             self.test_bool = not self.test_bool
 
         event.Skip()
@@ -604,12 +607,34 @@ class PropertyHeatMap(wx.Frame):
             self.to_remove.append(tx1)
             self.to_remove.append(tx2)
             self.to_remove.append(line)
-        size = self.apart_sizer.GetMinSize()
-        self.p.SetSize((300, size.Height+175))
-        self.sc.SetScrollbars(1, 1, 1, size.Height+175)
+        self.apart_sizer.Layout()
+        self.p.SetSize((300, self.apart_sizer.GetMinSize().Height+170))
+        self.sc.SetScrollbars(1, 1, 1, self.apart_sizer.GetMinSize().Height+170)
         self.sc.SetScrollRate(10, 10)
 
         self.Refresh()
+
+    def show_close_things(self, data):
+        names = wx.StaticText(self.close_things_panel)
+        times = wx.StaticText(self.close_things_panel)
+        st1 = ""
+        st2 = ""
+        for i in data:
+            if "name" in i["data"].keys():
+                st1 += i["data"]["name"] + "\n"
+                st2 += str(round(i["dist"]/600, 1)) + "мин\n"
+        names.SetLabelText(st1)
+        times.SetLabelText(st2)
+        
+
+        # names.SetMaxSize((self.p.GetSize()[0]-50, 10000))
+        names.SetMinSize((100, 100))
+        self.close_things_sizer.Add(names, 10, wx.EXPAND|wx.LEFT, 2)
+        self.close_things_sizer.Add(times, 1, wx.ALIGN_RIGHT|wx.RIGHT, 2)
+        self.close_things_panel.SetSizer(self.close_things_sizer)
+
+        self.close_things_panel.Refresh()
+        print()
 
     def price_turn_on(self, event=None):
         self.button.SetLabel("Отключить")
