@@ -10,9 +10,9 @@ import java.util.*;
  * Created by Zettroke on 19.10.2017.
  */
 public class QuadTree {
-    static int THRESHOLD = 4000;
+    static int THRESHOLD = 3000;
     static int NODE_THRESHOLD = 20000;
-    static int THRESHOLD_SHAPE = 40000;
+    static int THRESHOLD_SHAPE = 1000;
 
 
     public QuadTreeNode root;

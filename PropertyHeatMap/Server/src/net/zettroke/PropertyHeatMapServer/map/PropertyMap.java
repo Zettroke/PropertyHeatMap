@@ -29,7 +29,9 @@ public class PropertyMap {
     public static int cache_size = 10;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
     private final static HashSet<String> supportedRoutes = new HashSet<>(Arrays.asList("subway", "tram", "trolleybus", "bus"));
-    public final static HashSet<String> keysInfrastructureObject = new HashSet<>(Arrays.asList("shop"));
+    public final static HashSet<String> keysInfrastructureObject = new HashSet<>(Arrays.asList("shop", "amenity", "craft"));
+    final static HashSet<String> available_amenity = new HashSet<>(Arrays.asList("pharmacy", "kindergarten", "post_office", "police", "library", "clinic",
+            "veterinary", "dentist", "bank", "atm", "cafe"));
 
     // Speed in meters per 0.1 seconds.
     public static final float car_speed = 1.38888f;
@@ -107,6 +109,14 @@ public class PropertyMap {
         }
     }
 
+    boolean canCovertToSimpleNode(Node n){
+        if (!Collections.disjoint(n.data.keySet(), keysInfrastructureObject)){
+            return !(!n.data.containsKey("amenity") || (n.data.containsKey("amenity") && available_amenity.contains(n.data.get("amenity"))));
+        }else{
+            return !rgnBuilder.isRGN(n);
+        }
+    }
+
     public void init(){
         try {
             int[] coords = loader.getCoordBounds(this);
@@ -159,12 +169,15 @@ public class PropertyMap {
             for (Node n: nodes.values()){
                 if (n.data != null){
                     if (n.data.size() != 0){
-                        if (n.data.containsKey("shop") || n.data.containsKey("amenity")){
-                            List<RoadGraphNode> temp = findRoadGraphNodesInCircle(n, 300);
-                            if (temp.size() < 4){
-                                temp = findRoadGraphNodesInCircle(n, 600);
+                        if (!Collections.disjoint(n.data.keySet(), keysInfrastructureObject)) {
+                            if (!n.data.containsKey("amenity") || (n.data.containsKey("amenity") && available_amenity.contains(n.data.get("amenity")))) {
+
+                                List<RoadGraphNode> temp = findRoadGraphNodesInCircle(n, 300);
+                                if (temp.size() < 4) {
+                                    temp = findRoadGraphNodesInCircle(n, 600);
+                                }
+                                infrastructure_connections.put(n.id, temp.toArray(new RoadGraphNode[temp.size()]));
                             }
-                            infrastructure_connections.put(n.id, temp.toArray(new RoadGraphNode[temp.size()]));
                         }
                     }
                 }

@@ -15,12 +15,18 @@ mx_dist = 18000
 
 server_address = "127.0.0.1"
 try:
-    server_address = requests.get("https://pastebin.com/raw/jkUmzJZ0", timeout=2).text
+    # server_address = requests.get("https://pastebin.com/raw/jkUmzJZ0", timeout=2).text
     print("ip set to " + server_address)
 except Exception:
     pass
 # ShowApartmentsEvent, EVT_SHOW_APARTMENTS = wx.lib.newevent.NewEvent()
-
+base_server_url = "http://" + server_address + "/"
+map_tiles_url = "http://" + server_address + "/image/z{z}/{x}.{y}.png"
+price_tiles_url = "http://" + server_address + "/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
+road_tiles_url = "http://" + server_address + "/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}&foot={foot}"
+point_search_url = "http://" + server_address + "/api/search/point?z={z}&x={x}&y={y}"
+suggestion_url = "http://" + server_address + "/api/search/predict?text={}&suggestions=10"
+close_stuff_url = "http://" + server_address + "/api/search/close_objects?id={id}&max_dist={max_dist}&foot={foot}&max_num={max_num}http://127.0.0.1/api/search/close_objects?id=62186199&max_dist=18000&foot=true&max_num=150"
 
 class LoadTask:
 
@@ -43,11 +49,7 @@ class LoadTask:
 
 class Map(wx.Panel):
 
-    base_server_url = "http://" + server_address + "/"
-    map_tiles_url = "http://" + server_address + "/image/z{z}/{x}.{y}.png"
-    price_tiles_url = "http://" + server_address + "/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
-    road_tiles_url = "http://" + server_address + "/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}&foot={foot}"
-    point_search_url = "http://" + server_address + "/api/search/point?z={z}&x={x}&y={y}"
+
 
     def __init__(self, *args, **kwargs):
         self.parent = kwargs["parent"]
@@ -98,8 +100,8 @@ class Map(wx.Panel):
         self.pressed = False
         self.missing_image = wx.Bitmap.FromBuffer(256, 256, Image.new("RGB", (256, 256), 0xCCCCCC).tobytes())
         self.zoom = 16
-        self.available_zoom_levels = tuple(map(int, requests.get(self.base_server_url + "image/zoom_levels").text.split()))
-        self.bounds = tuple(map(int, requests.get(self.base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
+        self.available_zoom_levels = tuple(map(int, requests.get(base_server_url + "image/zoom_levels").text.split()))
+        self.bounds = tuple(map(int, requests.get(base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
         self.tile_queue = queue.PriorityQueue()
         self.Connect(-1, -1, EVT_REFRESH, self.my_refresh)
         self.loader_lock = Lock()
@@ -115,11 +117,12 @@ class Map(wx.Panel):
 
     def request_location(self, x, y):
         print("request")
-        ans = json.loads(requests.get(self.point_search_url.format(x=x, y=y, z=self.zoom)).text, encoding="utf-8")
+        ans = json.loads(requests.get(point_search_url.format(x=x, y=y, z=self.zoom)).text, encoding="utf-8")
         if ans["status"] == "success":
             
             if ans["objects"][0]["id"] not in self.shapes_dict:
                 print(ans["objects"][0]["id"])
+                stuff_close = json.loads(requests.get(point_search_url.format(x=x, y=y, z=self.zoom)).text, encoding="utf-8")
                 # print(json.dumps(ans, ensure_ascii=False, indent=2))
                 max_x, max_y = 0, 0
                 min_x, min_y = 2 ** 32 - 1, 2 ** 32 - 1
@@ -141,7 +144,7 @@ class Map(wx.Panel):
                         x2, y2 = x // 256, y // 256
                         dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
                         self.tile_queue.put(
-                            LoadTask(self.road_tiles_url, dist + 20000, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id, max_dist=mx_dist, foot=self.foot))
+                            LoadTask(road_tiles_url, dist + 20000, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id, max_dist=mx_dist, foot=self.foot))
                 data = ans["objects"][0]["data"]
                 self.parent.show_address(data["addr:street"] + ", " + data["addr:housenumber"])
                 wx.CallAfter(self.parent.price_turn_off)
@@ -256,7 +259,7 @@ class Map(wx.Panel):
                 self.zoom -= 1
                 self.map_x = self.map_x // 2 - event.GetPosition()[0] // 2
                 self.map_y = self.map_y // 2 - event.GetPosition()[1] // 2
-            self.bounds = tuple(map(int, requests.get(self.base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
+            self.bounds = tuple(map(int, requests.get(base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
 
             self.bitmaps.clear()
             while not self.tile_queue.empty():
@@ -315,16 +318,16 @@ class Map(wx.Panel):
                     else:
                         dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
                         self.bitmaps[(x2, y2)] = self.missing_image
-                        self.tile_queue.put(LoadTask(self.map_tiles_url, dist, (x2, y2), self.tiles_dict, x=x2, y=y2, z=self.zoom))
+                        self.tile_queue.put(LoadTask(map_tiles_url, dist, (x2, y2), self.tiles_dict, x=x2, y=y2, z=self.zoom))
                         self.already_updated_bitmaps.add((x2, y2))
                         if self.price_turn_on:
                             self.tile_queue.put(
-                                LoadTask(self.price_tiles_url, dist + 1, (x2, y2), self.price_tiles_dict, x=x2, y=y2, z=self.zoom, price=self.price,
+                                LoadTask(price_tiles_url, dist + 1, (x2, y2), self.price_tiles_dict, x=x2, y=y2, z=self.zoom, price=self.price,
                                          range=self.p_range))
                         if self.road_turn_on:
 
                             self.tile_queue.put(
-                                LoadTask(self.road_tiles_url, dist + 20000, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id,
+                                LoadTask(road_tiles_url, dist + 20000, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id,
                                          max_dist=mx_dist, foot=self.foot))
                 else:
                     self.bitmaps[(x // 256, y // 256)] = self.missing_image
@@ -380,7 +383,7 @@ class Completer(wx.TextCompleterSimple):
         print("Completion for", prefix)
         self.ind = 0
         s = self.app.search_entry.GetValue()
-        resp = requests.get("http://" + server_address + "/api/search/predict?text={}&suggestions=10".format(s)).text
+        resp = requests.get(suggestion_url.format(s)).text
         ans = json.loads(resp)
         self.s = ans["suggestions"]
         return True

@@ -48,7 +48,7 @@ public class CloseObjectsHandler implements ShittyHttpHandler{
         int max_dist =  Integer.decode(decoder.parameters().get("max_dist").get(0));
         boolean foot = Boolean.parseBoolean(decoder.parameters().get("foot").get(0));
         int max_num = Integer.MAX_VALUE;
-        if (decoder.parameters().get("max_num").size() != 0) {
+        if (decoder.parameters().get("max_num") != null) {
             max_num = Integer.decode(decoder.parameters().get("max_num").get(0));
         }
         int ind;

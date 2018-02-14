@@ -423,9 +423,9 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }else {
                 addRoad(m);
             }
-            /*if (shapes.size() > QuadTree.THRESHOLD_SHAPE){
+            if (shapes.size() > QuadTree.THRESHOLD_SHAPE){
                 split();
-            }*/
+            }
         }else{
             for (QuadTreeNode node: this) {
                 if (node.can_contain_shape(m)) {

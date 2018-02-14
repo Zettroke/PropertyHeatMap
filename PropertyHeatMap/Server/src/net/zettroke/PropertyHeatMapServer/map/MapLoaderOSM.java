@@ -198,7 +198,7 @@ public class MapLoaderOSM implements MapLoader{
         HashMap<Long, SimpleNode> simpleNodeHashMap = new HashMap<>();
         for (Long l: new HashSet<>(nodes.keySet())){
             Node n = nodes.get(l);
-            if (!builder.isRGN(n) && !relation_nodes.contains(n.id) && !Collections.disjoint(n.data.keySet(), PropertyMap.keysInfrastructureObject)){
+            if (!builder.isRGN(n) && !relation_nodes.contains(n.id) && Collections.disjoint(n.data.keySet(), PropertyMap.keysInfrastructureObject)){
                 nodes.remove(l);
                 simpleNodeHashMap.put(n.id, new SimpleNode(n));
             }else{
