@@ -218,6 +218,7 @@ public class MapLoaderOSM implements MapLoader{
                     }
                 }
             }
+            System.out.println("simplify node step: " + z);
             for (Way w : ways.values()) {
                 for (int i = 0; i < w.nodes.size(); i++) {
                     SimpleNode n = w.nodes.get(i);

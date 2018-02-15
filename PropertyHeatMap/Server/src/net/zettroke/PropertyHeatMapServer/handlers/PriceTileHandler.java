@@ -1,5 +1,6 @@
 package net.zettroke.PropertyHeatMapServer.handlers;
 
+import com.eclipsesource.json.JsonObject;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelFutureListener;
@@ -10,11 +11,13 @@ import net.zettroke.PropertyHeatMapServer.map.MapShape;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.QuadTreeNode;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
+import net.zettroke.PropertyHeatMapServer.utils.ParamsChecker;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
+import java.nio.charset.Charset;
 import java.util.HashSet;
 
 public class PriceTileHandler implements ShittyHttpHandler{
@@ -23,6 +26,13 @@ public class PriceTileHandler implements ShittyHttpHandler{
     double coefficent = 1;
 
     final String path = "tile/price";
+    static final ParamsChecker checker = new ParamsChecker()
+            .addName("x").addType(ParamsChecker.IntegerType).addNoRange()
+            .addName("y").addType(ParamsChecker.IntegerType).addNoRange()
+            .addName("z").addType(ParamsChecker.IntegerType).addNoRange()
+            .addName("price").addType(ParamsChecker.IntegerType).addNoRange()
+            .addName("range").addType(ParamsChecker.DoubleType).addNoRange();
+
     @Override
     public String getPath() {
         return path;
@@ -31,37 +41,46 @@ public class PriceTileHandler implements ShittyHttpHandler{
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
 
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        int z = Integer.decode(decoder.parameters().get("z").get(0));
-        int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
-        int x = Integer.decode(decoder.parameters().get("x").get(0));
-        int y = Integer.decode(decoder.parameters().get("y").get(0));
-        int price = Integer.decode(decoder.parameters().get("price").get(0));
-        double range = Double.parseDouble(decoder.parameters().get("range").get(0));
+        if (checker.isValid(decoder)) {
+            int z = Integer.decode(decoder.parameters().get("z").get(0));
+            int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
+            int x = Integer.decode(decoder.parameters().get("x").get(0));
+            int y = Integer.decode(decoder.parameters().get("y").get(0));
+            int price = Integer.decode(decoder.parameters().get("price").get(0));
+            double range = Double.parseDouble(decoder.parameters().get("range").get(0));
 
 
-        coefficent = 1.0/mult;
+            coefficent = 1.0 / mult;
 
-        BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
+            BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
 
-        Graphics2D g = (Graphics2D) image.getGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.setColor(new Color(255, 255, 255, 0));
-        g.fillRect(0, 0, 256, 256);
+            Graphics2D g = (Graphics2D) image.getGraphics();
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setColor(new Color(255, 255, 255, 0));
+            g.fillRect(0, 0, 256, 256);
 
-        QuadTreeNode treeNode = new QuadTreeNode(new int[]{x*mult*256, y*mult*256, (x+1)*mult*256, (y+1)*mult*256}, false);
+            QuadTreeNode treeNode = new QuadTreeNode(new int[]{x * mult * 256, y * mult * 256, (x + 1) * mult * 256, (y + 1) * mult * 256}, false);
 
-        propertyMap.fillTreeNode(treeNode);
-
-
-        drawTreeNode(g, treeNode, 256*x, 256*y, price, range);
+            propertyMap.fillTreeNode(treeNode);
 
 
-        ByteBuf buf = ctx.alloc().buffer();
-        ByteBufOutputStream outputStream = new ByteBufOutputStream(buf);
-        ImageIO.write(image, "png", outputStream);
-        HttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
+            drawTreeNode(g, treeNode, 256 * x, 256 * y, price, range);
 
-        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+
+            ByteBuf buf = ctx.alloc().buffer();
+            ByteBufOutputStream outputStream = new ByteBufOutputStream(buf);
+            ImageIO.write(image, "png", outputStream);
+            HttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
+
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        }else{
+            JsonObject ans = new JsonObject();
+            ans.add("status", "error");
+            ans.add("error", checker.getErrorMessage());
+            DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, ctx.alloc().buffer().writeBytes(ans.toString().getBytes(Charset.forName("utf-8"))));
+            response.headers().set("content-type", "text/json; charset=UTF-8");
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        }
     }
 
     int coef(int n){

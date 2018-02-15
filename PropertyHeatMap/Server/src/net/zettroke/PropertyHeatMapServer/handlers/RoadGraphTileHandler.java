@@ -1,5 +1,6 @@
 package net.zettroke.PropertyHeatMapServer.handlers;
 
+import com.eclipsesource.json.JsonObject;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelFutureListener;
@@ -13,6 +14,7 @@ import net.zettroke.PropertyHeatMapServer.utils.*;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.nio.charset.Charset;
 import java.util.concurrent.locks.Lock;
 import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -30,6 +32,15 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
     double coefficent = 1;
     final int around = 8;
 
+    final static ParamsChecker checker = new ParamsChecker()
+                .addName("x").addType(ParamsChecker.IntegerType).addNoRange()
+                .addName("y").addType(ParamsChecker.IntegerType).addNoRange()
+                .addName("z").addType(ParamsChecker.IntegerType).addNoRange()
+                .addName("start_id").addType(ParamsChecker.LongType).addNoRange()
+                .addName("max_dist").addType(ParamsChecker.IntegerType).addRange(0, 36000)
+                .addName("foot").addType(ParamsChecker.BooleanType).addNoRange();
+
+
     int coef(int n){
         return (int)Math.round(coefficent*n);
     }
@@ -37,43 +48,52 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
 
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-
         long st = System.nanoTime();
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        int z = Integer.decode(decoder.parameters().get("z").get(0));
-        int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
-        int x = Integer.decode(decoder.parameters().get("x").get(0));
-        int y = Integer.decode(decoder.parameters().get("y").get(0));
-        long start_id = Long.decode(decoder.parameters().get("start_id").get(0));
-        int max_dist =  Integer.decode(decoder.parameters().get("max_dist").get(0));
-        boolean foot = Boolean.parseBoolean(decoder.parameters().get("foot").get(0));
-        //System.out.println("Id - " + id + " Thread - " + Thread.currentThread().getName());
-        coefficent = 1.0/mult;
+        if (checker.isValid(decoder)) {
+            int z = Integer.decode(decoder.parameters().get("z").get(0));
+            int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
+            int x = Integer.decode(decoder.parameters().get("x").get(0));
+            int y = Integer.decode(decoder.parameters().get("y").get(0));
+            long start_id = Long.decode(decoder.parameters().get("start_id").get(0));
+            int max_dist = Integer.decode(decoder.parameters().get("max_dist").get(0));
+            boolean foot = Boolean.parseBoolean(decoder.parameters().get("foot").get(0));
+            coefficent = 1.0 / mult;
 
-        QuadTreeNode treeNode = new QuadTreeNode(new int[]{x*mult*256 - around*256, y*mult*256 - around*256, (x+1)*mult*256 + around*256, (y+1)*mult*256 + around*256}, false);
-        propertyMap.fillTreeNodeWithRoadGraphNodes(treeNode);
-        int ind=0;
-        propertyMap.cache.lock.lock();
-        long start = System.nanoTime();
-        CalculatedGraphKey key = new CalculatedGraphKey(start_id, foot, max_dist);
-        if (propertyMap.cache.contains(key)){
-            ind = propertyMap.cache.getCachedIndex(key);
-        }else {
-            ind = propertyMap.cache.getNewIndexForGraph(key);
-            propertyMap.calcRoadGraph(start_id, true, max_dist, ind);
-            TimeMeasurer.printMeasure("Graph calculated in %t millis.", start);
+            QuadTreeNode treeNode = new QuadTreeNode(new int[]{x * mult * 256 - around * 256, y * mult * 256 - around * 256, (x + 1) * mult * 256 + around * 256, (y + 1) * mult * 256 + around * 256}, false);
+            propertyMap.fillTreeNodeWithRoadGraphNodes(treeNode);
+            int ind = 0;
+            propertyMap.cache.lock.lock();
+            long start = System.nanoTime();
+            CalculatedGraphKey key = new CalculatedGraphKey(start_id, foot, max_dist);
+            if (propertyMap.cache.contains(key)) {
+                ind = propertyMap.cache.getCachedIndex(key);
+                propertyMap.cache.lock.unlock();
+            } else {
+                ind = propertyMap.cache.getNewIndexForGraph(key);
+                propertyMap.calcRoadGraph(start_id, foot, max_dist, ind);
+                TimeMeasurer.printMeasure("Graph calculated in %t millis.", start);
+                propertyMap.cache.lock.unlock();
+            }
+
+            int mode = foot ? 0 : 1;
+            st = System.nanoTime();
+            byte[] img = RoadGraphDrawer.getInstance().draw(propertyMap, treeNode, x, y, z, mult, mode, max_dist, ind);
+            //TimeMeasurer.printMeasure("Tile done in %t", st);
+            ByteBuf buf = ctx.alloc().buffer();
+            buf.writeBytes(img);
+
+            DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
+
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        }else{
+            JsonObject ans = new JsonObject();
+            ans.add("status", "error");
+            ans.add("error", checker.getErrorMessage());
+            DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, ctx.alloc().buffer().writeBytes(ans.toString().getBytes(Charset.forName("utf-8"))));
+            response.headers().set("content-type", "text/json; charset=UTF-8");
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
         }
-        propertyMap.cache.lock.unlock();
-        int mode = foot ? 0: 1;
-        st = System.nanoTime();
-        byte[] img = RoadGraphDrawer.getInstance().draw(propertyMap, treeNode, x, y, z, mult, mode, max_dist, ind);
-        //TimeMeasurer.printMeasure("Tile done in %t", st);
-        ByteBuf buf = ctx.alloc().buffer();
-        buf.writeBytes(img);
-
-        DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
-
-        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
         //TimeMeasurer.printMeasure(st, "Tile done in %t millis");
     }
 
