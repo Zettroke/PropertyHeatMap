@@ -311,7 +311,9 @@ public class QuadTree {
     private void rec_add_from_nodes_to_node(QuadTreeNode res, QuadTreeNode source, HashSet<Long> alreadyAdd){
         if (!source.isEndNode){
             for (QuadTreeNode node: source){
-                rec_add_from_nodes_to_node(res, node, alreadyAdd);
+                if (res.intersec_with_tree_node(node)) {
+                    rec_add_from_nodes_to_node(res, node, alreadyAdd);
+                }
             }
         }else{
             for (MapShape shape: source.shapes){

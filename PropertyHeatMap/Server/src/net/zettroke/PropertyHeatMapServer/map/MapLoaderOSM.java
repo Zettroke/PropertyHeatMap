@@ -20,7 +20,6 @@ public class MapLoaderOSM implements MapLoader{
     private ArrayList<SimpleNode> simpleNodes;
     private HashMap<Long, Way> ways = new HashMap<>();
     private HashMap<Long, Relation> relations = new HashMap<>();
-    ArrayList<String> names = new ArrayList<>();
 
     private static class Deduplicator{
         //before ~1823MB
@@ -119,7 +118,7 @@ public class MapLoaderOSM implements MapLoader{
                             } else if (tempWay != null) {
                                 tempWay.data.put(dedup.dedup(streamReader.getAttributeValue(0)), dedup.dedup(streamReader.getAttributeValue(1)));
                             } else if (tempRelation != null) {
-                                tempRelation.data.put(streamReader.getAttributeValue(0), streamReader.getAttributeValue(1));
+                                tempRelation.data.put(dedup.dedup(streamReader.getAttributeValue(0)), dedup.dedup(streamReader.getAttributeValue(1)));
                             }
                             break;
                         case "nd":
@@ -159,6 +158,9 @@ public class MapLoaderOSM implements MapLoader{
                             coords = context.mercator(tempNode.lon, tempNode.lat);
                             tempNode.x = coords[0]; tempNode.y = coords[1];
                             nodes.put(tempNode.id, tempNode);
+                            if (tempNode.data.size() == 0) {
+                                tempNode.data = null;
+                            }
                             tempNode = null;
                             break;
                         case "way":
@@ -188,7 +190,7 @@ public class MapLoaderOSM implements MapLoader{
             streamReader.next();
         }
         streamReader.close();
-
+        dedup = null;
         System.gc();
         System.out.println("Loaded osm in " + (System.nanoTime()-start)/1000000.0 + " millis.");
         System.out.println("Nodes: "+nodes.size());
@@ -196,18 +198,50 @@ public class MapLoaderOSM implements MapLoader{
         System.out.println("Relations: "+relations.size());
 
         HashMap<Long, SimpleNode> simpleNodeHashMap = new HashMap<>();
-        for (Long l: new HashSet<>(nodes.keySet())){
-            Node n = nodes.get(l);
-            if (!builder.isRGN(n) && !relation_nodes.contains(n.id) && Collections.disjoint(n.data.keySet(), PropertyMap.keysInfrastructureObject)){
-                nodes.remove(l);
-                simpleNodeHashMap.put(n.id, new SimpleNode(n));
-            }else{
-                if (n.data.size() == 0) {
-                    n.data = null;
+        int cnt = 0;
+        HashSet<Long> s = new HashSet<>(nodes.keySet());
+        Iterator<Long> iter = s.iterator();
+        int steps = 15;
+        for (int z=0;z<steps;z++) {
+            for (int i = 0; i < s.size()/steps; i++) {
+                Long l = iter.next();
+                Node n = nodes.get(l);
+                if (n.data != null) {
+                    if (!builder.isRGN(n) && !relation_nodes.contains(n.id) && Collections.disjoint(n.data.keySet(), PropertyMap.keysInfrastructureObject)) {
+                        nodes.remove(l);
+                        simpleNodeHashMap.put(n.id, new SimpleNode(n));
+                    }
+                } else {
+                    if (!builder.isRGN(n) && !relation_nodes.contains(n.id)) {
+                        nodes.remove(l);
+                        simpleNodeHashMap.put(n.id, new SimpleNode(n));
+                    }
+                }
+            }
+            for (Way w : ways.values()) {
+                for (int i = 0; i < w.nodes.size(); i++) {
+                    SimpleNode n = w.nodes.get(i);
+                    if (simpleNodeHashMap.containsKey(n.id)) {
+                        w.nodes.set(i, simpleNodeHashMap.get(n.id));
+                    }
                 }
             }
         }
-
+        /*for (Long l: s){
+            Node n = nodes.get(l);
+            if (n.data != null){
+                if (!builder.isRGN(n) && !relation_nodes.contains(n.id) && Collections.disjoint(n.data.keySet(), PropertyMap.keysInfrastructureObject)) {
+                    nodes.remove(l);
+                    simpleNodeHashMap.put(n.id, new SimpleNode(n));
+                }
+            }else{
+                if (!builder.isRGN(n) && !relation_nodes.contains(n.id)){
+                    nodes.remove(l);
+                    simpleNodeHashMap.put(n.id, new SimpleNode(n));
+                }
+            }
+        }
+        s = null;
         for (Way w: ways.values()){
             for (int i=0; i<w.nodes.size(); i++){
                 SimpleNode n = w.nodes.get(i);
@@ -215,8 +249,7 @@ public class MapLoaderOSM implements MapLoader{
                     w.nodes.set(i, simpleNodeHashMap.get(n.id));
                 }
             }
-        }
-
+        }*/
         for (Way w: ways.values()){
             w.initBounds();
         }
@@ -227,7 +260,7 @@ public class MapLoaderOSM implements MapLoader{
         System.out.println("SimpleNodes: " + simpleNodes.size());
         System.out.println("Complex Nodes: " + nodes.size());
 
-        //System.gc();
+        System.gc();
 
 
     }

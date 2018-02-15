@@ -65,6 +65,8 @@ public class PropertyMap {
 
     public QuadTree tree;
 
+
+
     int[] mercator(double lon, double lat){
         int x = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.toRadians(lon)+Math.PI))-x_begin);
         int y = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.PI-Math.log(Math.tan(Math.toRadians(lat)/2+Math.PI/4))))-y_begin);
@@ -133,7 +135,6 @@ public class PropertyMap {
             simpleNodes = loader.getSimpleNodes();
             relations = loader.getRelations();
 
-            new ObjectOutputStream(new FileOutputStream("way.obj")).writeObject(ways.get(119052101L));
 
             tree = new QuadTree(new int[]{0, 0, x_end - x_begin, y_end - y_begin});
             tree.root.split();
@@ -363,7 +364,7 @@ public class PropertyMap {
                 }
                 int dist = 0;
                 for (int i=start_ind; i < way.nodes.size(); i++){
-                    dist += Math.round(calculateDistance(prev_simple_node, way.nodes.get(i))/divider);
+                    dist += Math.round(calculateDistance(new Node(prev_simple_node, this), new Node(way.nodes.get(i), this))/divider);
                     if (way.nodes.get(i) instanceof Node){
                         Node n = (Node) way.nodes.get(i);
                         if (n.publicTransportStop){
@@ -491,7 +492,21 @@ public class PropertyMap {
         tree.fillTreeNodeWithRoadGraphNodes(n);
     }
 
-    public static int calculateDistance(SimpleNode n1, SimpleNode n2){
+    /*public static int calculateDistance(SimpleNode n1, SimpleNode n2}){
+        return calculateDistance(new Node(n1, this),)
+        double lat1 = Math.toRadians(n1.lat);
+        double lat2 = Math.toRadians(n2.lat);
+        double dlat = Math.toRadians(n2.lat-n1.lat);
+        double dlon = Math.toRadians(n2.lon-n1.lon);
+
+        double a = Math.sin(dlat/2) * Math.sin(dlat/2) + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon/2) * Math.sin(dlon/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+        return (int)Math.round(earthRadius*c);
+
+    }*/
+
+    public static int calculateDistance(Node n1, Node n2){
         double lat1 = Math.toRadians(n1.lat);
         double lat2 = Math.toRadians(n2.lat);
         double dlat = Math.toRadians(n2.lat-n1.lat);

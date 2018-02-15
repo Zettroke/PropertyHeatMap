@@ -27,7 +27,6 @@ public class RoadGraphDrawer{
         boolean temp;
         if (!isGlobalSet || isNative) {
             try {
-                //System.setProperty("java.library.path", System.getProperty("java.library.path") + ";./native_libs");
                 System.loadLibrary("JNI-CairoDrawer");
 
                 temp = true;
@@ -35,6 +34,8 @@ public class RoadGraphDrawer{
                 System.err.println("Cairo draw not available");
                 e.printStackTrace();
                 temp = false;
+                System.out.println("Все в порядке, cairo недоступен, поэтому будет использован рендер на java. Для повторной попытки загрузить cairo перезапустите сервер.");
+                System.out.println("It's okay. Cairo not available, so using java render. If you want to try load cairo again restart server.");
             }
             isNativeAvailable = temp;
         }else{

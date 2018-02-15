@@ -20,8 +20,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class RoadGraphTileHandler implements ShittyHttpHandler{
     PropertyMap propertyMap;
 
-    static Lock global_rgn_lock = new ReentrantLock();
-
     static final int zoom_level = 13; 
 
     final String path = "tile/road";
@@ -52,7 +50,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         //System.out.println("Id - " + id + " Thread - " + Thread.currentThread().getName());
         coefficent = 1.0/mult;
 
-        QuadTreeNode treeNode = new QuadTreeNode(new int[]{x*mult*256 - around*256, y*mult*256 - around*256, (x+1)*mult*256 + around*256, (y+1)*mult*256 + around*256});
+        QuadTreeNode treeNode = new QuadTreeNode(new int[]{x*mult*256 - around*256, y*mult*256 - around*256, (x+1)*mult*256 + around*256, (y+1)*mult*256 + around*256}, false);
         propertyMap.fillTreeNodeWithRoadGraphNodes(treeNode);
         int ind=0;
         propertyMap.cache.lock.lock();

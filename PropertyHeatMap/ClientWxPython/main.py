@@ -6,7 +6,16 @@ import requests
 from threading import Thread, Lock, current_thread, Condition
 import json
 import time
+import sys
 
+server_address = "127.0.0.1"
+ip_set_manually = False
+if len(sys.argv) > 1:
+    ind = sys.argv.index("-ip")
+    if ind != -1:
+        ip_set_manually = True
+        server_address = sys.argv[ind+1]
+        print("ip set manually to " + server_address)
 
 # 2k18 yaaaay
 
@@ -14,13 +23,18 @@ EVT_REFRESH = wx.NewId()
 mx_dist = 18000
 mx_dist_stuff = 6000
 
-server_address = "127.0.0.1"
-try:
-    server_address = requests.get("https://pastebin.com/raw/jkUmzJZ0", timeout=2).text
-    print("ip set to " + server_address)
-except Exception:
-    pass
-# ShowApartmentsEvent, EVT_SHOW_APARTMENTS = wx.lib.newevent.NewEvent()
+if not ip_set_manually:
+    try:
+        data = requests.get("https://pastebin.com/raw/jkUmzJZ0", timeout=2).text
+        ip, message = data.split("\n", 1)
+        server_address = ip.replace("\r", "")
+
+        print("ip set to " + server_address)
+        print(len(server_address))
+        print("message:", message)
+    except Exception:
+        print("Failed to get ip!")
+
 base_server_url = "http://" + server_address + "/"
 map_tiles_url = "http://" + server_address + "/image/z{z}/{x}.{y}.png"
 price_tiles_url = "http://" + server_address + "/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
@@ -28,6 +42,8 @@ road_tiles_url = "http://" + server_address + "/api/tile/road?z={z}&x={x}&y={y}&
 point_search_url = "http://" + server_address + "/api/search/point?z={z}&x={x}&y={y}"
 suggestion_url = "http://" + server_address + "/api/search/predict?text={}&suggestions=10"
 close_things_url = "http://" + server_address + "/api/search/close_objects?id={id}&max_dist={max_dist}&foot={foot}&max_num={max_num}"
+
+
 class LoadTask:
 
     def __init__(self, url, priority, key, place, **kwargs):
@@ -149,7 +165,7 @@ class Map(wx.Panel):
 
                 if "apartments" in data.keys():
                     wx.CallAfter(self.parent.show_apartments, data["apartments"])
-                    wx.CallAfter(self.parent.show_close_things, stuff_close["objects"])
+                wx.CallAfter(self.parent.show_close_things, stuff_close["objects"])
             else:
                 del self.shapes_dict[ans["objects"][0]["id"]]
                 # del self.shapes_bitmaps[ans["objects"][0]["id"]]
@@ -247,7 +263,6 @@ class Map(wx.Panel):
         event.Skip()
 
     def zoom_method(self, event=None):
-        st = time.clock()
         z = abs(event.WheelRotation)//event.WheelRotation
         if self.available_zoom_levels[0] <= z+self.zoom <= self.available_zoom_levels[1]:
             if z > 0:
@@ -269,7 +284,6 @@ class Map(wx.Panel):
             self.road_tiles_dict.clear()
             self.already_updated_bitmaps.clear()
             self.render_shapes_to_bitmaps()
-            print("zoom in", time.clock()-st)
             self.Refresh()
 
     def update_all_bitmaps(self):
@@ -349,8 +363,8 @@ class Map(wx.Panel):
             
     def center_on(self, obj):
         mult = 2**(self.server_zoom - self.zoom)
-        print("from:", self.map_x, self.map_y)
-        print("to:", round(obj["result"]["center"][0] / mult),round(obj["result"]["center"][1] / mult))
+        # print("from:", self.map_x, self.map_y)
+        # print("to:", round(obj["result"]["center"][0] / mult),round(obj["result"]["center"][1] / mult))
         self.map_x = round(obj["result"]["center"][0] / mult) - self.GetSize()[0]//2
         self.map_y = round(obj["result"]["center"][1] / mult) - self.GetSize()[1]//2
         self.Refresh()
@@ -376,10 +390,9 @@ class Completer(wx.TextCompleterSimple):
         self.app = app
 
     def GetCompletions(self, prefix, res):
-        print("Completion for", prefix)
+        pass
 
     def Start(self, prefix):
-        print("Completion for", prefix)
         self.ind = 0
         s = self.app.search_entry.GetValue()
         resp = requests.get(suggestion_url.format(s)).text
@@ -420,16 +433,13 @@ class PropertyHeatMap(wx.Frame):
 
         self.apartments_panel = wx.Panel(self.p)
         self.close_things_panel = wx.Panel(self.p)
-        self.close_things_panel.SetBackgroundColour(wx.Colour(255, 255, 0))
+
+        self.turn_things_and_aparts = wx.Button(self.p, label="Жилье")
+        self.turn_things_and_aparts.Bind(wx.EVT_BUTTON, self.switch_views)
         # self.close_things_panel.Hide()
 
         self.UiInit()
 
-    def switch_view(self):
-        if self.current_show == "apart":
-            pass
-        else:
-            pass
 
     def UiInit(self):
         self.SetTitle('PropertyHeatMap')
@@ -443,7 +453,6 @@ class PropertyHeatMap(wx.Frame):
 
         self.box_sizer.Add(self.map, 9, wx.ALL | wx.EXPAND)
         self.box_sizer.Add(self.sc, 2, wx.ALL | wx.EXPAND)
-        self.Bind(wx.EVT_CHAR_HOOK, self.test)
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
         search_sizer = wx.BoxSizer()
@@ -486,6 +495,9 @@ class PropertyHeatMap(wx.Frame):
         self.choose_text = wx.StaticText(self.p, label="Выбрано: ", pos=(1, 1))
         self.choose_text.SetFont(wx.Font(10, wx.FONTFAMILY_DECORATIVE, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
         line2 = wx.StaticLine(self.p, size=(350, 2), style=wx.LI_VERTICAL)
+
+        self.data_panel_size.Add(self.turn_things_and_aparts, 0, wx.ALIGN_RIGHT)
+
         self.data_panel_size.Add(line2, 0, wx.TOP | wx.BOTTOM | wx.EXPAND, 5)
         self.data_panel_size.Add(self.choose_text, 0, wx.LEFT | wx.EXPAND, 5)
         self.data_panel_size.AddSpacer(4)
@@ -495,48 +507,40 @@ class PropertyHeatMap(wx.Frame):
 
         self.data_panel_size.Add(self.apartments_panel, 1, wx.EXPAND | wx.LEFT, 2)
         self.data_panel_size.Add(self.close_things_panel, 1, wx.EXPAND | wx.LEFT, 2)
+        self.close_things_panel.Hide()
 
         self.p.SetSizer(self.data_panel_size)
         self.panel.SetSizer(self.box_sizer)
         self.SetClientSize((900, 500))
 
-
-
-        '''menu = wx.MenuBar()
-        filemenu = wx.Menu()
-        self.r1m = filemenu.AppendRadioItem(1, "dasdas1")
-        self.r2m = filemenu.AppendRadioItem(2, "dasdas2")
-        menu.Append(filemenu, "File")
-        self.SetMenuBar(menu)'''
-
     def on_close(self, event):
         self.Destroy()
         
     def find(self):
-        print("finding")
         s = self.search_entry.GetValue()
         ans = json.loads(requests.get("http://"+server_address+"/api/search/string?text={}".format(s)).text)
         if ans["status"] == "found":
             print("found")
             self.map.center_on(ans)
 
-    def test(self, event):
-        if event.KeyCode == 13:
-            if self.test_bool:
-                print("hiding")
-                self.apartments_panel.Hide()
-                self.data_panel_size.Layout()
-                self.apart_sizer.Layout()
-                self.p.SetSize(self.p.GetSize()[0], self.close_things_sizer.GetMinSize()[1] + 175)
-                self.sc.SetScrollbars(1, 1, 1, self.close_things_sizer.GetMinSize()[1] + 175)
-            else:
-                print("showing")
-                self.apartments_panel.Show()
-                self.data_panel_size.Layout()
-                self.apart_sizer.Layout()
-                self.p.SetSize((300, self.apart_sizer.GetMinSize().Height+170))
-                self.sc.SetScrollbars(1, 1, 1, self.apart_sizer.GetMinSize().Height+170)
-            self.test_bool = not self.test_bool
+    def switch_views(self, event):
+        if self.test_bool:
+            self.turn_things_and_aparts.SetLabelText("Инфраструктура")
+            self.apartments_panel.Hide()
+            self.close_things_panel.Show()
+            self.data_panel_size.Layout()
+            self.apart_sizer.Layout()
+            self.p.SetSize(self.p.GetSize()[0], self.close_things_sizer.GetMinSize()[1] + 175)
+            self.sc.SetScrollbars(1, 1, 1, self.close_things_sizer.GetMinSize()[1] + 175)
+        else:
+            self.turn_things_and_aparts.SetLabelText("Жилье")
+            self.apartments_panel.Show()
+            self.close_things_panel.Hide()
+            self.data_panel_size.Layout()
+            self.apart_sizer.Layout()
+            self.p.SetSize((300, self.apart_sizer.GetMinSize().Height+170))
+            self.sc.SetScrollbars(1, 1, 1, self.apart_sizer.GetMinSize().Height+170)
+        self.test_bool = not self.test_bool
 
         event.Skip()
 
@@ -565,13 +569,6 @@ class PropertyHeatMap(wx.Frame):
     def clear_close_things(self):
         for i in range(self.close_things_sizer.GetItemCount()):
             self.close_things_sizer.Remove(0)
-
-        for w in self.to_remove:
-            try:
-                w.Destroy()
-            except Exception:
-                pass
-        self.to_remove.clear()
 
     def show_apartments(self, aparts):
 
@@ -615,6 +612,7 @@ class PropertyHeatMap(wx.Frame):
         self.Refresh()
 
     def show_close_things(self, data):
+        self.clear_close_things()
         names = wx.StaticText(self.close_things_panel)
         times = wx.StaticText(self.close_things_panel)
         st1 = ""
@@ -632,6 +630,7 @@ class PropertyHeatMap(wx.Frame):
         self.close_things_sizer.Add(names, 10, wx.EXPAND|wx.LEFT, 2)
         self.close_things_sizer.Add(times, 1, wx.ALIGN_RIGHT|wx.RIGHT, 2)
         self.close_things_panel.SetSizer(self.close_things_sizer)
+        self.close_things_sizer.Layout()
 
         self.close_things_panel.Refresh()
         print()

@@ -235,6 +235,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     public int depth = 0;
 
     int items = 0;
+    boolean divide = true;
     public boolean isEndNode = true;
     public int[] bounds;
     QuadTreeNode parent;
@@ -249,7 +250,12 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     public QuadTreeNode(int[] bounds){
         this.bounds = bounds;
     }
-    
+
+    public QuadTreeNode(int[] bounds, boolean divide) {
+        this.divide = divide;
+        this.bounds = bounds;
+    }
+
     boolean can_contain_shape(MapShape m) {
         if (inBounds(new MapPoint(m.way.bounds[0], m.way.bounds[1])) || inBounds(new MapPoint(m.way.bounds[0], m.way.bounds[3])) || inBounds(new MapPoint(m.way.bounds[2], m.way.bounds[1])) || inBounds(new MapPoint(m.way.bounds[2], m.way.bounds[3]))){
             return true;
@@ -386,7 +392,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }
         } else {
             roadGraphNodes.add(rgn);
-            if (roadGraphNodes.size() > QuadTree.THRESHOLD) {
+            if (divide && roadGraphNodes.size() > QuadTree.THRESHOLD) {
                 split();
             }
         }
@@ -409,7 +415,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }
         } else {
             this.nodes.add(n);
-            if (this.nodes.size() > QuadTree.NODE_THRESHOLD) {
+            if (divide && this.nodes.size() > QuadTree.NODE_THRESHOLD) {
                 this.split();
             }
         }
@@ -423,7 +429,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }else {
                 addRoad(m);
             }
-            if (shapes.size() > QuadTree.THRESHOLD_SHAPE){
+            if (divide && shapes.size() > QuadTree.THRESHOLD_SHAPE){
                 split();
             }
         }else{
@@ -980,9 +986,6 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
 
     }
 
-    private void addPoly_another(final MapShape m){
-
-    }
 
     static DMapPoint DHorzCross(int horz, int x1, int x2, DMapPoint p1, DMapPoint p2){
         if ((p1.y > horz && p2.y > horz) || (p1.y < horz && p2.y < horz)){

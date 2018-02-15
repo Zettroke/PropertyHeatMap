@@ -48,12 +48,13 @@ public class PriceTileHandler implements ShittyHttpHandler{
         g.setColor(new Color(255, 255, 255, 0));
         g.fillRect(0, 0, 256, 256);
 
-        QuadTreeNode treeNode = new QuadTreeNode(new int[]{x*mult*256, y*mult*256, (x+1)*mult*256, (y+1)*mult*256});
+        QuadTreeNode treeNode = new QuadTreeNode(new int[]{x*mult*256, y*mult*256, (x+1)*mult*256, (y+1)*mult*256}, false);
 
         propertyMap.fillTreeNode(treeNode);
-        //TODO: findInRect
+
 
         drawTreeNode(g, treeNode, 256*x, 256*y, price, range);
+
 
         ByteBuf buf = ctx.alloc().buffer();
         ByteBufOutputStream outputStream = new ByteBufOutputStream(buf);

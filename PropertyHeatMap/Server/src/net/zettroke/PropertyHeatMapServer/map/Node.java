@@ -3,9 +3,13 @@ package net.zettroke.PropertyHeatMapServer.map;
 import java.util.HashMap;
 
 public class Node extends SimpleNode{
+
     public HashMap<String, String> data = new HashMap<>();
     boolean isRoadNode = false;
     boolean publicTransportStop = false;
+
+    public double lon;
+    public double lat;
 
     public Node(double lon, double lat){
         this.lon = lon;
@@ -21,5 +25,14 @@ public class Node extends SimpleNode{
         double[] coords = context.inverse_mercator(x, y);
         lon = coords[0];
         lat = coords[1];
+    }
+
+    public Node(SimpleNode n, PropertyMap context){
+        double[] crds = context.inverse_mercator(n.x, n.y);
+        lon = crds[0];
+        lat = crds[1];
+        x = n.x;
+        y = n.y;
+        id = n.id;
     }
 }
