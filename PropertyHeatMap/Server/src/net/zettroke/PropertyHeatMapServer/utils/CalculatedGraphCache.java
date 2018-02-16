@@ -9,6 +9,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class CalculatedGraphCache {
 
     public ReentrantLock lock = new ReentrantLock();
+    public ReentrantLock calculationLock = new ReentrantLock();
+    public HashMap<CalculatedGraphKey, ReentrantLock> loading= new HashMap<>();
     HashMap<Long, RoadGraphNode> roadGraph;
     LinkedHashMap<CalculatedGraphKey, Integer> cached = new LinkedHashMap<CalculatedGraphKey, Integer>(){
         @Override
@@ -32,7 +34,7 @@ public class CalculatedGraphCache {
         }
     }
 
-    public int getNewIndexForGraph(CalculatedGraphKey key){
+    public synchronized int getNewIndexForGraph(CalculatedGraphKey key){
         int ind = free_indexes.get(free_indexes.size()-1);
         free_indexes.remove(free_indexes.size()-1);
         cached.put(key, ind);

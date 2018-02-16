@@ -63,10 +63,42 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
             QuadTreeNode treeNode = new QuadTreeNode(new int[]{x * mult * 256 - around * 256, y * mult * 256 - around * 256, (x + 1) * mult * 256 + around * 256, (y + 1) * mult * 256 + around * 256}, false);
             propertyMap.fillTreeNodeWithRoadGraphNodes(treeNode);
             int ind = 0;
+
             propertyMap.cache.lock.lock();
             long start = System.nanoTime();
             CalculatedGraphKey key = new CalculatedGraphKey(start_id, foot, max_dist);
+            //Это страшное нагромождение из локов должно работать. 5:23 утра...
+            if (propertyMap.cache.loading.containsKey(key)){
+                ReentrantLock lk = propertyMap.cache.loading.get(key);
+                propertyMap.cache.lock.unlock();
+                lk.lock();
+                ind = propertyMap.cache.getCachedIndex(key);
+                lk.unlock();
+            }else{
+                if (propertyMap.cache.contains(key)) {
+                    ind = propertyMap.cache.getCachedIndex(key);
+                    propertyMap.cache.lock.unlock();
+                } else {
+                    ReentrantLock lk = new ReentrantLock();
+                    lk.lock();
+                    propertyMap.cache.loading.put(key, lk);
+                    propertyMap.cache.lock.unlock();
+
+                    ind = propertyMap.cache.getNewIndexForGraph(key);
+                    propertyMap.calcRoadGraph(start_id, foot, max_dist, ind);
+                    TimeMeasurer.printMeasure("Graph calculated in %t millis.", start);
+
+                    propertyMap.cache.lock.lock();
+                    propertyMap.cache.loading.remove(key);
+                    lk.unlock();
+                    propertyMap.cache.lock.unlock();
+
+                }
+
+            }
+            /*
             if (propertyMap.cache.contains(key)) {
+
                 ind = propertyMap.cache.getCachedIndex(key);
                 propertyMap.cache.lock.unlock();
             } else {
@@ -75,11 +107,12 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                 TimeMeasurer.printMeasure("Graph calculated in %t millis.", start);
                 propertyMap.cache.lock.unlock();
             }
+            */// Это то, что было раньше. Расчет одного графа останавливал все запросы,
+            /// в независимости от того собираются ли они считать граф или имеют уже готорый резкльтат
+
 
             int mode = foot ? 0 : 1;
-            st = System.nanoTime();
             byte[] img = RoadGraphDrawer.getInstance().draw(propertyMap, treeNode, x, y, z, mult, mode, max_dist, ind);
-            //TimeMeasurer.printMeasure("Tile done in %t", st);
             ByteBuf buf = ctx.alloc().buffer();
             buf.writeBytes(img);
 

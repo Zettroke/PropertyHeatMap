@@ -18,6 +18,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class CloseObjectsHandler implements ShittyHttpHandler{
 
@@ -59,14 +60,33 @@ public class CloseObjectsHandler implements ShittyHttpHandler{
             propertyMap.cache.lock.lock();
             long start = System.nanoTime();
             CalculatedGraphKey key = new CalculatedGraphKey(id, foot, max_dist);
-            if (propertyMap.cache.contains(key)) {
+            if (propertyMap.cache.loading.containsKey(key)){
+                ReentrantLock lk = propertyMap.cache.loading.get(key);
+                propertyMap.cache.lock.unlock();
+                lk.lock();
                 ind = propertyMap.cache.getCachedIndex(key);
-                propertyMap.cache.lock.unlock();
-            } else {
-                ind = propertyMap.cache.getNewIndexForGraph(key);
-                propertyMap.calcRoadGraph(id, true, max_dist, ind);
-                TimeMeasurer.printMeasure("Graph calculated in %t millis.", start);
-                propertyMap.cache.lock.unlock();
+                lk.unlock();
+            }else{
+                if (propertyMap.cache.contains(key)) {
+                    ind = propertyMap.cache.getCachedIndex(key);
+                    propertyMap.cache.lock.unlock();
+                } else {
+                    ReentrantLock lk = new ReentrantLock();
+                    lk.lock();
+                    propertyMap.cache.loading.put(key, lk);
+                    propertyMap.cache.lock.unlock();
+
+                    ind = propertyMap.cache.getNewIndexForGraph(key);
+                    propertyMap.calcRoadGraph(id, foot, max_dist, ind);
+                    TimeMeasurer.printMeasure("Graph calculated in %t millis.", start);
+
+                    propertyMap.cache.lock.lock();
+                    propertyMap.cache.loading.remove(key);
+                    lk.unlock();
+                    propertyMap.cache.lock.unlock();
+
+                }
+
             }
             JsonObject answer = new JsonObject();
 
