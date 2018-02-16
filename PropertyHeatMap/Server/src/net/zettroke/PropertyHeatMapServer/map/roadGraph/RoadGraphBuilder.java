@@ -32,9 +32,13 @@ public class RoadGraphBuilder {
     }
 
     public void connect(Node n1, Node n2, RoadType connectType){
-        //fixme: Где деление на скорость?
         int dist = PropertyMap.calculateDistance(n1, n2);
         connect(n1, n2, connectType, dist);
+    }
+
+    public void connect(Node n1, Node n2, RoadType connectType, float car_speed){
+        int dist = PropertyMap.calculateDistance(n1, n2);
+        connect(n1, n2, connectType, dist, car_speed);
     }
 
     public void connect(Node n1, Node n2, RoadType connectType, int dist){
@@ -56,16 +60,38 @@ public class RoadGraphBuilder {
             b2 = nodes.get(n2.id);
         }
 
-        connect(b1, b2, connectType, dist);
+        connect(b1, b2, connectType, dist, PropertyMap.car_speed);
     }
 
-    private void connect(RoadGraphNodeBuilder rgn1, RoadGraphNodeBuilder rgn2, RoadType connType, int dist){
+    public void connect(Node n1, Node n2, RoadType connectType, int dist, float car_speed){
+        RoadGraphNodeBuilder b1;
+        if (!nodes.containsKey(n1.id)){
+            b1 = new RoadGraphNodeBuilder(n1);
+            nodes.put(n1.id, b1);
+            nodesTree.add(b1);
+        }else{
+            b1 = nodes.get(n1.id);
+        }
+
+        RoadGraphNodeBuilder b2;
+        if (!nodes.containsKey(n2.id)){
+            b2 = new RoadGraphNodeBuilder(n2);
+            nodes.put(n2.id, b2);
+            nodesTree.add(b2);
+        }else{
+            b2 = nodes.get(n2.id);
+        }
+
+        connect(b1, b2, connectType, dist, car_speed);
+    }
+
+    private void connect(RoadGraphNodeBuilder rgn1, RoadGraphNodeBuilder rgn2, RoadType connType, int dist, float car_speed){
         if (!RoadGraphNode.car_exclude.contains(connType)){
             rgn1.connectionsCar.add(rgn2.rgn);
             rgn2.connectionsCar.add(rgn1.rgn);
 
-            rgn1.distancesCar.add(Math.round(dist/PropertyMap.car_speed));
-            rgn2.distancesCar.add(Math.round(dist/PropertyMap.car_speed));
+            rgn1.distancesCar.add(Math.round(dist/car_speed));
+            rgn2.distancesCar.add(Math.round(dist/car_speed));
 
             rgn1.roadTypesCar.add(connType);
             rgn2.roadTypesCar.add(connType);

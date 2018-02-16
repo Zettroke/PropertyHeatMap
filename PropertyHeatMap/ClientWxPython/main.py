@@ -30,7 +30,6 @@ if not ip_set_manually:
         server_address = ip.replace("\r", "")
 
         print("ip set to " + server_address)
-        print(len(server_address))
         print("message:", message)
     except Exception:
         print("Failed to get ip!")
@@ -112,7 +111,12 @@ class Map(wx.Panel):
         self.last_pos = (0, 0)
         self.bitmaps = {}
         self.pressed = False
-        self.missing_image = wx.Bitmap.FromBuffer(256, 256, Image.new("RGB", (256, 256), 0xCCCCCC).tobytes())
+        img = Image.new("RGB", (256, 256), 0xCCCCCC)
+        dr = ImageDraw.ImageDraw(img)
+        for i in range(0, 257, 64):
+            dr.line((0, i, 256, i), 0xDDDDDD, 1)
+            dr.line((i, 0, i, 256), 0xDDDDDD, 1)
+        self.missing_image = wx.Bitmap.FromBuffer(256, 256, img.tobytes())
         self.zoom = 16
         self.available_zoom_levels = tuple(map(int, requests.get(base_server_url + "image/zoom_levels").text.split()))
         self.bounds = tuple(map(int, requests.get(base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
@@ -125,8 +129,12 @@ class Map(wx.Panel):
         Thread(target=self.tile_loader, daemon=True, name="loader 2").start()
         # Thread(target=self.tile_loader, daemon=True, name="loader 3").start()
 
-    def my_refresh(self, event):
-
+    def my_refresh(self, event=None):
+        if len(self.bitmaps) > 250:
+            self.bitmaps.clear()
+            self.road_tiles_dict.clear()
+            self.price_tiles_dict.clear()
+            self.tiles_dict.clear()
         self.Refresh()
 
     def request_location(self, x, y):
@@ -346,6 +354,7 @@ class Map(wx.Panel):
                     self.bitmaps[(x // 256, y // 256)] = self.missing_image
 
                 dc.DrawBitmap(self.bitmaps[(x2, y2)], x - self.map_x, y - self.map_y)
+
         self.loader_lock.release()
 
     def tile_loader(self):
@@ -357,9 +366,10 @@ class Map(wx.Panel):
             self.loader_lock.acquire()
             to_load.place[to_load.key] = image
             self.bitmaps_to_update.add(to_load.key)
-            wx.CallAfter(self.Refresh)
+            wx.CallAfter(self.my_refresh)
 
             self.loader_lock.release()
+
             
     def center_on(self, obj):
         mult = 2**(self.server_zoom - self.zoom)
@@ -541,6 +551,7 @@ class PropertyHeatMap(wx.Frame):
             self.p.SetSize((300, self.apart_sizer.GetMinSize().Height+170))
             self.sc.SetScrollbars(1, 1, 1, self.apart_sizer.GetMinSize().Height+170)
         self.test_bool = not self.test_bool
+        self.sc.SetScrollRate(10, 10)
 
         event.Skip()
 
@@ -652,6 +663,10 @@ class PropertyHeatMap(wx.Frame):
             self.map.foot = True
         else:
             self.map.foot = False
+        self.map.road_tiles_dict.clear()
+        self.map.bitmaps.clear()
+        self.map.update_all_bitmaps()
+        self.map.Refresh()
 
 
 if __name__ == '__main__':

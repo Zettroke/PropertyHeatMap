@@ -167,9 +167,19 @@ public class MapLoaderOSM implements MapLoader{
                             ways.put(tempWay.id, tempWay);
                             if (tempWay.data.containsKey("highway")){
                                 RoadType roadType = RoadType.getType(tempWay.data);
+                                float car_speed;
+                                if (tempWay.data.containsKey("maxspeed")){
+                                    try {
+                                        car_speed = Integer.parseInt(tempWay.data.get("maxspeed")) / 36.0f; // хрен знает что в maxspeed может лежать кроме числа....
+                                    }catch (NumberFormatException e){
+                                        car_speed = PropertyMap.car_speed;
+                                    }
+                                }else{
+                                    car_speed = PropertyMap.car_speed;
+                                }
 
                                 for (int i=1; i<tempNodeList.size(); i++){
-                                    builder.connect(tempNodeList.get(i-1), tempNodeList.get(i), roadType);
+                                    builder.connect(tempNodeList.get(i-1), tempNodeList.get(i), roadType, car_speed);
                                 }
 
                                 if (tempWay.data.containsKey("name") && tempWay.data.containsKey("highway") && !tempWay.data.get("highway").equals("trunk")){
