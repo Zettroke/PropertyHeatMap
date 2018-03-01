@@ -1,10 +1,14 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
 
+import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphLine;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.TimeMeasurer;
 
 import java.util.*;
+
+import static net.zettroke.PropertyHeatMapServer.map.QuadTreeNode.DHorzCross;
+import static net.zettroke.PropertyHeatMapServer.map.QuadTreeNode.DVertCross;
 
 /**
  * Created by Zettroke on 19.10.2017.
@@ -32,6 +36,10 @@ public class QuadTree {
     void add(MapShape m){
         root.add(m);
 
+    }
+
+    void add(RoadGraphLine line){
+        root.add(line);
     }
 
     public QuadTree(int[] bounds){
@@ -356,6 +364,62 @@ public class QuadTree {
                 }
             }
 
+        }
+    }
+
+    public void fillTreeNodeWithRoadGraphLines(QuadTreeNode n){
+        MapPoint p0 = new MapPoint(n.bounds[0], n.bounds[1]), p1 = new MapPoint(n.bounds[2], n.bounds[1]), p2 = new MapPoint(n.bounds[2], n.bounds[3]), p3 = new MapPoint(n.bounds[0], n.bounds[3]);
+        QuadTreeNode treeNode = getEndNode(new MapPoint(n.bounds[0], n.bounds[1]));
+        while (treeNode.parent != null){
+            if (treeNode.inBounds(p0)&&treeNode.inBounds(p1)&&treeNode.inBounds(p2)&&treeNode.inBounds(p3)){
+                break;
+            }else{
+                treeNode = treeNode.parent;
+            }
+        }
+        rec_add_rgl_from_nodes_to_node(n, treeNode);
+    }
+
+    private void rec_add_rgl_from_nodes_to_node(QuadTreeNode dst, QuadTreeNode src){
+        if (src.isEndNode){
+            if (dst.contain_tree_node(src)){
+                dst.roadGraphLines.addAll(src.roadGraphLines);
+            }else{
+                for (RoadGraphLine rgl: src.roadGraphLines){
+                    if (dst.inBounds(rgl.n1.n) || dst.inBounds(rgl.n2.n)){
+                        dst.add(rgl);
+                    }else{
+                        QuadTreeNode.DMapPoint p1 = new QuadTreeNode.DMapPoint(rgl.n1.n);
+                        QuadTreeNode.DMapPoint p2 = new QuadTreeNode.DMapPoint(rgl.n2.n);
+                        QuadTreeNode.DMapPoint h1 = DHorzCross(dst.bounds[1], dst.bounds[0], dst.bounds[2], p1, p2);
+                        if (h1 != null){
+                            dst.roadGraphLines.add(rgl);
+                            continue;
+                        }
+                        QuadTreeNode.DMapPoint h2 = DHorzCross(dst.bounds[3], dst.bounds[0], dst.bounds[2], p1, p2);
+                        if (h2 != null){
+                            dst.roadGraphLines.add(rgl);
+                            continue;
+                        }
+                        QuadTreeNode.DMapPoint v1 = DVertCross(dst.bounds[0], dst.bounds[1], dst.bounds[3], p1, p2);
+                        if (v1 != null){
+                            dst.roadGraphLines.add(rgl);
+                            continue;
+                        }
+                        QuadTreeNode.DMapPoint v2 = DVertCross(dst.bounds[2], dst.bounds[1], dst.bounds[3], p1, p2);
+                        if (v2 != null){
+                            dst.roadGraphLines.add(rgl);
+                            continue;
+                        }
+                    }
+                }
+            }
+        }else{
+            for (QuadTreeNode t: src){
+                if (dst.intersec_with_tree_node(t)) {
+                    rec_add_rgl_from_nodes_to_node(dst, t);
+                }
+            }
         }
     }
 

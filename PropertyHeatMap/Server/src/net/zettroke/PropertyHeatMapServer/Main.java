@@ -25,12 +25,25 @@ import javax.imageio.stream.ImageOutputStream;
 
 public class Main {
 
+    enum EN{
+        A, B, C, D, E, F, G, H, Ad, dsad, dsa, das, dqew, dfs, gfdg
+    }
+
     static HashMap<Long, MapPoint> map = new HashMap<>();
     static PropertyMap propertyMap;
     static ArrayList<Polygon> mapPoly = new ArrayList<>();
     static double coefficent = 1;
     static int x;
     static int y;
+
+    static class MyThread extends Thread{
+        int val=42;
+
+        @Override
+        public void run() {
+            System.out.println(((MyThread)Thread.currentThread()).val);
+        }
+    }
 
     static int coef(int n) {
         return (int) Math.round(n * coefficent);
@@ -65,14 +78,35 @@ public class Main {
                         RoadGraphDrawer.isGlobalSet = true;
                         RoadGraphDrawer.isNative = false;
                         //System.out.println("set drawer to java");
-                    }
+                    }else if (s.substring(6).equals("cairo")) {
+                        RoadGraphDrawer.isGlobalSet = true;
+                        RoadGraphDrawer.isNative = true;
+                        RoadGraphDrawer.forceCairo = true;
+
+                        //System.out.println("set drawer to java");
+                    }/*else if (s.substring(6).equals("opengl")) {
+                        RoadGraphDrawer.isGlobalSet = true;
+                        RoadGraphDrawer.isNative = false;
+                        //System.out.println("set drawer to java");
+                    }*/
                 }
             }
         }
 
+        new MyThread().start();
+
         PropertyMapServer server = new PropertyMapServer(map_name);
         server.start();
 
+
+        Runtime.getRuntime().addShutdownHook(new Thread(){
+            @Override
+            public void run() {
+                System.out.println("closing!!!");
+                try{new FileOutputStream("Lel");Thread.sleep(1000);}catch (Exception e){}
+            }
+        });
+        
 
 
         /*long start = System.nanoTime();
@@ -128,6 +162,7 @@ public class Main {
         jpgWriter.write(null, outputImage, jpgWriteParam);
         jpgWriter.dispose();*/
     }
+
 
 
     static void draw(Graphics2D g, QuadTreeNode t, ArrayList<int[]> rects) {

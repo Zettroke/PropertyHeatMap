@@ -19,7 +19,7 @@ class MapApp(Canvas):
         # git answer !!1
         self.root = root
         self.miss_photo = ImageTk.PhotoImage(Image.new("RGB", (256, 256), 0xC3C3C3))
-        self.is_local_network = True
+        self.is_local_network = False
         if not self.is_local_network:
             self.map_server = "http://178.140.109.241:25565/image/"
             self.image_server = "http://178.140.109.241:25565/image/z{z}/{x}.{y}.png"
@@ -39,8 +39,8 @@ class MapApp(Canvas):
         except Exception:
             pass
 
-        try:
-            requests.get(self.map_server, timeout=2)
+        '''try:
+            requests.get(self.map_server[:self.map_server.rfing("/", -2)], timeout=2)
         except Exception:
 
             l = Label(root, text="Server is down. Unable to run.", font="Arial 16")
@@ -50,7 +50,7 @@ class MapApp(Canvas):
             b.pack()
             root.geometry("350x75")
 
-            return
+            return'''
 
         self.min_zoom, self.max_zoom = map(int, requests.get(self.map_server + "zoom_levels").text.split())
         self.zoom = self.min_zoom

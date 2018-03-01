@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 // Сохраняет память, т.к. Integer весит 20 байт а int 4 байта. Также из-за отсутствия проверок увеличилась скорость инициализации.
-public class IntArrayList {
-    private int[] container = new int[10];
+public class IntArrayList implements Iterable<Integer>{
+    private int[] container;
 
     private int size = 0;
 
@@ -23,9 +23,15 @@ public class IntArrayList {
     }
 
     public void addAll(int... ints){
-        for (int i: ints){
-            add(i);
+        if (container.length > size + ints.length){
+            System.arraycopy(ints, 0, container, size, ints.length);
+            size += ints.length;
+        }else{
+            for (int i: ints){
+                add(i);
+            }
         }
+
     }
 
     private void grow(int minSize){
@@ -54,7 +60,7 @@ public class IntArrayList {
 
             @Override
             public Integer next() {
-                return container[ind];
+                return container[ind++];
             }
         };
     }
@@ -65,6 +71,18 @@ public class IntArrayList {
 
     public int[] toArray(){
         return Arrays.copyOf(container, size);
+    }
+
+    public void set(int index, int value){
+        container[index] = value;
+    }
+
+    public IntArrayList(){
+        this(10);
+    }
+
+    public IntArrayList(int capacity){
+        container = new int[capacity];
     }
 
 

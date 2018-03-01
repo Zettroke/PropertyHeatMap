@@ -5,12 +5,10 @@ import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
+import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphLine;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNodeBuilder;
-import net.zettroke.PropertyHeatMapServer.utils.Apartment;
-import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphCache;
-import net.zettroke.PropertyHeatMapServer.utils.IntArrayList;
-import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
+import net.zettroke.PropertyHeatMapServer.utils.*;
 
 
 import java.io.*;
@@ -62,6 +60,7 @@ public class PropertyMap {
     RoadGraphBuilder rgnBuilder;
     public HashMap<Long, RoadGraphNode> roadGraph;
     public CalculatedGraphCache cache;
+    public ArrayList<RoadGraphLine> roadGraphLines;
 
     public QuadTree tree;
 
@@ -135,7 +134,7 @@ public class PropertyMap {
             simpleNodes = loader.getSimpleNodes();
             relations = loader.getRelations();
 
-
+            System.out.println("Creating QuadTree...");
             tree = new QuadTree(new int[]{0, 0, x_end - x_begin, y_end - y_begin});
             tree.root.split();
             long start = System.nanoTime();
@@ -184,11 +183,29 @@ public class PropertyMap {
                     }
                 }
             }
-
+            init_roadGraphLines();
+            /*QuadTreeNode treeNode = new QuadTreeNode(new int[]{0, 0,  8 * 256 , 8 * 256 }, false);
+            fillTreeNodeWithRoadGraphNodes(treeNode);
+            init_node = treeNode;*/
             System.gc();
         }catch (Exception e){
             System.err.println("PropertyMapInit Failed!!!");
             e.printStackTrace();
+        }
+    }
+
+    private void init_roadGraphLines(){
+        roadGraphLines = new ArrayList<>();
+        boolean[] visited = new boolean[roadGraph.size()];
+        for (RoadGraphNode rgn: roadGraph.values()){
+            visited[rgn.index] = true;
+            for (int i=0; i<rgn.ref_to[0].length; i++){
+                if (!visited[rgn.ref_to[0][i].index]) {
+                    RoadGraphLine rgl = new RoadGraphLine(rgn, rgn.ref_to[0][i], rgn.ref_types[0][i]);
+                    roadGraphLines.add(rgl);
+                    tree.add(rgl);
+                }
+            }
         }
     }
 
@@ -490,6 +507,10 @@ public class PropertyMap {
 
     public void fillTreeNodeWithRoadGraphNodes(QuadTreeNode n){
         tree.fillTreeNodeWithRoadGraphNodes(n);
+    }
+
+    public void fillTreeNodeWithRoadGraphLines(QuadTreeNode n){
+        tree.fillTreeNodeWithRoadGraphLines(n);
     }
 
     /*public static int calculateDistance(SimpleNode n1, SimpleNode n2}){

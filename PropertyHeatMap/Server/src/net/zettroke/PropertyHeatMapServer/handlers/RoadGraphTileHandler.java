@@ -60,14 +60,15 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
             boolean foot = Boolean.parseBoolean(decoder.parameters().get("foot").get(0));
             coefficent = 1.0 / mult;
 
-            QuadTreeNode treeNode = new QuadTreeNode(new int[]{x * mult * 256 - around * 256, y * mult * 256 - around * 256, (x + 1) * mult * 256 + around * 256, (y + 1) * mult * 256 + around * 256}, false);
-            propertyMap.fillTreeNodeWithRoadGraphNodes(treeNode);
+            QuadTreeNode treeNode = new QuadTreeNode(new int[]{x * mult * 256 , y * mult * 256, (x + 1) * mult * 256 , (y + 1) * mult * 256}, false);
+            //propertyMap.fillTreeNodeWithRoadGraphNodes(treeNode);
+            propertyMap.fillTreeNodeWithRoadGraphLines(treeNode);
             int ind = 0;
 
             propertyMap.cache.lock.lock();
             long start = System.nanoTime();
             CalculatedGraphKey key = new CalculatedGraphKey(start_id, foot, max_dist);
-            //Это страшное нагромождение из локов должно работать. 5:23 утра...
+
             if (propertyMap.cache.loading.containsKey(key)){
                 ReentrantLock lk = propertyMap.cache.loading.get(key);
                 propertyMap.cache.lock.unlock();
@@ -108,11 +109,13 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
                 propertyMap.cache.lock.unlock();
             }
             */// Это то, что было раньше. Расчет одного графа останавливал все запросы,
-            /// в независимости от того собираются ли они считать граф или имеют уже готорый резкльтат
+            /// в независимости от того собираются ли они считать граф или имеют уже готорый результат
+
+            //System.out.println("Server thread " + ((IndexedThread)Thread.currentThread()).index);
 
 
             int mode = foot ? 0 : 1;
-            byte[] img = RoadGraphDrawer.getInstance().draw(propertyMap, treeNode, x, y, z, mult, mode, max_dist, ind);
+            byte[] img = RoadGraphDrawer.getInstance(propertyMap).draw(treeNode, x, y, z, mult, mode, max_dist, ind, propertyMap.roadGraph.size());
             ByteBuf buf = ctx.alloc().buffer();
             buf.writeBytes(img);
 

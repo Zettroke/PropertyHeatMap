@@ -1,6 +1,8 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
+import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphLine;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
+import net.zettroke.PropertyHeatMapServer.utils.IntArrayList;
 
 import java.util.*;
 
@@ -246,6 +248,7 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     public ArrayList<MapShape> shapes = new ArrayList<>();
     ArrayList<Node> nodes = new ArrayList<>();
     public ArrayList<RoadGraphNode> roadGraphNodes = new ArrayList<>();
+    public ArrayList<RoadGraphLine> roadGraphLines = new ArrayList<>();
 
     public QuadTreeNode(int[] bounds){
         this.bounds = bounds;
@@ -303,7 +306,6 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     boolean StrictInBounds(DMapPoint p){
         return (p.x > bounds[0] && p.x < bounds[2] && p.y > bounds[1] && p.y < bounds[3]);
     }
-
 
     void split(){
         if (isEndNode) {
@@ -440,6 +442,42 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }
         }
 
+    }
+
+    void add(RoadGraphLine line){
+        if (isEndNode){
+            DMapPoint p1 = new DMapPoint(line.n1.n);
+            DMapPoint p2 = new DMapPoint(line.n2.n);
+            if (inBounds(p1) || inBounds(p2)){
+                roadGraphLines.add(line);
+            }else {
+                DMapPoint h1 = DHorzCross(bounds[1], bounds[0], bounds[2], p1, p2);
+                DMapPoint h2 = DHorzCross(bounds[3], bounds[0], bounds[2], p1, p2);
+                DMapPoint v1 = DVertCross(bounds[0], bounds[1], bounds[3], p1, p2);
+                DMapPoint v2 = DVertCross(bounds[2], bounds[1], bounds[3], p1, p2);
+
+                if (h1 != null || h2 != null || v1 != null || v2 != null){
+                    roadGraphLines.add(line);
+                }
+            }
+        }else{
+            for (QuadTreeNode t: this){
+                DMapPoint p1 = new DMapPoint(line.n1.n);
+                DMapPoint p2 = new DMapPoint(line.n2.n);
+                if (t.inBounds(p1) || t.inBounds(p2)){
+                    t.add(line);
+                }else {
+                    DMapPoint h1 = DHorzCross(t.bounds[1], t.bounds[0], t.bounds[2], p1, p2);
+                    DMapPoint h2 = DHorzCross(t.bounds[3], t.bounds[0], t.bounds[2], p1, p2);
+                    DMapPoint v1 = DVertCross(t.bounds[0], t.bounds[1], t.bounds[3], p1, p2);
+                    DMapPoint v2 = DVertCross(t.bounds[2], t.bounds[1], t.bounds[3], p1, p2);
+
+                    if (h1 != null || h2 != null || v1 != null || v2 != null){
+                        t.add(line);
+                    }
+                }
+            }
+        }
     }
 
     private void addRoad(final MapShape m){
@@ -985,7 +1023,6 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
         }
 
     }
-
 
     static DMapPoint DHorzCross(int horz, int x1, int x2, DMapPoint p1, DMapPoint p2){
         if ((p1.y > horz && p2.y > horz) || (p1.y < horz && p2.y < horz)){
