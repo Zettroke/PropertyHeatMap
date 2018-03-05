@@ -78,17 +78,7 @@ public class Main {
                         RoadGraphDrawer.isGlobalSet = true;
                         RoadGraphDrawer.isNative = false;
                         //System.out.println("set drawer to java");
-                    }else if (s.substring(6).equals("cairo")) {
-                        RoadGraphDrawer.isGlobalSet = true;
-                        RoadGraphDrawer.isNative = true;
-                        RoadGraphDrawer.forceCairo = true;
-
-                        //System.out.println("set drawer to java");
-                    }/*else if (s.substring(6).equals("opengl")) {
-                        RoadGraphDrawer.isGlobalSet = true;
-                        RoadGraphDrawer.isNative = false;
-                        //System.out.println("set drawer to java");
-                    }*/
+                    }
                 }
             }
         }

@@ -359,10 +359,10 @@ class Map(wx.Panel):
 
     def tile_loader(self):
         while True:
+
             to_load = self.tile_queue.get()
             image = Image.open(io.BytesIO(requests.get(to_load.url.format(**to_load.params), stream=False).content))
             image = image.convert("RGBA")
-
             self.loader_lock.acquire()
             to_load.place[to_load.key] = image
             self.bitmaps_to_update.add(to_load.key)

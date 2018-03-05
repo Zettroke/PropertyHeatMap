@@ -31,7 +31,7 @@ cairo_status_t my_write_func(void* closure, const unsigned char* data, unsigned 
 }
 
 JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer_drawCairoCall
-(JNIEnv *env, jobject obj, jintArray arr, jint len , jint divider, jint zoom_level) {
+(JNIEnv *env, jobject obj, jintArray arr, jint len , jint divider) {
 
 	//printf("drawing %d lines\n", len / 14);
 	auto start = stch::high_resolution_clock::now();
@@ -56,25 +56,23 @@ JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadG
 		y2 = params[i + 4] / divider;
 		color2 = params[i + 5];
 		width = params[i + 6];
-		if (width > 20) {
-			if (zoom_level <= 13) {
-				width = width * (1 << (13 - zoom_level));
-			}
-			cairo_pattern_t *gradient = cairo_pattern_create_linear(x1, y1, x2, y2);
-			cairo_pattern_add_color_stop_rgba(gradient, 0, (color1 >> 16 & 0xFF) / 255.0, (color1 >> 8 & 0xFF) / 255.0, (color1 & 0xFF) / 255.0, 0.8);
-			cairo_pattern_add_color_stop_rgba(gradient, 1, (color2 >> 16 & 0xFF) / 255.0, (color2 >> 8 & 0xFF) / 255.0, (color2 & 0xFF) / 255.0, 0.8);
-			cairo_set_source(cr, gradient);
-			cairo_set_line_width(cr, width / 100.0f);
-			cairo_move_to(cr, x1, y1);
-			cairo_line_to(cr, x2, y2);
-			cairo_stroke(cr);
+		
 
-			cairo_pattern_destroy(gradient);
-		}
+		cairo_pattern_t *gradient = cairo_pattern_create_linear(x1, y1, x2, y2);
+		cairo_pattern_add_color_stop_rgba(gradient, 0, (color1 >> 16 & 0xFF) / 255.0, (color1 >> 8 & 0xFF) / 255.0, (color1 & 0xFF) / 255.0, 0.8);
+		cairo_pattern_add_color_stop_rgba(gradient, 1, (color2 >> 16 & 0xFF) / 255.0, (color2 >> 8 & 0xFF) / 255.0, (color2 & 0xFF) / 255.0, 0.8);
+		cairo_set_source(cr, gradient);
+		cairo_set_line_width(cr, width / 100.0f);
+		cairo_move_to(cr, x1, y1);
+		cairo_line_to(cr, x2, y2);
+		cairo_stroke(cr);
+
+		cairo_pattern_destroy(gradient);
+		
 	}
 	cairo_surface_flush(surface);
 	double t1 = stch::duration_cast<stch::microseconds>(stch::high_resolution_clock::now() - start).count() / 1000.0;
-	//printf("draw done in %f millis.\n", t1);
+	printf("draw done in %f millis.\n", t1);
 	/*cairo_surface_flush(surface);
 	unsigned char *c = cairo_image_surface_get_data(surface);
 	for (int j = 0; j < 262144; j += 1024) {
@@ -92,7 +90,7 @@ JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadG
 
 	cairo_surface_write_to_png_stream(surface, my_write_func, &data);
 	double t2 = stch::duration_cast<stch::microseconds>(stch::high_resolution_clock::now() - start).count() / 1000.0;
-	//printf("png done in %f millis.\n", t2);
+	printf("png done in %f millis.\n", t2);
 	jbyteArray res = env->NewByteArray(data.len);
 	env->SetByteArrayRegion(res, 0, data.len, data.data);
 	
@@ -103,9 +101,9 @@ JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadG
 	cairo_surface_destroy(surface);
 
 	env->ReleaseIntArrayElements(arr, params, JNI_ABORT);
-	/*std::ofstream of("timing.txt");
+	std::ofstream of("timing.txt");
 	of << t1 << " " << t2;
-	of.close();*/
+	of.close();
 	return res;
 }
 

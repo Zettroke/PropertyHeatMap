@@ -19,7 +19,6 @@ public class RoadGraphDrawer{
 
     public static boolean isGlobalSet = false;
     public static boolean isNative;
-    public static boolean forceCairo = false;
 
     public static boolean test = false;
 
@@ -29,42 +28,29 @@ public class RoadGraphDrawer{
     final static int zoom_level = 13;
     static RoadGraphDrawer instance = null;
 
-    private RoadGraphDrawer(PropertyMap propertyMap){
-        boolean tempOpenGL=false, tempCairo;
+    private RoadGraphDrawer(){
+        boolean tempOpenGL, tempCairo;
         if (!isGlobalSet || isNative) {
-            if (!forceCairo) {
-                try {
-                    System.loadLibrary("JNI-OpenGL-Drawer");
-                    IntArrayList rgns = new IntArrayList();
-                    for (int i=0; i<propertyMap.roadGraph.size()*2; i++){
-                        rgns.add(0);
-                    }
-                    for (RoadGraphNode rgn: propertyMap.roadGraph.values()){
-                        rgns.set(rgn.index*2, rgn.n.x);
-                        rgns.set(rgn.index*2+1, rgn.n.y);
-                    }
-                    IntArrayList rgls = new IntArrayList();
-                    for (RoadGraphLine rgl: propertyMap.roadGraphLines){
-                        rgls.addAll(rgl.n1.index, rgl.n2.index, rgl.type.ordinal());
-                    }
-                    initOpenGLRenderer(10, PropertyMap.default_zoom, rgns.toArray(), rgns.size(), rgls.toArray(), rgls.size(), propertyMap.tree.root.bounds, PropertyMapServer.PROC_NUM);
-                    // OpenGL всегда фейлит первую картинку. Почему не знаю. Решено отрисовкой одной картинки.
+
+            try{
+                System.loadLibrary("JNI-OpenGL-Drawer");
+                initOpenGLRenderer(PropertyMapServer.PROC_NUM);
+                // OpenGL всегда фейлит первую картинку. Почему не знаю. Решено отрисовкой одной картинки.
                 /*int mx = 0;
                 for (RoadGraphNode rgn: PropertyMap.init_node.roadGraphNodes){
                     mx = Math.max(rgn.index, mx);
                 }
                 drawNative(PropertyMap.init_node, 0, 0, 11, 8, 1, 18000, 0, mx+2);*/
-                    tempOpenGL = true;
+                tempOpenGL = true;
 
-                } catch (UnsatisfiedLinkError e) {
-                    tempOpenGL = false;
-                    System.out.println("OpenGl draw not available");
-                }
+            }catch (UnsatisfiedLinkError e){
+                tempOpenGL = false;
+                System.out.println("OpenGl draw not available");
             }
             if (!tempOpenGL) {
                 try {
                     System.loadLibrary("JNI-CairoDrawer");
-                    System.out.println("Selected Cairo!");
+
                     tempCairo = true;
                 } catch (UnsatisfiedLinkError e) {
                     System.out.println("Cairo draw not available");
@@ -83,24 +69,23 @@ public class RoadGraphDrawer{
         }
     }
 
-    public synchronized static RoadGraphDrawer getInstance(PropertyMap propertyMap) {
+    public synchronized static RoadGraphDrawer getInstance() {
         if (instance == null) {
-            instance = new RoadGraphDrawer(propertyMap);
+            instance = new RoadGraphDrawer();
         }
         return instance;
 
     }
     //[x1, y1, color1, x2, y2, color2, width]
-    public native byte[] drawCairoCall(int[] data, int len, int divider, int zoom_level);
+    public native byte[] drawCairoCall(int[] data, int len, int divider);
 
-    public native void initOpenGLRenderer(int cache_size, int server_zoom, int[] roadGraphNodes, int len1, int[] roadGraphLines, int len2, int[] bounds, int num_process);
+    public native void initOpenGLRenderer(int num_process);
 
     public native byte[] drawOpenGLCall(int[] data, int len, int divider, int zoom_level, int process_num, int max_dist);
 
     public native void closeOpenGLRenderer();
-    public native void updateOpenGLDistances(int[] data, int len, int ind);
-    public native byte[] drawOpenGLTile(int x, int y, int z, int max_dist, int ind, int proc_ind);
 
+    // TODO: main loop too slow.    OPTIMIZE!!!1
     private byte[] drawNativeCairo(QuadTreeNode treeNode, int x, int y, int z, int mult, int mode, int max_dist, int ind){
         IntArrayList bundle = new IntArrayList(treeNode.roadGraphLines.size());
         int th_ind = ((IndexedThread)Thread.currentThread()).index;
@@ -206,7 +191,7 @@ public class RoadGraphDrawer{
                 }
             }
         }
-        return drawCairoCall(bundle.toArray(), bundle.size(), mult, z);
+        return drawCairoCall(bundle.toArray(), bundle.size(), mult);
 
     }
 
@@ -257,6 +242,7 @@ public class RoadGraphDrawer{
                             stroke = tertiary_stroke;
                         } else {
                             stroke = tertiary_stroke;
+                            //dont_draw = true;
                         }
                         break;
                     case PRIMARY:

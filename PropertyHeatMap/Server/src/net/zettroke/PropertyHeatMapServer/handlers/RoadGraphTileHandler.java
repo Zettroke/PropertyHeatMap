@@ -115,7 +115,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
 
 
             int mode = foot ? 0 : 1;
-            byte[] img = RoadGraphDrawer.getInstance(propertyMap).draw(treeNode, x, y, z, mult, mode, max_dist, ind, propertyMap.roadGraph.size());
+            byte[] img = RoadGraphDrawer.getInstance().draw(treeNode, x, y, z, mult, mode, max_dist, ind, propertyMap.roadGraph.size());
             ByteBuf buf = ctx.alloc().buffer();
             buf.writeBytes(img);
 

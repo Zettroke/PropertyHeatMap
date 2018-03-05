@@ -73,10 +73,6 @@ public class IntArrayList implements Iterable<Integer>{
         return Arrays.copyOf(container, size);
     }
 
-    public void set(int index, int value){
-        container[index] = value;
-    }
-
     public IntArrayList(){
         this(10);
     }

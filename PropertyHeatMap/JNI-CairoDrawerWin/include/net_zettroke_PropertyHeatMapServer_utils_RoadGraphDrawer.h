@@ -12,34 +12,26 @@ extern "C" {
 /*
  * Class:     net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer
  * Method:    drawCairoCall
- * Signature: ([IIII)[B
+ * Signature: ([III)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer_drawCairoCall
-  (JNIEnv *, jobject, jintArray, jint, jint, jint);
+  (JNIEnv *, jobject, jintArray, jint, jint);
 
 /*
  * Class:     net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer
- * Method:    initOpenGLRenderer
- * Signature: (I)V
+ * Method:    initOpenGL
+ * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer_initOpenGLRenderer
-  (JNIEnv *, jobject, jint);
+JNIEXPORT void JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer_initOpenGL
+  (JNIEnv *, jobject);
 
 /*
  * Class:     net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer
  * Method:    drawOpenGLCall
- * Signature: ([IIIIII)[B
+ * Signature: ([III)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer_drawOpenGLCall
-  (JNIEnv *, jobject, jintArray, jint, jint, jint, jint, jint);
-
-/*
- * Class:     net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer
- * Method:    closeOpenGLRenderer
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer_closeOpenGLRenderer
-  (JNIEnv *, jobject);
+  (JNIEnv *, jobject, jintArray, jint, jint);
 
 #ifdef __cplusplus
 }

@@ -8,7 +8,10 @@ import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphLine;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNodeBuilder;
-import net.zettroke.PropertyHeatMapServer.utils.*;
+import net.zettroke.PropertyHeatMapServer.utils.Apartment;
+import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphCache;
+import net.zettroke.PropertyHeatMapServer.utils.IntArrayList;
+import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
 
 
 import java.io.*;
@@ -60,7 +63,6 @@ public class PropertyMap {
     RoadGraphBuilder rgnBuilder;
     public HashMap<Long, RoadGraphNode> roadGraph;
     public CalculatedGraphCache cache;
-    public ArrayList<RoadGraphLine> roadGraphLines;
 
     public QuadTree tree;
 
@@ -195,15 +197,12 @@ public class PropertyMap {
     }
 
     private void init_roadGraphLines(){
-        roadGraphLines = new ArrayList<>();
         boolean[] visited = new boolean[roadGraph.size()];
         for (RoadGraphNode rgn: roadGraph.values()){
             visited[rgn.index] = true;
             for (int i=0; i<rgn.ref_to[0].length; i++){
                 if (!visited[rgn.ref_to[0][i].index]) {
-                    RoadGraphLine rgl = new RoadGraphLine(rgn, rgn.ref_to[0][i], rgn.ref_types[0][i]);
-                    roadGraphLines.add(rgl);
-                    tree.add(rgl);
+                    tree.add(new RoadGraphLine(rgn, rgn.ref_to[0][i], rgn.ref_types[0][i]));
                 }
             }
         }
