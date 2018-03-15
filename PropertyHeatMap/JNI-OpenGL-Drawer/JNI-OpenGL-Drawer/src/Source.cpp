@@ -3,7 +3,7 @@
 
 
 #include "jni.h"
-#include "net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer.h"
+#include "net_zettroke_PropertyHeatMapServer_utils_Drawer.h"
 #include "shared_data_types.h"
 
 int number_of_process;
@@ -12,7 +12,7 @@ HANDLE* events;
 unsigned char** out_buffers;
 
 
-JNIEXPORT void JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer_initOpenGLRenderer
+JNIEXPORT void JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_Drawer_initOpenGLRenderer
 (JNIEnv *env, jobject obj, jint num_proc) {
 	mapfiles = new HANDLE[num_proc];
 	events = new HANDLE[num_proc];
@@ -55,7 +55,7 @@ JNIEXPORT void JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDr
 	
 }
 
-JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer_drawOpenGLCall
+JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_Drawer_drawGraphOpenGLCall
 (JNIEnv *env, jobject obj, jintArray arr, jint len, jint divider, jint zoom_level, jint proc_ind, jint max_dist) {
 	jboolean copy = false;
 	jint *params = env->GetIntArrayElements(arr, &copy);
@@ -69,11 +69,6 @@ JNIEXPORT jbyteArray JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadG
 	env->SetByteArrayRegion(out_arr, 0, out_len, (jbyte *)(out_buffers[proc_ind] + 4));
 	env->ReleaseIntArrayElements(arr, params, JNI_ABORT);
 	return out_arr;
-}
-
-JNIEXPORT void JNICALL Java_net_zettroke_PropertyHeatMapServer_utils_RoadGraphDrawer_closeOpenGLRenderer
-(JNIEnv *env, jobject obj) {
-
 }
 
 

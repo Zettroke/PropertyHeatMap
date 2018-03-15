@@ -11,6 +11,7 @@ import net.zettroke.PropertyHeatMapServer.map.MapShape;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.QuadTreeNode;
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
+import net.zettroke.PropertyHeatMapServer.utils.Drawer;
 import net.zettroke.PropertyHeatMapServer.utils.ParamsChecker;
 
 import javax.imageio.ImageIO;
@@ -50,7 +51,7 @@ public class PriceTileHandler implements ShittyHttpHandler{
             double range = Double.parseDouble(decoder.parameters().get("range").get(0));
 
 
-            coefficent = 1.0 / mult;
+            /*coefficent = 1.0 / mult;
 
             BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
 
@@ -59,19 +60,21 @@ public class PriceTileHandler implements ShittyHttpHandler{
             g.setColor(new Color(255, 255, 255, 0));
             g.fillRect(0, 0, 256, 256);
 
-            QuadTreeNode treeNode = new QuadTreeNode(new int[]{x * mult * 256, y * mult * 256, (x + 1) * mult * 256, (y + 1) * mult * 256}, false);
 
+
+
+
+
+            drawTreeNode(g, treeNode, 256 * x, 256 * y, price, range);*/
+            QuadTreeNode treeNode = new QuadTreeNode(new int[]{x * mult * 256, y * mult * 256, (x + 1) * mult * 256, (y + 1) * mult * 256}, false);
             propertyMap.fillTreeNode(treeNode);
 
-
-            drawTreeNode(g, treeNode, 256 * x, 256 * y, price, range);
-
+            byte[] arr = Drawer.getInstance().drawBuilding(treeNode, x, y, z, price, range);
 
             ByteBuf buf = ctx.alloc().buffer();
-            ByteBufOutputStream outputStream = new ByteBufOutputStream(buf);
-            ImageIO.write(image, "png", outputStream);
+            buf.writeBytes(arr);
             HttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
-
+            response.headers().set("Content-Type", "image/png");
             ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
         }else{
             JsonObject ans = new JsonObject();

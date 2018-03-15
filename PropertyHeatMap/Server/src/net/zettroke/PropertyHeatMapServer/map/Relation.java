@@ -9,8 +9,8 @@ import java.util.HashMap;
  */
 public class Relation implements Serializable{
     long id;
-    ArrayList<Node> nodes = new ArrayList<>();
-    ArrayList<Way> ways = new ArrayList<>();
-    ArrayList<Relation> relations = new ArrayList<>();
-    HashMap<String, String> data = new HashMap<>();
+    public ArrayList<Node> nodes = new ArrayList<>();
+    public ArrayList<Way> ways = new ArrayList<>();
+    public ArrayList<Relation> relations = new ArrayList<>();
+    public HashMap<String, String> data = new HashMap<>();
 }

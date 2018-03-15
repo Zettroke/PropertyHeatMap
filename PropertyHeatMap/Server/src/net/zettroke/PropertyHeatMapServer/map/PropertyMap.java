@@ -4,16 +4,17 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
+import net.zettroke.PropertyHeatMapServer.Main;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphLine;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNodeBuilder;
-import net.zettroke.PropertyHeatMapServer.utils.Apartment;
-import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphCache;
-import net.zettroke.PropertyHeatMapServer.utils.IntArrayList;
-import net.zettroke.PropertyHeatMapServer.utils.StringPredictor;
+import net.zettroke.PropertyHeatMapServer.utils.*;
 
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
@@ -66,7 +67,7 @@ public class PropertyMap {
 
     public QuadTree tree;
 
-
+    RoadGraphNode start_node;
 
     int[] mercator(double lon, double lat){
         int x = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.toRadians(lon)+Math.PI))-x_begin);
@@ -109,6 +110,7 @@ public class PropertyMap {
                 if (w.data.containsKey("building") || w.data.containsKey("highway")){// || ways.get(i).data.containsKey("railway")) {
                     t.add(new MapShape(w));
                 }
+                cnt++;
             }
         }
     }
@@ -150,9 +152,9 @@ public class PropertyMap {
             for (ParallelInitThread pit : threads) {
                 try {
                     pit.join();
-                } catch (InterruptedException e) {
-                }
+                } catch (InterruptedException e) {}
             }
+
             System.out.println("QuadTree created in " + (System.nanoTime() - start) / 1000000.0 + " millis.");
 
             start = System.nanoTime();
@@ -186,9 +188,37 @@ public class PropertyMap {
                 }
             }
             init_roadGraphLines();
-            /*QuadTreeNode treeNode = new QuadTreeNode(new int[]{0, 0,  8 * 256 , 8 * 256 }, false);
-            fillTreeNodeWithRoadGraphNodes(treeNode);
-            init_node = treeNode;*/
+            /*for (RoadGraphNode rgn: roadGraph.values()){
+                rgn.dist[0] = Integer.MAX_VALUE;
+            }
+            RoadGraphNode st = roadGraph.get(256021027L);
+            st.dist[0] = 0;
+            RoadGraphNode[] src = new RoadGraphNode[roadGraph.size()];
+            RoadGraphNode[] dst = new RoadGraphNode[roadGraph.size()];
+            src[0] = st;
+            start_node = st;
+            widthRecCalculateDistance(src, dst,5000, 0, 0);
+            System.out.println(big_cnt);
+            BufferedImage image = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = (Graphics2D)image.getGraphics();
+            g.setColor(new Color(0, 0, 0 ,0));
+            g.fillRect(0, 0, 1024, 1024);
+            drawGraph(g, 5000);
+            ImageIO.write(image, "png", new File("skak.png"));
+
+            //int mult = (int) Math.pow(2, PropertyMap.default_zoom - 16);
+            //double cf = 1.0 / mult;
+            //BufferedImage image2 = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);
+            //Graphics2D g2 = (Graphics2D) image2.getGraphics();
+            ////g.setColor(new Color(255, 0, 0, 255));
+            ////g2.fillRect(0 ,0, 1024, 1024);
+            //g2.setColor(new Color(255, 0, 0));
+            //g2.setStroke(new BasicStroke(50f / mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            //g2.drawRect(coef(start_node.n.x, cf)-20, coef(start_node.n.y, cf)-20, 40, 40);
+            //g2.fillRect(coef(start_node.n.x, cf)-10, coef(start_node.n.y, cf)-10, 20, 20);
+            //ImageIO.write(image2, "png", new File("start_overlay.png"));
+            System.exit(0);*/
+            //init_node = treeNode;
             System.gc();
         }catch (Exception e){
             System.err.println("PropertyMapInit Failed!!!");
@@ -217,7 +247,7 @@ public class PropertyMap {
                 System.out.println("public transport " + cnt/(double)relations.size());
             }
             if (rel.data.containsKey("route_master") && supportedRoutes.contains(rel.data.get("route_master"))){
-                Relation r = null;// = rel.relations.get(0);// should be with max id
+                Relation r = null;
                 for (int i=0; i<rel.relations.size(); i++){
                     if (rel.relations.get(i) != null && rel.relations.get(i).data.containsKey("route")){
                         r = rel.relations.get(i);
@@ -226,7 +256,6 @@ public class PropertyMap {
                 }
                 if (r == null) continue;
                 if (r.nodes.size() == 1) continue;
-
                 Way way = new Way();
                 int relation_way_index_begin = -1;
                 int relation_way_index_end = -1;
@@ -298,9 +327,8 @@ public class PropertyMap {
                 if (route_type.equals("bus") || route_type.equals("trolleybus")) {
                     roadType = route_type.equals("bus") ? RoadType.BUS: RoadType.TROLLEYBUS;
                     for (int i = relation_node_index_begin; i < relation_node_index_end; i++) {
-                        int mdmpind = way.minDistToPoint(r.nodes.get(i));
-
                         Node trn = r.nodes.get(i);
+                        int mdmpind = way.minDistToPoint(trn);
                         trn.publicTransportStop = true;
                         way.nodes.add(mdmpind + 1, trn);
                     }
@@ -392,13 +420,12 @@ public class PropertyMap {
                     }
                     prev_simple_node = way.nodes.get(i);
                 }
-
+                way.nodes.size();
 
             }
         }
     }
 
-    //TODO: optimize circle search. use bounds.
     public void load_prices(){
         HashMap<String, String> deduplicator = new HashMap<>();
         int counter = 0;
@@ -598,10 +625,27 @@ public class PropertyMap {
                     to = rgn.ref_to[mode][j];
                     dist_to = rgn.dist[put] + rgn.distancesTo[mode][j];
                     if (dist_to < to.dist[put]) {
+                        /*big_cnt++;
+                        BufferedImage image = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);
+                        Graphics2D g = (Graphics2D) image.getGraphics();
+                        drawGraph(g, 5000);
+                        int mult = (int) Math.pow(2, PropertyMap.default_zoom - 16);
+                        double cf = 1.0 / mult;
+                        g.setColor(new Color(0, 0, 240));
+                        g.setStroke(new BasicStroke(50f / mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                        g.drawLine(coef(rgn.n.x, cf), coef(rgn.n.y, cf), coef(to.n.x, cf), coef(to.n.y, cf));
+                        try {
+                            ImageIO.write(image, "png", new File(String.format("GraphCalcAnimationWidth/img%05d.png", cnt++)));
+                            System.out.println("Draw " + (cnt - 1)); } catch (Exception e) {
+                            e.printStackTrace(); }*/
                         to.dist[put] = dist_to;
                         if (dist_to <= max_dist) {
                             dest[dest_ind++] = to;
                         }
+                        if (cnt > 540) {
+                            System.exit(0);
+                        }
+
                     }
                 }
             }
@@ -613,11 +657,156 @@ public class PropertyMap {
         }
     }
 
+    void drawGraph(Graphics2D g, int max_dist){
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int z = 16;
+        int zoom_level = 13;
+        int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
+        int mode = 0;
+
+        BasicStroke secondary_stroke = new BasicStroke(65f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke primary_stroke = new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke tertiary_stroke = new BasicStroke(60f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke service_stroke = new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke residential_stroke = new BasicStroke(50f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke living_stroke = new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke default_stroke = new BasicStroke(20f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke unknown_stroke = new BasicStroke(10f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        double cf = 1.0/mult;
+        int offx = 0*mult*256;
+        int offy = 0*mult*256;
+        boolean dont_draw = false;
+        int lines = 0;
+        boolean[] visited = new boolean[roadGraph.size()];
+        g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        for (RoadGraphNode rgn : roadGraph.values()){
+            //if (treeNode.inBounds(rgn.n)){
+            visited[rgn.index] = true;
+            for (int i=0; i<rgn.ref_to[mode].length; i++){
+                RoadGraphNode ref = rgn.ref_to[mode][i];
+                if (!visited[ref.index]){
+                    switch (rgn.ref_types[mode][i]){
+                        case SECONDARY:
+                            if (z > zoom_level) {
+                                g.setStroke(secondary_stroke);
+                            }else{
+                                g.setStroke(new BasicStroke(120f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                            }
+                            break;
+                        case RESIDENTIAL:
+                            if (z > zoom_level) {
+                                g.setStroke(residential_stroke);
+                            }else{
+                                dont_draw = true;
+                            }
+                            break;
+                        case SERVICE:
+                            if (z > zoom_level) {
+                                g.setStroke(service_stroke);
+                            }else{
+                                dont_draw = true;
+                            }
+                            break;
+                        case TERTIARY:
+                            if (z > zoom_level) {
+                                g.setStroke(tertiary_stroke);
+                            }else{
+                                g.setStroke(tertiary_stroke);
+                                //dont_draw = true;
+                            }
+                            break;
+                        case PRIMARY:
+                            if (z > zoom_level) {
+                                g.setStroke(primary_stroke);
+                            }else{
+                                g.setStroke(new BasicStroke(120f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                            }
+                            break;
+                        case TRUNK:
+                            g.setStroke(new BasicStroke(80f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                            break;
+                        case DEFAULT:
+                            if (z > zoom_level) {
+                                g.setStroke(default_stroke);
+                            }else{
+                                dont_draw = true;
+                            }
+                            break;
+                        case LIVING_STREET:
+                            if (z > zoom_level) {
+                                g.setStroke(living_stroke);
+                            }else{
+                                dont_draw = true;
+                            }
+                            break;
+                        case SUBWAY:
+                            dont_draw = true;
+                            break;
+                        case TRAM:
+                            dont_draw = true;
+                            break;
+                        case BUS:
+                            dont_draw = true;
+                            break;
+                        case TROLLEYBUS:
+                            dont_draw = true;
+                            break;
+                        case INVISIBLE:
+                            dont_draw = true;
+                            break;
+                        default:
+                            if (z > zoom_level) {
+                                g.setStroke(unknown_stroke);
+                            }else{
+                                dont_draw = true;
+                            }
+                            break;
+                    }
+                    if (!dont_draw) {
+
+                        g.setPaint(new GradientPaint(coef(rgn.n.x - offx, cf), coef(rgn.n.y - offy, cf), rgn.getNodeColor(max_dist, 0),
+                                coef(ref.n.x - offx, cf), coef(ref.n.y - offy, cf), ref.getNodeColor(max_dist, 0)));
+                        g.drawLine(coef(rgn.n.x - offx, cf), coef(rgn.n.y - offy, cf), coef(ref.n.x - offx, cf), coef(ref.n.y - offy, cf));
+                        //lines++;
+                    }else{
+                        dont_draw = false;
+                    }
+                }
+            }
+
+        }
+    }
+
+    public static int coef(int n, double cf){
+        return (int)Math.round(cf*n);
+    }
+    int big_cnt = 0;
+    int cnt = 0;
     void recCalculateDistances(RoadGraphNode rgn, final int max_dist, final int mode, final int put){
         for (int i=0; i<rgn.ref_to[mode].length; i++){
             RoadGraphNode to = rgn.ref_to[mode][i];
+
             int dist = rgn.distancesTo[mode][i];
             if (rgn.dist[put] + dist < to.dist[put]){
+                if (big_cnt % 60 == 0) {
+                    BufferedImage image = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D g = (Graphics2D) image.getGraphics();
+                    drawGraph(g, 5000);
+
+                    int mult = (int) Math.pow(2, PropertyMap.default_zoom - 16);
+                    double cf = 1.0 / mult;
+                    g.setColor(new Color(0, 0, 240));
+                    g.setStroke(new BasicStroke(50f / mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                    g.drawLine(coef(rgn.n.x, cf), coef(rgn.n.y, cf), coef(to.n.x, cf), coef(to.n.y, cf));
+                    try {
+                        ImageIO.write(image, "png", new File(String.format("GraphCalcAnimation/img%05d.png", cnt++)));
+                        System.out.println("Draw " + (cnt - 1));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                big_cnt++;
                 to.dist[put] = rgn.dist[put] + dist;
                 if (to.dist[put] <= max_dist) {
                     recCalculateDistances(to, max_dist, mode, put);

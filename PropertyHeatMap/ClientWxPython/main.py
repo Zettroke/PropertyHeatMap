@@ -127,7 +127,7 @@ class Map(wx.Panel):
 
         Thread(target=self.tile_loader, daemon=True, name="loader 1").start()
         Thread(target=self.tile_loader, daemon=True, name="loader 2").start()
-        # Thread(target=self.tile_loader, daemon=True, name="loader 3").start()
+        Thread(target=self.tile_loader, daemon=True, name="loader 3").start()
 
     def my_refresh(self, event=None):
         if len(self.bitmaps) > 250:

@@ -5,8 +5,8 @@ import java.util.HashMap;
 public class Node extends SimpleNode{
 
     public HashMap<String, String> data = new HashMap<>();
-    boolean isRoadNode = false;
-    boolean publicTransportStop = false;
+    public boolean isRoadNode = false;
+    public boolean publicTransportStop = false;
 
     public double lon;
     public double lat;

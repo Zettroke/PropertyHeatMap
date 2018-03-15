@@ -2,6 +2,7 @@ package net.zettroke.PropertyHeatMapServer.map;
 
 import net.zettroke.PropertyHeatMapServer.utils.Apartment;
 
+import java.awt.geom.Line2D;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,10 +28,11 @@ public class Way implements Serializable{
         return new MapPoint(Math.round(x/(float)nodes.size()), Math.round(y/(float)nodes.size()));
     }
     public int minDistToPoint(MapPoint p) {
-        MapPoint min = new MapPoint(Integer.MAX_VALUE, Integer.MAX_VALUE);
+        MapPoint min = new MapPoint(-1000000, -1000000);
+        double min_len = Double.MAX_VALUE;
         MapPoint p1 = nodes.get(0);
         try{
-        min = min.distTo(p) > p1.distTo(p) ? p: min;}
+        min = min.distTo(p) > p1.distTo(p) ? p1: min;}
         catch (Exception e){
             System.out.println("exception");
         }
@@ -38,32 +40,58 @@ public class Way implements Serializable{
         MapPoint p2;
         for (int i = 1; i < nodes.size(); i++) {
             p2 = nodes.get(i);
-            min = min.distTo(p) > p2.distTo(p) ? p2: min;
-            double A = p1.y - p2.y;
-            double B = p2.x - p1.x;
-            if (A == 0) {
-                MapPoint tp = new MapPoint(p1.x, p.y);
-                //minDist = Math.min(minDist, Math.abs(p1.y - p.y));
-                if (p.distTo(min) > p.distTo(tp)){
-                    min = tp;
-                    min_ind = i-1;
-                }
-            } else if (B == 0) {
-                MapPoint tp = new MapPoint(p.x, p1.y);
-                //minDist = Math.min(minDist, Math.abs(p1.x - p.x));
-                min = min.distTo(p) > tp.distTo(p) ? tp: min;
+            //min = min.distTo(p) > p2.distTo(p) ? p2: min;
+            int x2 = p2.x;
+            int x1 = p1.x;
+            int px = p.x;
+            int y2 = p2.y;
+            int y1 = p1.y;
+            int py = p.y;
+            x2 -= x1;
+            y2 -= y1;
+            // px,py becomes relative vector from x1,y1 to test point
+            px -= x1;
+            py -= y1;
+            long dotprod = px * (long)x2 + py * (long)y2;
+            double projlenSq;
+            if (dotprod <= 0.0) {
+                // px,py is on the side of x1,y1 away from x2,y2
+                // distance to segment is length of px,py vector
+                // "length of its (clipped) projection" is now 0.0
+                projlenSq = 0.0;
             } else {
-                double k1 = -A / B;
-                double k2 = B / A;
-                double b1 = -(p1.x * p2.y - p2.x * p1.y) / B;
-                double b2 = -B / A * p.x + p.y;
-                int x = (int) Math.round((b2 - b1) / (k1 - k2));
-                int y = (int) Math.round(k1 * ((b2 - b1) / (k1 - k2)) + b1);
-                MapPoint tp = new MapPoint(x, y);
-                //minDist = Math.min(minDist, Math.sqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y)));
-                min = min.distTo(p) > tp.distTo(p) ? tp: min;
+                // switch to backwards vectors relative to x2,y2
+                // x2,y2 are already the negative of x1,y1=>x2,y2
+                // to get px,py to be the negative of px,py=>x2,y2
+                // the dot product of two negated vectors is the same
+                // as the dot product of the two normal vectors
+                px = x2 - px;
+                py = y2 - py;
+                dotprod = px * (long)x2 + py * (long)y2;
+                if (dotprod <= 0.0) {
+                    // px,py is on the side of x2,y2 away from x1,y1
+                    // distance to segment is length of (backwards) px,py vector
+                    // "length of its (clipped) projection" is now 0.0
+                    projlenSq = 0.0;
+                } else {
+                    // px,py is between x1,y1 and x2,y2
+                    // dotprod is the length of the px,py vector
+                    // projected on the x2,y2=>x1,y1 vector times the
+                    // length of the x2,y2=>x1,y1 vector
+                    projlenSq = dotprod * dotprod / (double)(x2 * (long)x2 + y2 * (long)y2);
+                }
             }
+            // Distance to line is now the length of the relative point
+            // vector minus the length of its projection onto the line
+            // (which is zero if the projection falls outside the range
+            //  of the line segment).
+            double lenSq = px * (long)px + py * (long)py - projlenSq;
+            double len = lenSq < 0 ? 0:Math.sqrt(lenSq);
 
+            if (len < min_len){
+                min_len = len;
+                min_ind = i-1;
+            }
 
             p1 = p2;
         }
@@ -96,6 +124,20 @@ public class Way implements Serializable{
             return Math.min(Math.min(p.distTo(new MapPoint(bounds[0], bounds[1])), p.distTo(new MapPoint(bounds[0], bounds[3]))),
                             Math.min(p.distTo(new MapPoint(bounds[2], bounds[1])), p.distTo(new MapPoint(bounds[2], bounds[3]))));
         }
+    }
+
+    public Way clone(){
+        Way r = new Way();
+        if (bounds != null) {
+            r.bounds = bounds.clone();
+        }
+        r.id = id;
+        r.nodes = (ArrayList<SimpleNode>) nodes.clone();
+        r.data = (HashMap<String, String>) data.clone();
+        if (apartments != null) {
+            r.apartments = (ArrayList<Apartment>) apartments.clone();
+        }
+        return r;
     }
 
 }

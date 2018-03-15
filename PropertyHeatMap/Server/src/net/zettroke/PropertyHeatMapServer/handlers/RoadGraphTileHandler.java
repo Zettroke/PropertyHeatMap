@@ -2,7 +2,6 @@ package net.zettroke.PropertyHeatMapServer.handlers;
 
 import com.eclipsesource.json.JsonObject;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
@@ -11,12 +10,8 @@ import net.zettroke.PropertyHeatMapServer.map.QuadTreeNode;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.*;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.nio.charset.Charset;
-import java.util.concurrent.locks.Lock;
-import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class RoadGraphTileHandler implements ShittyHttpHandler{
@@ -115,7 +110,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
 
 
             int mode = foot ? 0 : 1;
-            byte[] img = RoadGraphDrawer.getInstance().draw(treeNode, x, y, z, mult, mode, max_dist, ind, propertyMap.roadGraph.size());
+            byte[] img = Drawer.getInstance().drawGraph(treeNode, x, y, z, mult, mode, max_dist, ind, propertyMap.roadGraph.size());
             ByteBuf buf = ctx.alloc().buffer();
             buf.writeBytes(img);
 

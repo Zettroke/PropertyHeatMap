@@ -15,8 +15,8 @@ import static net.zettroke.PropertyHeatMapServer.map.QuadTreeNode.DVertCross;
  */
 public class QuadTree {
     static int THRESHOLD = 3000;
-    static int NODE_THRESHOLD = 20000;
-    static int THRESHOLD_SHAPE = 1000;
+    static int NODE_THRESHOLD = 50000;
+    static int THRESHOLD_SHAPE = 800;
 
 
     public QuadTreeNode root;
