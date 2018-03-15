@@ -642,10 +642,6 @@ public class PropertyMap {
                         if (dist_to <= max_dist) {
                             dest[dest_ind++] = to;
                         }
-                        if (cnt > 540) {
-                            System.exit(0);
-                        }
-
                     }
                 }
             }
