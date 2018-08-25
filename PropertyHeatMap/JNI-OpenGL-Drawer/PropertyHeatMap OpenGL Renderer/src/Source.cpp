@@ -227,15 +227,15 @@ void RenderFunction(int v)
 	glReadBuffer(GL_COLOR_ATTACHMENT1);
 
 	glReadPixels(0, 0, 256, 256, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	for (int i = 0; i < 256; i++) {
+	/*for (int i = 0; i < 256; i++) {
 		for (int j = 0; j < 256; j++) {
 			unsigned char* curr = data + (i * 256 + j) * 4;
-			/*curr[0] = curr[0] * 9 / 8;
-			curr[1] = curr[1] * 9 / 8;
-			curr[2] = curr[2] * 9 / 8;*/
+			//curr[0] = curr[0] * 9 / 8;
+			//curr[1] = curr[1] * 9 / 8;
+			//curr[2] = curr[2] * 9 / 8;
 			curr[3] = curr[3] * 15 / 16;
 		}
-	}
+	}*/
 }
 
 void start_up(int v) {
@@ -297,6 +297,7 @@ int main(int argc, char** argv) {
 	
 	glutInit(&argc, argv);
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
+	
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
 	glutCreateWindow("PropertyHeatMap OpenGL Renderer");
 	GLenum err = glewInit();
@@ -321,12 +322,12 @@ int main(int argc, char** argv) {
 	glutTimerFunc(10, start_up, 0);
 	glutTimerFunc(20, start_up, 0);
 	glutTimerFunc(30, MyMainLoop, 0);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	//glEnable(GL_LINE_SMOOTH);
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glBlendFunc(GL_SRC_ALPHA, GL_CONSTANT_ALPHA);
-	//glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
+	glEnable(GL_LINE_SMOOTH);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendFunc(GL_SRC_ALPHA, GL_CONSTANT_ALPHA);
+	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 	glViewport(0, 0, 256, 256);
 	glutHideWindow();
 	glutMainLoop();

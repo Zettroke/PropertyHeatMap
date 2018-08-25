@@ -426,7 +426,8 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
     void add(final MapShape m){
         if (this.isEndNode){
             if (m.isPoly){
-                addPoly_double(new MapShape(m.way));
+                //addPoly_double(new MapShape(m.way)); //TODO: simple poly adding
+                addPoly_simple(m);
                 //addPoly_double(m);
             }else {
                 addRoad(m);
@@ -1022,6 +1023,16 @@ public class QuadTreeNode implements Iterable<QuadTreeNode>{
             }
         }
 
+    }
+
+    private void addPoly_simple(final MapShape m){
+        if     (!((m.way.bounds[0] < bounds[0] && m.way.bounds[2] < bounds[0])
+                ||(m.way.bounds[0] > bounds[2] && m.way.bounds[2] > bounds[2])
+                ||(m.way.bounds[1] < bounds[1] && m.way.bounds[3] < bounds[1])
+                ||(m.way.bounds[1] > bounds[3] && m.way.bounds[3] > bounds[3])
+                )){
+            shapes.add(m);
+        }
     }
 
     static DMapPoint DHorzCross(int horz, int x1, int x2, DMapPoint p1, DMapPoint p2){

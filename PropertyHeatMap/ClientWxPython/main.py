@@ -8,6 +8,12 @@ import json
 import time
 import sys
 
+
+# temp
+global_off_x = 617
+global_off_y = 318
+
+
 server_address = "127.0.0.1"
 ip_set_manually = False
 if len(sys.argv) > 1:
@@ -339,7 +345,7 @@ class Map(wx.Panel):
                     else:
                         dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
                         self.bitmaps[(x2, y2)] = self.missing_image
-                        self.tile_queue.put(LoadTask(map_tiles_url, dist, (x2, y2), self.tiles_dict, x=x2, y=y2, z=self.zoom))
+                        self.tile_queue.put(LoadTask(map_tiles_url, dist, (x2, y2), self.tiles_dict, x=x2+global_off_x*2**(self.zoom-10), y=y2+global_off_y*2**(self.zoom-10), z=self.zoom))
                         self.already_updated_bitmaps.add((x2, y2))
                         if self.price_turn_on:
                             self.tile_queue.put(
@@ -520,7 +526,8 @@ class PropertyHeatMap(wx.Frame):
 
         self.p.SetSizer(self.data_panel_size)
         self.panel.SetSizer(self.box_sizer)
-        self.SetClientSize((900, 500))
+        self.Move((-7, 0))
+        self.SetClientSize((1500, 900))
 
     def on_close(self, event):
         self.Destroy()
@@ -534,7 +541,7 @@ class PropertyHeatMap(wx.Frame):
 
     def switch_views(self, event):
         if self.test_bool:
-            self.turn_things_and_aparts.SetLabelText("Инфраструктура")
+            self.turn_things_and_aparts.SetLabelText("Жилье")
             self.apartments_panel.Hide()
             self.close_things_panel.Show()
             self.data_panel_size.Layout()
@@ -542,7 +549,7 @@ class PropertyHeatMap(wx.Frame):
             self.p.SetSize(self.p.GetSize()[0], self.close_things_sizer.GetMinSize()[1] + 175)
             self.sc.SetScrollbars(1, 1, 1, self.close_things_sizer.GetMinSize()[1] + 175)
         else:
-            self.turn_things_and_aparts.SetLabelText("Жилье")
+            self.turn_things_and_aparts.SetLabelText("Инфраструктура")
             self.apartments_panel.Show()
             self.close_things_panel.Hide()
             self.data_panel_size.Layout()

@@ -28,6 +28,9 @@ public class PropertyMap {
 
     static final int earthRadius = 6371000;
 
+    public int off_x = 0;
+    public int off_y = 0;
+
     public static int default_zoom = 19;
     public static int cache_size = 10;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
@@ -69,13 +72,13 @@ public class PropertyMap {
 
     RoadGraphNode start_node;
 
-    int[] mercator(double lon, double lat){
+    public int[] mercator(double lon, double lat){
         int x = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.toRadians(lon)+Math.PI))-x_begin);
         int y = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.PI-Math.log(Math.tan(Math.toRadians(lat)/2+Math.PI/4))))-y_begin);
         return new int[]{x, y};
     }
 
-    double[] inverse_mercator(double x, double y){
+    public double[] inverse_mercator(double x, double y){
         double lon = Math.toDegrees((x + x_begin)/(MAP_RESOLUTION/2/Math.PI) - Math.PI);
         double lat = Math.toDegrees(-(2*Math.atan(Math.exp((y + y_begin)/(MAP_RESOLUTION/2/Math.PI) - Math.PI)) - Math.PI/2));
         return new double[]{lon, lat};
@@ -128,7 +131,8 @@ public class PropertyMap {
             int[] coords = loader.getCoordBounds(this);
 
             x_begin = coords[0]; y_begin = coords[1]; x_end = coords[2]; y_end = coords[3];
-
+            off_x = (int)Math.round(x_begin/(double)MAP_RESOLUTION*1024);
+            off_y = (int)Math.round(y_begin/(double)MAP_RESOLUTION*1024);
             rgnBuilder = new RoadGraphBuilder(new int[]{0, 0, x_end - x_begin, y_end - y_begin}, cache_size);
 
             loader.load(rgnBuilder, this);

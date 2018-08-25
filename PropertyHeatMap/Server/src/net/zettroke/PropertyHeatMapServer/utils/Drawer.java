@@ -16,6 +16,7 @@ public class Drawer {
 
     public static boolean isGlobalSet = false;
     public static boolean isNative;
+    public static boolean forceCairo = false;
 
     public static boolean test = false;
 
@@ -29,22 +30,27 @@ public class Drawer {
         boolean tempOpenGL, tempCairo;
         if (!isGlobalSet || isNative) {
 
-            try{
-                System.loadLibrary("JNI-OpenGL-Drawer");
-                System.loadLibrary("JNI-CairoDrawer");
-                initOpenGLRenderer(PropertyMapServer.PROC_NUM);
-                // OpenGL всегда фейлит первую картинку. Почему не знаю. Решено отрисовкой одной картинки.
+            if (!forceCairo) {
+                try {
+                    System.loadLibrary("JNI-OpenGL-Drawer");
+                    System.loadLibrary("JNI-CairoDrawer");
+                    initOpenGLRenderer(PropertyMapServer.PROC_NUM);
+                    // OpenGL всегда фейлит первую картинку. Почему не знаю. Решено отрисовкой одной картинки.
                 /*int mx = 0;
                 for (RoadGraphNode rgn: PropertyMap.init_node.roadGraphNodes){
                     mx = Math.max(rgn.index, mx);
                 }
                 drawNative(PropertyMap.init_node, 0, 0, 11, 8, 1, 18000, 0, mx+2);*/
-                tempOpenGL = true;
+                    tempOpenGL = true;
 
-            }catch (UnsatisfiedLinkError e){
+                } catch (UnsatisfiedLinkError e) {
+                    tempOpenGL = false;
+                    System.out.println("OpenGl draw not available");
+                }
+            }else {
                 tempOpenGL = false;
-                System.out.println("OpenGl draw not available");
             }
+
             if (!tempOpenGL) {
                 try {
                     System.loadLibrary("JNI-CairoDrawer");
@@ -52,9 +58,11 @@ public class Drawer {
                     tempCairo = true;
                 } catch (UnsatisfiedLinkError e) {
                     System.out.println("Cairo draw not available");
+                    e.printStackTrace();
                     tempCairo = false;
                     System.out.println("Все в порядке, cairo недоступен, поэтому будет использован рендер на java. Для повторной попытки загрузить cairo перезапустите сервер.");
                     System.out.println("It's okay. Cairo not available, so using java render. If you want to try load cairo again restart server.");
+
                 }
             }else{
                 tempCairo = false;
@@ -572,7 +580,7 @@ public class Drawer {
                 return drawBuildingNativeCairo(treeNode, x, y, z, price, range);
             }else{
                 //return drawGraphNativeOpenGL(treeNode, x, y, z, mult, mode, max_dist, ind);
-                return null;
+                return drawBuildingNativeCairo(treeNode, x, y, z, price, range);
             }
         }else{
             return drawBuildingJava(treeNode, x, y, z, price, range);

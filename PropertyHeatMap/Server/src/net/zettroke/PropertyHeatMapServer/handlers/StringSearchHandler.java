@@ -30,6 +30,13 @@ public class StringSearchHandler implements ShittyHttpHandler{
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         if (checker.isValid(decoder)) {
             String text = decoder.parameters().get("text").get(0);
+            boolean latlon = false;
+            if (decoder.parameters().containsKey("latlon")){
+                try{
+                    latlon = Boolean.parseBoolean(decoder.parameters().get("latlon").get(0));
+                }catch (Exception e){}
+
+            }
 
             Way way = propertyMap.searchMap.get(text.toLowerCase());
             JsonObject ans = new JsonObject();
@@ -37,7 +44,11 @@ public class StringSearchHandler implements ShittyHttpHandler{
                 ans.add("status", "not found");
             } else {
                 ans.add("status", "found");
-                ans.add("result", Jsonizer.toJson(way, true));
+                if (latlon){
+                    ans.add("result", Jsonizer.toJson(way, true, true, propertyMap));
+                }else {
+                    ans.add("result", Jsonizer.toJson(way, true));
+                }
             }
             ByteBuf buf = ctx.alloc().buffer().writeBytes(ans.toString().getBytes(Charset.forName("utf-8")));
             DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);

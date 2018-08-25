@@ -1,0 +1,28 @@
+.left_order{
+    float: left;
+}
+
+.suggest_list{
+    border-left:    gray 2px solid;
+    border-right:   gray 2px solid;
+    border-bottom:  gray 2px solid;
+}
+
+.suggest_hint{
+    width: 100%;
+    background:none;
+    border:none;
+    border-bottom: black 1px solid;
+
+}
+.suggest_hint:hover{
+    background: gray;
+}
+
+.table_heading_name{
+    font-weight: bolder;
+}
+.apartment{
+    border-bottom: black 1px solid;
+    padding-top: 20px;
+}

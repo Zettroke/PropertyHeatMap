@@ -57,9 +57,14 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
+        try {
+            System.loadLibrary("JNI-CairoDrawer");
+        }catch (UnsatisfiedLinkError e){
+            e.printStackTrace();
+        }
         String map_name = new Scanner(new FileInputStream("current_map_file.conf")).nextLine();
         ImageIO.setUseCache(false);
-
+        //Drawer.forceCairo = true;
         if (args.length != 0) {
             for (String s : args) {
                 if (s.contains("-draw=")) {
@@ -89,7 +94,7 @@ public class Main {
                 try{new FileOutputStream("Lel");Thread.sleep(1000);}catch (Exception e){}
             }
         });
-        
+
 
 
         /*long start = System.nanoTime();

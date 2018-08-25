@@ -5,6 +5,7 @@ import com.eclipsesource.json.JsonObject;
 import io.netty.handler.codec.http.QueryStringDecoder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -138,11 +139,13 @@ public class ParamsChecker {
     private ArrayList<String> names = new ArrayList<>();
     private ArrayList<CheckValueType> types = new ArrayList<>();
     private ArrayList<Range> ranges = new ArrayList<>();
+    private ArrayList<ParamsChecker> checkers = new ArrayList<>();
     //private HashMap<String, Integer> indexes;
 
     private ArrayList<String> miss_name = new ArrayList<>();
     private ArrayList<String> incorrect_type = new ArrayList<>();
     private ArrayList<String> out_of_range = new ArrayList<>();
+    private ArrayList<JsonObject> failed_checkers = new ArrayList<>();
 
     public ParamsChecker addName(String name){
         names.add(name);
@@ -164,9 +167,14 @@ public class ParamsChecker {
         return this;
     }
 
+    public ParamsChecker or(ParamsChecker... checkers){
+        this.checkers.addAll(Arrays.asList(checkers));
+        return this;
+    }
+
     public boolean isValid(QueryStringDecoder decoder){
         boolean correct = true;
-        miss_name.clear();incorrect_type.clear();out_of_range.clear();
+        miss_name.clear();incorrect_type.clear();out_of_range.clear();failed_checkers.clear();
         for (int i=0; i<names.size(); i++){
             CheckValueType curr = types.get(i);
             if (decoder.parameters().containsKey(names.get(i))){
@@ -189,6 +197,18 @@ public class ParamsChecker {
                 miss_name.add(names.get(i));
                 correct = false;
             }
+        }
+        if (checkers.size() != 0) {
+            boolean or_check = false;
+            for (ParamsChecker ch : checkers) {
+                if (!ch.isValid(decoder)) {
+                    failed_checkers.add(ch.getErrorMessage());
+                } else {
+                    or_check = true;
+                }
+
+            }
+            correct &= or_check;
         }
 
 
@@ -225,7 +245,23 @@ public class ParamsChecker {
             err.add("Out of range", p);
         }
 
+        if (failed_checkers.size() != 0){
+            JsonArray p = new JsonArray();
+
+            for (JsonObject o: failed_checkers){
+                p.add(o);
+            }
+            err.add("At least one of follow should be correct", p);
+        }
+
         return err;
+    }
+
+    public JsonObject createErrorAnswer(){
+        JsonObject ans = new JsonObject();
+        ans.add("status", "error");
+        ans.add("error", this.getErrorMessage());
+        return ans;
     }
 }
 

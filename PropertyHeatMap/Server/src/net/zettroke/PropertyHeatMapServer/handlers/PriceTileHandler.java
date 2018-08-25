@@ -18,6 +18,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.util.HashSet;
 
@@ -49,25 +50,35 @@ public class PriceTileHandler implements ShittyHttpHandler{
             int y = Integer.decode(decoder.parameters().get("y").get(0));
             int price = Integer.decode(decoder.parameters().get("price").get(0));
             double range = Double.parseDouble(decoder.parameters().get("range").get(0));
+            boolean absolute = false;
+            if (decoder.parameters().containsKey("absolute")){
+                absolute = Boolean.parseBoolean(decoder.parameters().get("absolute").get(0));
+            }
+            if (absolute){
+                x -= (int)(propertyMap.off_x * Math.pow(2, z-10)); y -= (int)(propertyMap.off_y * Math.pow(2, z-10));
+            }
 
-
-            /*coefficent = 1.0 / mult;
-
-            BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
-
-            Graphics2D g = (Graphics2D) image.getGraphics();
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g.setColor(new Color(255, 255, 255, 0));
-            g.fillRect(0, 0, 256, 256);
-
-
-
-
-
-
-            drawTreeNode(g, treeNode, 256 * x, 256 * y, price, range);*/
             QuadTreeNode treeNode = new QuadTreeNode(new int[]{x * mult * 256, y * mult * 256, (x + 1) * mult * 256, (y + 1) * mult * 256}, false);
             propertyMap.fillTreeNode(treeNode);
+            double dist = price*range*2;
+            for (MapShape mh: treeNode.shapes){
+                int clr = -1;
+                long x_sm = 0, y_sm = 0;
+                for (MapPoint p: mh.points){
+                    x_sm += p.x; y_sm += p.y;
+                }
+
+                double ap_price = -1000000000000000000000.0;
+                for (Apartment ap : mh.way.apartments) {
+                    if (Math.abs(price - ap_price) > Math.abs(price - ap.price / ap.area)) {
+                        ap_price = ap.price / ap.area;
+                    }
+                }
+                if (ap_price > price - price * range && ap_price < price + price * range) {
+                    float color = (float) ((((price + price * range) - ap_price) / dist) * (24.0 / 36.0));
+                    clr = Color.getHSBColor(color, 1.0f, 0.95f).getRGB();
+                }
+            }
 
             byte[] arr = Drawer.getInstance().drawBuilding(treeNode, x, y, z, price, range);
 
@@ -77,9 +88,7 @@ public class PriceTileHandler implements ShittyHttpHandler{
             response.headers().set("Content-Type", "image/png");
             ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
         }else{
-            JsonObject ans = new JsonObject();
-            ans.add("status", "error");
-            ans.add("error", checker.getErrorMessage());
+            JsonObject ans = checker.createErrorAnswer();
             DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, ctx.alloc().buffer().writeBytes(ans.toString().getBytes(Charset.forName("utf-8"))));
             response.headers().set("content-type", "text/json; charset=UTF-8");
             ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);

@@ -100,7 +100,7 @@ public class Way implements Serializable{
     }
     public synchronized void initBounds(){
         if (bounds == null) {
-            bounds = new int[4];
+            bounds = new int[]{Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE};
             for (SimpleNode n : nodes) {
                 bounds[0] = Math.min(bounds[0], n.x);
                 bounds[1] = Math.min(bounds[1], n.y);

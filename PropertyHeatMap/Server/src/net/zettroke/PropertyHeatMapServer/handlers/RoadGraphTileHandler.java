@@ -26,15 +26,18 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
     }
     double coefficent = 1;
     final int around = 8;
-
-    final static ParamsChecker checker = new ParamsChecker()
-                .addName("x").addType(ParamsChecker.IntegerType).addNoRange()
-                .addName("y").addType(ParamsChecker.IntegerType).addNoRange()
-                .addName("z").addType(ParamsChecker.IntegerType).addNoRange()
-                .addName("start_id").addType(ParamsChecker.LongType).addNoRange()
-                .addName("max_dist").addType(ParamsChecker.IntegerType).addRange(0, 36000)
-                .addName("foot").addType(ParamsChecker.BooleanType).addNoRange();
-
+    final static ThreadLocal<ParamsChecker> pcheckers = new ThreadLocal<ParamsChecker>(){
+        @Override
+        protected ParamsChecker initialValue() {
+            return new ParamsChecker()
+                    .addName("x").addType(ParamsChecker.IntegerType).addNoRange()
+                    .addName("y").addType(ParamsChecker.IntegerType).addNoRange()
+                    .addName("z").addType(ParamsChecker.IntegerType).addNoRange()
+                    .addName("start_id").addType(ParamsChecker.LongType).addNoRange()
+                    .addName("max_dist").addType(ParamsChecker.IntegerType).addRange(0, 36000)
+                    .addName("foot").addType(ParamsChecker.BooleanType).addNoRange();
+        }
+    };
 
     int coef(int n){
         return (int)Math.round(coefficent*n);
@@ -45,6 +48,7 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         long st = System.nanoTime();
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        ParamsChecker checker = pcheckers.get();
         if (checker.isValid(decoder)) {
             int z = Integer.decode(decoder.parameters().get("z").get(0));
             int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
@@ -53,10 +57,17 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
             long start_id = Long.decode(decoder.parameters().get("start_id").get(0));
             int max_dist = Integer.decode(decoder.parameters().get("max_dist").get(0));
             boolean foot = Boolean.parseBoolean(decoder.parameters().get("foot").get(0));
+            boolean absolute = false;
+            if (decoder.parameters().containsKey("absolute")){
+                absolute = Boolean.parseBoolean(decoder.parameters().get("absolute").get(0));
+            }
+            if (absolute){
+                x -= (int)(propertyMap.off_x * Math.pow(2, z-10)); y -= (int)(propertyMap.off_y * Math.pow(2, z-10));
+            }
             coefficent = 1.0 / mult;
 
-            QuadTreeNode treeNode = new QuadTreeNode(new int[]{x * mult * 256 , y * mult * 256, (x + 1) * mult * 256 , (y + 1) * mult * 256}, false);
-            //propertyMap.fillTreeNodeWithRoadGraphNodes(treeNode);
+            QuadTreeNode treeNode = new QuadTreeNode(new int[]{x * mult * 256 - 400 , y * mult * 256 - 400, (x + 1) * mult * 256 + 400 , (y + 1) * mult * 256 + 400}, false);
+
             propertyMap.fillTreeNodeWithRoadGraphLines(treeNode);
             int ind = 0;
 

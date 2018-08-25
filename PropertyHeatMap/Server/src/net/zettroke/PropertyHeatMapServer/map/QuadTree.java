@@ -12,6 +12,7 @@ import static net.zettroke.PropertyHeatMapServer.map.QuadTreeNode.DVertCross;
 
 /**
  * Created by Zettroke on 19.10.2017.
+ * CRSJ419R60Z
  */
 public class QuadTree {
     static int THRESHOLD = 3000;
@@ -35,7 +36,6 @@ public class QuadTree {
 
     void add(MapShape m){
         root.add(m);
-
     }
 
     void add(RoadGraphLine line){
@@ -326,7 +326,7 @@ public class QuadTree {
         }else{
             for (MapShape shape: source.shapes){
                 if (!alreadyAdd.contains(shape.way.id) && shape.way.apartments != null && shape.way.apartments.size() != 0) {
-                    res.add(new MapShape(shape.way));
+                    res.shapes.add(new MapShape(shape.way));
                     alreadyAdd.add(shape.way.id);
                 }
             }
