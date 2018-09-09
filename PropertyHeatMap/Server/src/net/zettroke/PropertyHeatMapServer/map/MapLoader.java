@@ -4,11 +4,12 @@ import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public interface MapLoader {
-    void load(RoadGraphBuilder builder, PropertyMap context) throws Exception;
+    void load(RoadGraphBuilder builder) throws Exception;
 
-    int[] getCoordBounds(PropertyMap context) throws Exception;
+    int[] getCoordBounds() throws Exception;
 
     HashMap<Long, Node> getNodes() throws Exception;
 
@@ -17,4 +18,7 @@ public interface MapLoader {
     HashMap<Long, Way> getWays();
 
     HashMap<Long, Relation> getRelations() throws Exception;
+
+    HashMap<String, Way> getSearchStrings() throws Exception;
+
 }

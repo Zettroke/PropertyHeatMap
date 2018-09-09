@@ -10,7 +10,7 @@ import net.zettroke.PropertyHeatMapServer.map.Way;
 import java.util.Map;
 
 public class Jsonizer {
-    public static JsonObject toJson(Way way, boolean points, boolean latlon, PropertyMap context) {
+    public static JsonObject toJson(Way way, boolean points, boolean latlon) {
         JsonObject answer = new JsonObject();
         JsonObject data = new JsonObject();
         for (Map.Entry<String, String> p : way.data.entrySet()) {
@@ -26,7 +26,7 @@ public class Jsonizer {
                     point.add(p.x);
                     point.add(p.y);
                 }else{
-                    double[] ltln = context.inverse_mercator(p.x, p.y);
+                    double[] ltln = PropertyMap.inverse_mercator(p.x, p.y);
                     point.add(ltln[1]);
                     point.add(ltln[0]);
                 }
@@ -50,7 +50,7 @@ public class Jsonizer {
         answer.add("data", data);
         MapPoint center = way.getCenter();
         if (latlon){
-            double[] c = context.inverse_mercator(center.x, center.y);
+            double[] c = PropertyMap.inverse_mercator(center.x, center.y);
             answer.add("center", new JsonArray().add(c[1]).add(c[0]));
         }else {
             answer.add("center", new JsonArray().add(center.x).add(center.y));
@@ -60,7 +60,7 @@ public class Jsonizer {
         return answer;
     }
     public static JsonObject toJson(Way way, boolean points){
-        return toJson(way, points, false, null);
+        return toJson(way, points, false);
     }
 
     public static JsonObject toJson(Node n){

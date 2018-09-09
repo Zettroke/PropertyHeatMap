@@ -1,6 +1,5 @@
 package net.zettroke.PropertyHeatMapServer.handlers;
 
-import com.eclipsesource.json.Json;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -14,7 +13,6 @@ import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
 import net.zettroke.PropertyHeatMapServer.utils.ParamsChecker;
 
 import java.nio.charset.Charset;
-import java.util.Map;
 
 public class MapPointSearchHandler implements ShittyHttpHandler {
     private PropertyMap propertyMap;
@@ -46,7 +44,7 @@ public class MapPointSearchHandler implements ShittyHttpHandler {
             if (decoder.parameters().containsKey("lat") && decoder.parameters().containsKey("lon")){
                 double lat = Double.parseDouble(decoder.parameters().get("lat").get(0));
                 double lon = Double.parseDouble(decoder.parameters().get("lon").get(0));
-                int[] xy = propertyMap.mercator(lon, lat);
+                int[] xy =  PropertyMap.mercator(lon, lat);
                 x = xy[0]; y = xy[1];
                 latlon = true;
             }else {
@@ -64,7 +62,7 @@ public class MapPointSearchHandler implements ShittyHttpHandler {
                 if (!latlon) {
                     arr.add(Jsonizer.toJson(w, true));
                 }else{
-                    arr.add(Jsonizer.toJson(w, true, true, propertyMap));
+                    arr.add(Jsonizer.toJson(w, true, true));
                 }
                 answer.add("objects", arr);
 

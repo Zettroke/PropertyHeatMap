@@ -25,14 +25,6 @@ public class Main {
     static int x;
     static int y;
 
-    static class MyThread extends Thread{
-        int val=42;
-
-        @Override
-        public void run() {
-            System.out.println(((MyThread)Thread.currentThread()).val);
-        }
-    }
 
     static int coef(int n) {
         return (int) Math.round(n * coefficent);
@@ -57,11 +49,6 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        try {
-            System.loadLibrary("JNI-CairoDrawer");
-        }catch (UnsatisfiedLinkError e){
-            e.printStackTrace();
-        }
         String map_name = new Scanner(new FileInputStream("current_map_file.conf")).nextLine();
         ImageIO.setUseCache(false);
         //Drawer.forceCairo = true;
@@ -81,20 +68,10 @@ public class Main {
             }
         }
 
-        new MyThread().start();
-
-        PropertyMapServer server = new PropertyMapServer(map_name);
+        PropertyMap map = new PropertyMap();
+        map.addMapLoader(new MapLoaderOSM(map_name));
+        PropertyMapServer server = new PropertyMapServer(map);
         server.start();
-
-
-        Runtime.getRuntime().addShutdownHook(new Thread(){
-            @Override
-            public void run() {
-                System.out.println("closing!!!");
-                try{new FileOutputStream("Lel");Thread.sleep(1000);}catch (Exception e){}
-            }
-        });
-
 
 
         /*long start = System.nanoTime();

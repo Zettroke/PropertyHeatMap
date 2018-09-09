@@ -45,7 +45,7 @@ public class StringSearchHandler implements ShittyHttpHandler{
             } else {
                 ans.add("status", "found");
                 if (latlon){
-                    ans.add("result", Jsonizer.toJson(way, true, true, propertyMap));
+                    ans.add("result", Jsonizer.toJson(way, true, true));
                 }else {
                     ans.add("result", Jsonizer.toJson(way, true));
                 }

@@ -20,6 +20,7 @@ public class MapLoaderOSM implements MapLoader{
     private ArrayList<SimpleNode> simpleNodes;
     private HashMap<Long, Way> ways = new HashMap<>();
     private HashMap<Long, Relation> relations = new HashMap<>();
+    private HashMap<String, Way> searchStrings = new HashMap<>();
 
     private static class Deduplicator{
         //before ~1823MB
@@ -35,7 +36,7 @@ public class MapLoaderOSM implements MapLoader{
     }
 
     @Override
-    public int[] getCoordBounds(PropertyMap context) throws Exception{
+    public int[] getCoordBounds() throws Exception{
         BufferedInputStream fileIn = new BufferedInputStream(new FileInputStream(filename));
         XMLStreamReader streamReader = XMLInputFactory.newInstance().createXMLStreamReader(fileIn);
         while (true) {
@@ -56,8 +57,8 @@ public class MapLoaderOSM implements MapLoader{
         streamReader.close();
         fileIn.close();
 
-        int[] coords = context.mercator(degrees[0], degrees[1]);
-        int[] coords1 = context.mercator(degrees[2], degrees[3]);
+        int[] coords =  PropertyMap.mercator(degrees[0], degrees[1]);
+        int[] coords1 = PropertyMap.mercator(degrees[2], degrees[3]);
 
         return new int[]{coords[0], coords1[1], coords1[0], coords[1]};
     }
@@ -83,7 +84,16 @@ public class MapLoaderOSM implements MapLoader{
     }
 
     @Override
-    public void load(RoadGraphBuilder builder, PropertyMap context) throws XMLStreamException, FileNotFoundException{
+    public HashMap<String, Way> getSearchStrings() throws Exception {
+        return searchStrings;
+    }
+
+    @Override
+    public void load(RoadGraphBuilder builder) throws XMLStreamException, FileNotFoundException{
+
+
+
+
         Deduplicator dedup = new Deduplicator();
 
         HashSet<Long> relation_nodes = new HashSet<>();
@@ -154,8 +164,7 @@ public class MapLoaderOSM implements MapLoader{
                 } else {
                     switch (streamReader.getLocalName()) {
                         case "node":
-
-                            coords = context.mercator(tempNode.lon, tempNode.lat);
+                            coords = PropertyMap.mercator(tempNode.lon, tempNode.lat);
                             tempNode.x = coords[0]; tempNode.y = coords[1];
                             nodes.put(tempNode.id, tempNode);
                             if (tempNode.data.size() == 0) {
@@ -183,8 +192,7 @@ public class MapLoaderOSM implements MapLoader{
                                 }
 
                                 if (tempWay.data.containsKey("name") && tempWay.data.containsKey("highway") && !tempWay.data.get("highway").equals("trunk")){
-                                    context.predictor.add(tempWay.data.get("name"));
-                                    context.searchMap.put(tempWay.data.get("name").toLowerCase(), tempWay);
+                                    searchStrings.put(tempWay.data.get("name").toLowerCase(), tempWay);
                                 }
                             }
                             tempWay = null;

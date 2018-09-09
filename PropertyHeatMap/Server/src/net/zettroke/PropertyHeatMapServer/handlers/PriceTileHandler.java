@@ -55,7 +55,7 @@ public class PriceTileHandler implements ShittyHttpHandler{
                 absolute = Boolean.parseBoolean(decoder.parameters().get("absolute").get(0));
             }
             if (absolute){
-                x -= (int)(propertyMap.off_x * Math.pow(2, z-10)); y -= (int)(propertyMap.off_y * Math.pow(2, z-10));
+                //x -= (int)(propertyMap.off_x * Math.pow(2, z-10)); y -= (int)(propertyMap.off_y * Math.pow(2, z-10));
             }
 
             QuadTreeNode treeNode = new QuadTreeNode(new int[]{x * mult * 256, y * mult * 256, (x + 1) * mult * 256, (y + 1) * mult * 256}, false);

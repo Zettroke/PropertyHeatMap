@@ -17,13 +17,15 @@ public class PropertyMapServer {
 
     public static int PROC_NUM = 8;
 
-    String map_name;
-    PropertyMapServer(String map){
-        map_name = map;
+    PropertyMap propertyMap;
+
+
+    PropertyMapServer(PropertyMap propertyMap){
+        this.propertyMap = propertyMap;
     }
 
     public void start() throws Exception{
-        PropertyMap propertyMap = new PropertyMap(new MapLoaderOSM(map_name));
+
         //PropertyMapLoaderOSM.load(propertyMap, new File(map_name));
         //PropertyMapLoaderOSM.load(propertyMap, new File("C:/PropertyHeatMap/map.osm"));
         long start = System.nanoTime();

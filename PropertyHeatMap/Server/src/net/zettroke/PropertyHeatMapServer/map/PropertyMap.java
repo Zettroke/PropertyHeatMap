@@ -4,11 +4,10 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
-import net.zettroke.PropertyHeatMapServer.Main;
+import com.sun.xml.internal.bind.v2.runtime.unmarshaller.Loader;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphLine;
 import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNodeBuilder;
 import net.zettroke.PropertyHeatMapServer.utils.*;
 
 
@@ -48,15 +47,16 @@ public class PropertyMap {
 
     public boolean test = true;
 
-    MapLoader loader;
+    List<MapLoader> loaders = new ArrayList<>();
 
-    public int x_begin=0, y_begin=0;
-    public int x_end=0, y_end=0;
+    public int x_begin=Integer.MAX_VALUE, y_begin=Integer.MAX_VALUE;
+    public int x_end=Integer.MIN_VALUE, y_end=Integer.MIN_VALUE;
 
     public StringPredictor predictor = new StringPredictor();
     public HashMap<String, Way> searchMap = new HashMap<>();
 
     ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
+
     public HashMap<Long, Node> nodes = new HashMap<>();
     public HashMap<Long, Way> ways = new HashMap<>();
     public HashMap<Long, Relation> relations = new HashMap<>();
@@ -72,20 +72,31 @@ public class PropertyMap {
 
     RoadGraphNode start_node;
 
-    public int[] mercator(double lon, double lat){
+    public PropertyMap addMapLoader(MapLoader loader){
+        loaders.add(loader);
+        return this;
+    }
+
+    public static int[] mercator(double lon, double lat){
+        int x = (int)Math.round(MAP_RESOLUTION/2/Math.PI*(Math.toRadians(lon)+Math.PI));
+        int y = (int)Math.round(MAP_RESOLUTION/2/Math.PI*(Math.PI-Math.log(Math.tan(Math.toRadians(lat)/2+Math.PI/4))));
+        return new int[]{x, y};
+    }
+
+    public int[] rel_mercator(double lon, double lat){
         int x = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.toRadians(lon)+Math.PI))-x_begin);
         int y = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.PI-Math.log(Math.tan(Math.toRadians(lat)/2+Math.PI/4))))-y_begin);
         return new int[]{x, y};
     }
 
-    public double[] inverse_mercator(double x, double y){
-        double lon = Math.toDegrees((x + x_begin)/(MAP_RESOLUTION/2/Math.PI) - Math.PI);
-        double lat = Math.toDegrees(-(2*Math.atan(Math.exp((y + y_begin)/(MAP_RESOLUTION/2/Math.PI) - Math.PI)) - Math.PI/2));
+    public static double[] inverse_mercator(double x, double y){
+        double lon = Math.toDegrees((x)/(MAP_RESOLUTION/2/Math.PI) - Math.PI);
+        double lat = Math.toDegrees(-(2*Math.atan(Math.exp((y)/(MAP_RESOLUTION/2/Math.PI) - Math.PI)) - Math.PI/2));
         return new double[]{lon, lat};
     }
 
-    public PropertyMap(MapLoader loader) {
-        this.loader = loader;
+    public PropertyMap() {
+
     }
 
     class ParallelInitThread extends Thread{
@@ -128,22 +139,37 @@ public class PropertyMap {
 
     public void init(){
         try {
-            int[] coords = loader.getCoordBounds(this);
+            for (MapLoader loader: loaders) {
+                int[] coords = loader.getCoordBounds();
 
-            x_begin = coords[0]; y_begin = coords[1]; x_end = coords[2]; y_end = coords[3];
-            off_x = (int)Math.round(x_begin/(double)MAP_RESOLUTION*1024);
-            off_y = (int)Math.round(y_begin/(double)MAP_RESOLUTION*1024);
-            rgnBuilder = new RoadGraphBuilder(new int[]{0, 0, x_end - x_begin, y_end - y_begin}, cache_size);
+                x_begin = Math.min(coords[0], x_begin);
+                y_begin = Math.min(coords[1], y_begin);
+                x_end = Math.max(coords[2], x_end);
+                y_end = Math.max(coords[3], y_end);
+            }
 
-            loader.load(rgnBuilder, this);
+            off_x = (int) Math.round(x_begin / (double) MAP_RESOLUTION * 1024);
+            off_y = (int) Math.round(y_begin / (double) MAP_RESOLUTION * 1024);
+            rgnBuilder = new RoadGraphBuilder(new int[]{x_begin, y_begin, x_end, y_end}, cache_size);
 
-            nodes = loader.getNodes();
-            ways = loader.getWays();
-            simpleNodes = loader.getSimpleNodes();
-            relations = loader.getRelations();
+            for (MapLoader loader: loaders) {
+                loader.load(rgnBuilder);
+
+                nodes = loader.getNodes();
+                ways = loader.getWays();
+                simpleNodes = loader.getSimpleNodes();
+                relations = loader.getRelations();
+                Map<String, Way> searchStrings = loader.getSearchStrings();
+                searchMap.putAll(searchStrings);
+                Set<String> keyset = searchStrings.keySet();
+                for (String s: keyset){
+                    predictor.add(s);
+                }
+
+            }
 
             System.out.println("Creating QuadTree...");
-            tree = new QuadTree(new int[]{0, 0, x_end - x_begin, y_end - y_begin});
+            tree = new QuadTree(new int[]{x_begin, y_begin, x_end, y_end}); //TODO: change
             tree.root.split();
             long start = System.nanoTime();
             ArrayList<ParallelInitThread> threads = new ArrayList<>();
