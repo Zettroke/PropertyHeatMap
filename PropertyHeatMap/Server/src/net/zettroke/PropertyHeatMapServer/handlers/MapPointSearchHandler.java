@@ -20,15 +20,20 @@ public class MapPointSearchHandler implements ShittyHttpHandler {
 
     final String path = "search/point";
 
-    static final ParamsChecker checker = new ParamsChecker()
-            .or(new ParamsChecker()
-                    .addName("x").addType(ParamsChecker.IntegerType).addNoRange()
-                    .addName("y").addType(ParamsChecker.IntegerType).addNoRange()
-                    .addName("z").addType(ParamsChecker.IntegerType).addNoRange(),
-                new ParamsChecker()
-                    .addName("lat").addType(ParamsChecker.DoubleType).addNoRange()
-                    .addName("lon").addType(ParamsChecker.DoubleType).addNoRange()
-            );
+    final static ThreadLocal<ParamsChecker> pcheckers = new ThreadLocal<ParamsChecker>() {
+        @Override
+        protected ParamsChecker initialValue() {
+            return new ParamsChecker()
+                    .or(new ParamsChecker()
+                            .addParam("x").type(ParamsChecker.IntegerType).finish()
+                            .addParam("y").type(ParamsChecker.IntegerType).finish()
+                            .addParam("z").type(ParamsChecker.IntegerType).finish())
+                    .or(new ParamsChecker()
+                            .addParam("lat").type(ParamsChecker.DoubleType).finish()
+                            .addParam("lon").type(ParamsChecker.DoubleType).finish());
+        }
+    };
+
 
     @Override
     public String getPath() {
@@ -37,6 +42,7 @@ public class MapPointSearchHandler implements ShittyHttpHandler {
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
 
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        ParamsChecker checker = pcheckers.get();
         if (checker.isValid(decoder)) {
             int x;
             int y;

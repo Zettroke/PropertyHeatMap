@@ -10,6 +10,18 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class ParamsChecker {
+    public class ParamsCheckerException extends Exception{
+        public ParamsCheckerException(String s){super(s);}
+    }
+
+    private class Param{
+        String name;
+        CheckValueType type = StringType;
+        Range range = new Range(true);
+
+        public Param(String name){this.name = name;}
+    }
+
     private class Range{
         Object begin;
         Object end;
@@ -136,65 +148,78 @@ public class ParamsChecker {
 
     public static StringTypeClass StringType = new StringTypeClass();
 
-    private ArrayList<String> names = new ArrayList<>();
-    private ArrayList<CheckValueType> types = new ArrayList<>();
-    private ArrayList<Range> ranges = new ArrayList<>();
+    private boolean currently_adding = false;
+    private Param current_param;
+    private ArrayList<Param> params = new ArrayList<>();
     private ArrayList<ParamsChecker> checkers = new ArrayList<>();
-    //private HashMap<String, Integer> indexes;
+
 
     private ArrayList<String> miss_name = new ArrayList<>();
     private ArrayList<String> incorrect_type = new ArrayList<>();
     private ArrayList<String> out_of_range = new ArrayList<>();
     private ArrayList<JsonObject> failed_checkers = new ArrayList<>();
 
-    public ParamsChecker addName(String name){
-        names.add(name);
+    public ParamsChecker addParam(String name){
+        //if (currently_adding){
+        //    throw new ParamsCheckerException("Can't add new while not finished previous. Call finish() first.");
+        //}
+        currently_adding = true;
+        current_param = new Param(name);
         return this;
     }
 
-    public ParamsChecker addRange(Object start, Object end){
-        ranges.add(new Range(start, end));
+    public ParamsChecker range(Object start, Object end){
+        //if (!currently_adding){
+        //    throw new ParamsCheckerException("Can't set range because there is no param. Call addParam() first.");
+        //}
+        current_param.range = new Range(start, end);
         return this;
     }
 
-    public ParamsChecker addNoRange(){
-        ranges.add(new Range(true));
+    public ParamsChecker type(CheckValueType type){
+        //if (!currently_adding){
+        //    throw new ParamsCheckerException("Can't set range because there is no param. Call addParam() first.");
+        //}
+        current_param.type = type;
         return this;
     }
 
-    public ParamsChecker addType(CheckValueType type){
-        types.add(type);
+    public ParamsChecker finish(){
+        //if (!currently_adding){
+        //    throw new ParamsCheckerException("Can't finish because there is no param to finish. Call addParam() first.");
+        //}
+        currently_adding = false;
+        params.add(current_param);
+
         return this;
     }
 
-    public ParamsChecker or(ParamsChecker... checkers){
-        this.checkers.addAll(Arrays.asList(checkers));
+    public ParamsChecker or(ParamsChecker checker){
+        this.checkers.add(checker);
         return this;
     }
 
     public boolean isValid(QueryStringDecoder decoder){
         boolean correct = true;
         miss_name.clear();incorrect_type.clear();out_of_range.clear();failed_checkers.clear();
-        for (int i=0; i<names.size(); i++){
-            CheckValueType curr = types.get(i);
-            if (decoder.parameters().containsKey(names.get(i))){
-                String val = decoder.parameters().get(names.get(i)).get(0);
-                if (i < types.size()){
-                    if (!curr.isValid(val)){
+        for (int i=0; i<params.size(); i++){
+            Param par = params.get(i);
+            CheckValueType curr = par.type;
+            if (decoder.parameters().containsKey(par.name)){
+                String val = decoder.parameters().get(par.name).get(0);
+
+                if (!curr.isValid(val)){
+                    correct = false;
+                    incorrect_type.add(par.name + "=" + val + "(need " + curr.getName() + ")");
+                }else{
+                    Range currR = par.range;
+                    if (!(currR.isDummy || (curr.compare(val, currR.begin) >= 0 && 0 >= curr.compare(val, currR.end)))){
                         correct = false;
-                        incorrect_type.add(names.get(i) + "=" + val + "(need " + curr.getName() + ")");
-                    }else{
-                        if (i < ranges.size()){
-                            Range currR = ranges.get(i);
-                            if (!(ranges.get(i).isDummy || (curr.compare(val, currR.begin) >= 0 && 0 >= curr.compare(val, currR.end)))){
-                                correct = false;
-                                out_of_range.add(names.get(i) + "=" + val + " [" + currR.begin.toString() + ";" + currR.end.toString() + "]");
-                            }
-                        }
+                        out_of_range.add(par.name + "=" + val + " [" + currR.begin.toString() + ";" + currR.end.toString() + "]");
                     }
                 }
             }else{
-                miss_name.add(names.get(i));
+                miss_name.add(par.name);
                 correct = false;
             }
         }

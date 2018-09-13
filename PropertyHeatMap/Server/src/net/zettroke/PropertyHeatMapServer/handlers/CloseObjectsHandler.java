@@ -30,11 +30,16 @@ public class CloseObjectsHandler implements ShittyHttpHandler{
         return path;
     }
 
-    final static ParamsChecker checker = new ParamsChecker()
-            .addName("id").addType(ParamsChecker.LongType).addNoRange()
-            .addName("max_dist").addType(ParamsChecker.IntegerType).addRange(0, 36000)
-            .addName("foot").addType(ParamsChecker.BooleanType).addNoRange()
-            .addName("max_num").addType(ParamsChecker.IntegerType).addRange(1, 1000);
+    final static ThreadLocal<ParamsChecker> pcheckers = new ThreadLocal<ParamsChecker>() {
+        @Override
+        protected ParamsChecker initialValue() {
+            return new ParamsChecker()
+                    .addParam("id").type(ParamsChecker.LongType).finish()
+                    .addParam("max_dist").type(ParamsChecker.IntegerType).range(0, 36000).finish()
+                    .addParam("foot").type(ParamsChecker.BooleanType).finish()
+                    .addParam("max_num").type(ParamsChecker.IntegerType).range(1, 1000).finish();
+        }
+    };
 
 
     static class InfrObj{
@@ -50,6 +55,7 @@ public class CloseObjectsHandler implements ShittyHttpHandler{
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        ParamsChecker checker = pcheckers.get();
         if (checker.isValid(decoder)) {
             long id = Long.decode(decoder.parameters().get("id").get(0));
             int max_dist = Integer.decode(decoder.parameters().get("max_dist").get(0));

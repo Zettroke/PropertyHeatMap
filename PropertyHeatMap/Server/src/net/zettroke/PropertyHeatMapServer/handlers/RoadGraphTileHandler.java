@@ -30,12 +30,12 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         @Override
         protected ParamsChecker initialValue() {
             return new ParamsChecker()
-                    .addName("x").addType(ParamsChecker.IntegerType).addNoRange()
-                    .addName("y").addType(ParamsChecker.IntegerType).addNoRange()
-                    .addName("z").addType(ParamsChecker.IntegerType).addNoRange()
-                    .addName("start_id").addType(ParamsChecker.LongType).addNoRange()
-                    .addName("max_dist").addType(ParamsChecker.IntegerType).addRange(0, 36000)
-                    .addName("foot").addType(ParamsChecker.BooleanType).addNoRange();
+                    .addParam("x").type(ParamsChecker.IntegerType).finish()
+                    .addParam("y").type(ParamsChecker.IntegerType).finish()
+                    .addParam("z").type(ParamsChecker.IntegerType).finish()
+                    .addParam("start_id").type(ParamsChecker.LongType).finish()
+                    .addParam("max_dist").type(ParamsChecker.IntegerType).range(0, 36000).finish()
+                    .addParam("foot").type(ParamsChecker.BooleanType).finish();
         }
     };
 

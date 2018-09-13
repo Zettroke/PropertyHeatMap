@@ -23,11 +23,20 @@ public class StringSearchHandler implements ShittyHttpHandler{
     public String getPath() {
         return path;
     }
-    final static ParamsChecker checker = new ParamsChecker()
-            .addName("text").addType(ParamsChecker.StringType).addNoRange();
+
+    final static ThreadLocal<ParamsChecker> pcheckers = new ThreadLocal<ParamsChecker>() {
+        @Override
+        protected ParamsChecker initialValue() {
+            return new ParamsChecker()
+                    .addParam("text").type(ParamsChecker.StringType).finish();
+        }
+    };
+
+
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        ParamsChecker checker = pcheckers.get();
         if (checker.isValid(decoder)) {
             String text = decoder.parameters().get("text").get(0);
             boolean latlon = false;

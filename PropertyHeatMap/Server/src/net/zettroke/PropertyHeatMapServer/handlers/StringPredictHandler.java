@@ -17,9 +17,14 @@ import java.util.ArrayList;
 public class StringPredictHandler implements ShittyHttpHandler{
     private PropertyMap propertyMap;
     final String path = "search/predict";
-    final static ParamsChecker checker = new ParamsChecker()
-            .addName("text").addType(ParamsChecker.StringType).addNoRange()
-            .addName("suggestions").addType(ParamsChecker.IntegerType).addRange(0, 1000);
+    final static ThreadLocal<ParamsChecker> pcheckers = new ThreadLocal<ParamsChecker>() {
+        @Override
+        protected ParamsChecker initialValue() {
+            return new ParamsChecker()
+                    .addParam("text").type(ParamsChecker.StringType).finish()
+                    .addParam("suggestions").type(ParamsChecker.IntegerType).range(0, 1000).finish();
+        }
+    };
     @Override
     public String getPath() {
         return path;
@@ -27,6 +32,7 @@ public class StringPredictHandler implements ShittyHttpHandler{
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        ParamsChecker checker = pcheckers.get();
         if (checker.isValid(decoder)) {
             String req = decoder.parameters().get("text").get(0);
             int num = Integer.parseInt(decoder.parameters().get("suggestions").get(0));

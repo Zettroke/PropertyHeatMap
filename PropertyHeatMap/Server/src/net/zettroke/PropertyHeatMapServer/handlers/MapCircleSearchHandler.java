@@ -19,11 +19,17 @@ public class MapCircleSearchHandler implements ShittyHttpHandler{
 
     final String path = "search/circle";
     private PropertyMap propertyMap;
-    static final ParamsChecker checker = new ParamsChecker()
-            .addName("x").addType(ParamsChecker.IntegerType).addNoRange()
-            .addName("y").addType(ParamsChecker.IntegerType).addNoRange()
-            .addName("z").addType(ParamsChecker.IntegerType).addNoRange()
-            .addName("r").addType(ParamsChecker.IntegerType).addNoRange();
+
+    final static ThreadLocal<ParamsChecker> pcheckers = new ThreadLocal<ParamsChecker>() {
+        @Override
+        protected ParamsChecker initialValue() {
+            return new ParamsChecker()
+                    .addParam("x").type(ParamsChecker.IntegerType).finish()
+                    .addParam("y").type(ParamsChecker.IntegerType).finish()
+                    .addParam("z").type(ParamsChecker.IntegerType).finish()
+                    .addParam("r").type(ParamsChecker.IntegerType).finish();
+        }
+    };
 
     @Override
     public String getPath() {
@@ -34,6 +40,7 @@ public class MapCircleSearchHandler implements ShittyHttpHandler{
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        ParamsChecker checker = pcheckers.get();
         if (checker.isValid(decoder)) {
             int z = Integer.decode(decoder.parameters().get("z").get(0));
             int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);

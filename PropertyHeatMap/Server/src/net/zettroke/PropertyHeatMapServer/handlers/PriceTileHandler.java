@@ -28,12 +28,18 @@ public class PriceTileHandler implements ShittyHttpHandler{
     double coefficent = 1;
 
     final String path = "tile/price";
-    static final ParamsChecker checker = new ParamsChecker()
-            .addName("x").addType(ParamsChecker.IntegerType).addNoRange()
-            .addName("y").addType(ParamsChecker.IntegerType).addNoRange()
-            .addName("z").addType(ParamsChecker.IntegerType).addNoRange()
-            .addName("price").addType(ParamsChecker.IntegerType).addNoRange()
-            .addName("range").addType(ParamsChecker.DoubleType).addNoRange();
+
+    final static ThreadLocal<ParamsChecker> pcheckers = new ThreadLocal<ParamsChecker>() {
+        @Override
+        protected ParamsChecker initialValue() {
+            return new ParamsChecker()
+                    .addParam("x").type(ParamsChecker.IntegerType).finish()
+                    .addParam("y").type(ParamsChecker.IntegerType).finish()
+                    .addParam("z").type(ParamsChecker.IntegerType).finish()
+                    .addParam("price").type(ParamsChecker.IntegerType).finish()
+                    .addParam("range").type(ParamsChecker.DoubleType).finish();
+        }
+    };
 
     @Override
     public String getPath() {
@@ -43,6 +49,7 @@ public class PriceTileHandler implements ShittyHttpHandler{
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
 
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        ParamsChecker checker = pcheckers.get();
         if (checker.isValid(decoder)) {
             int z = Integer.decode(decoder.parameters().get("z").get(0));
             int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
