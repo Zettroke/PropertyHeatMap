@@ -18,6 +18,7 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -32,7 +33,7 @@ public class PropertyMap {
 
     public static int default_zoom = 19;
     public static int cache_size = 10;
-    public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256
+    public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256 = 2**27
     private final static HashSet<String> supportedRoutes = new HashSet<>(Arrays.asList("subway", "tram", "trolleybus", "bus"));
     public final static HashSet<String> keysInfrastructureObject = new HashSet<>(Arrays.asList("shop", "amenity", "craft"));
     final static HashSet<String> available_amenity = new HashSet<>(Arrays.asList("pharmacy", "kindergarten", "post_office", "police", "library", "clinic",
@@ -77,15 +78,18 @@ public class PropertyMap {
         return this;
     }
 
+    /**
+     * Web mercator with fixed zoom level.
+     * Map latlon point to square plane with sides MAP_RESOLUTION x MAP_RESOLUTION.
+     * So when lat=0 and lon=0 it will be center of square
+     * @see #MAP_RESOLUTION
+     * @param lon longitude
+     * @param lat latitude
+     * @return int array with x and y coordinates in it
+     */
     public static int[] mercator(double lon, double lat){
         int x = (int)Math.round(MAP_RESOLUTION/2/Math.PI*(Math.toRadians(lon)+Math.PI));
         int y = (int)Math.round(MAP_RESOLUTION/2/Math.PI*(Math.PI-Math.log(Math.tan(Math.toRadians(lat)/2+Math.PI/4))));
-        return new int[]{x, y};
-    }
-
-    public int[] rel_mercator(double lon, double lat){
-        int x = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.toRadians(lon)+Math.PI))-x_begin);
-        int y = (int)(Math.round(MAP_RESOLUTION/2/Math.PI*(Math.PI-Math.log(Math.tan(Math.toRadians(lat)/2+Math.PI/4))))-y_begin);
         return new int[]{x, y};
     }
 
@@ -456,7 +460,7 @@ public class PropertyMap {
         }
     }
 
-    public void load_prices(){
+    private void load_prices(){
         HashMap<String, String> deduplicator = new HashMap<>();
         int counter = 0;
         try {
@@ -569,20 +573,6 @@ public class PropertyMap {
         tree.fillTreeNodeWithRoadGraphLines(n);
     }
 
-    /*public static int calculateDistance(SimpleNode n1, SimpleNode n2}){
-        return calculateDistance(new Node(n1, this),)
-        double lat1 = Math.toRadians(n1.lat);
-        double lat2 = Math.toRadians(n2.lat);
-        double dlat = Math.toRadians(n2.lat-n1.lat);
-        double dlon = Math.toRadians(n2.lon-n1.lon);
-
-        double a = Math.sin(dlat/2) * Math.sin(dlat/2) + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon/2) * Math.sin(dlon/2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-        return (int)Math.round(earthRadius*c);
-
-    }*/
-
     public static int calculateDistance(Node n1, Node n2){
         double lat1 = Math.toRadians(n1.lat);
         double lat2 = Math.toRadians(n2.lat);
@@ -595,8 +585,44 @@ public class PropertyMap {
         return (int)Math.round(earthRadius*c);
 
     }
+    
+    public int getCalculatedGraphIndex(long start_id, boolean foot, int max_dist){
+        cache.lock.lock();
+        int res = 0;
+        CalculatedGraphKey key = new CalculatedGraphKey(start_id, foot, max_dist);
 
-    public void calcRoadGraph(long id, boolean foot, int max_dist, int ind) {
+        if (cache.loading.containsKey(key)){
+            ReentrantLock lk = cache.loading.get(key);
+            cache.lock.unlock();
+            lk.lock();
+            res = cache.getCachedIndex(key);
+            lk.unlock();
+        }else{
+            if (cache.contains(key)) {
+                res = cache.getCachedIndex(key);
+                cache.lock.unlock();
+            } else {
+                ReentrantLock lk = new ReentrantLock();
+                lk.lock();
+                cache.loading.put(key, lk);
+                cache.lock.unlock();
+
+                res = cache.getNewIndexForGraph(key);
+                calcRoadGraph(start_id, foot, max_dist, res);
+
+                cache.lock.lock();
+                cache.loading.remove(key);
+                lk.unlock();
+                cache.lock.unlock();
+
+            }
+
+        }
+
+        return res;
+    }
+
+    private void calcRoadGraph(long id, boolean foot, int max_dist, int ind) {
         HashSet<RoadType> exclude = foot ? RoadGraphNode.foot_exclude : RoadGraphNode.car_exclude;
         for (RoadGraphNode rgn: roadGraph.values()){
             rgn.dist[ind] = Integer.MAX_VALUE;
@@ -636,11 +662,6 @@ public class PropertyMap {
         }
     }
 
-    public List<Object> getCloseObjects(long id, boolean foot, int max_dist, int ind){
-
-
-        return null;
-    }
 
     void widthRecCalculateDistance(RoadGraphNode[] src, RoadGraphNode[] dest, final int max_dist, final int mode, final int put){
         RoadGraphNode[] temp;

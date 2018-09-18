@@ -62,38 +62,8 @@ public class CloseObjectsHandler implements ShittyHttpHandler{
             boolean foot = Boolean.parseBoolean(decoder.parameters().get("foot").get(0));
             int max_num = Integer.decode(decoder.parameters().get("max_num").get(0));
 
-            int ind;
-            propertyMap.cache.lock.lock();
-            long start = System.nanoTime();
-            CalculatedGraphKey key = new CalculatedGraphKey(id, foot, max_dist);
-            if (propertyMap.cache.loading.containsKey(key)){
-                ReentrantLock lk = propertyMap.cache.loading.get(key);
-                propertyMap.cache.lock.unlock();
-                lk.lock();
-                ind = propertyMap.cache.getCachedIndex(key);
-                lk.unlock();
-            }else{
-                if (propertyMap.cache.contains(key)) {
-                    ind = propertyMap.cache.getCachedIndex(key);
-                    propertyMap.cache.lock.unlock();
-                } else {
-                    ReentrantLock lk = new ReentrantLock();
-                    lk.lock();
-                    propertyMap.cache.loading.put(key, lk);
-                    propertyMap.cache.lock.unlock();
+            int ind = propertyMap.getCalculatedGraphIndex(id, foot, max_dist);
 
-                    ind = propertyMap.cache.getNewIndexForGraph(key);
-                    propertyMap.calcRoadGraph(id, foot, max_dist, ind);
-                    TimeMeasurer.printMeasure("Graph calculated in %t millis.", start);
-
-                    propertyMap.cache.lock.lock();
-                    propertyMap.cache.loading.remove(key);
-                    lk.unlock();
-                    propertyMap.cache.lock.unlock();
-
-                }
-
-            }
             JsonObject answer = new JsonObject();
 
             JsonArray values = new JsonArray();

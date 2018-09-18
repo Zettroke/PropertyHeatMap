@@ -35,7 +35,6 @@ public class Drawer {
                     System.loadLibrary("JNI-OpenGL-Drawer");
                     System.loadLibrary("JNI-CairoDrawer");
                     initOpenGLRenderer(PropertyMapServer.PROC_NUM);
-                    // OpenGL всегда фейлит первую картинку. Почему не знаю. Решено отрисовкой одной картинки.
                 /*int mx = 0;
                 for (RoadGraphNode rgn: PropertyMap.init_node.roadGraphNodes){
                     mx = Math.max(rgn.index, mx);
@@ -60,7 +59,7 @@ public class Drawer {
                     System.out.println("Cairo draw not available");
                     e.printStackTrace();
                     tempCairo = false;
-                    System.out.println("Все в порядке, cairo недоступен, поэтому будет использован рендер на java. Для повторной попытки загрузить cairo перезапустите сервер.");
+                    //System.out.println("Все в порядке, cairo недоступен, поэтому будет использован рендер на java. Для повторной попытки загрузить cairo перезапустите сервер.");
                     System.out.println("It's okay. Cairo not available, so using java render. If you want to try load cairo again restart server.");
 
                 }
