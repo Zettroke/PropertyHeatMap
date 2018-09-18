@@ -641,20 +641,19 @@ public class PropertyMap {
                         break;
                     }
                 }
-
             }
             if (found) {
                 break;
             }
         }
-        start.dist[ind] = 0;
-        RoadGraphNode[] src = new RoadGraphNode[roadGraph.size()];
-        RoadGraphNode[] res = new RoadGraphNode[roadGraph.size()];
-        src[0] = start;
-        if (test) {
+        if (start != null) {
+            start.dist[ind] = 0;
+            RoadGraphNode[] src = new RoadGraphNode[roadGraph.size()];
+            RoadGraphNode[] res = new RoadGraphNode[roadGraph.size()];
+            src[0] = start;
             widthRecCalculateDistance(src, res, max_dist, mode, ind);
-        }else {
-            recCalculateDistances(start, max_dist, mode, ind);
+        }else{
+            System.err.println("Doesn't found any road to calculate building");
         }
         //System.out.println("Graph Calculated!");
         if (!found) {
@@ -662,8 +661,7 @@ public class PropertyMap {
         }
     }
 
-
-    void widthRecCalculateDistance(RoadGraphNode[] src, RoadGraphNode[] dest, final int max_dist, final int mode, final int put){
+    private void widthRecCalculateDistance(RoadGraphNode[] src, RoadGraphNode[] dest, final int max_dist, final int mode, final int put){
         RoadGraphNode[] temp;
         RoadGraphNode rgn, to;
         int dist_to;
@@ -676,19 +674,6 @@ public class PropertyMap {
                     to = rgn.ref_to[mode][j];
                     dist_to = rgn.dist[put] + rgn.distancesTo[mode][j];
                     if (dist_to < to.dist[put]) {
-                        /*big_cnt++;
-                        BufferedImage image = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);
-                        Graphics2D g = (Graphics2D) image.getGraphics();
-                        drawGraph(g, 5000);
-                        int mult = (int) Math.pow(2, PropertyMap.default_zoom - 16);
-                        double cf = 1.0 / mult;
-                        g.setColor(new Color(0, 0, 240));
-                        g.setStroke(new BasicStroke(50f / mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                        g.drawLine(coef(rgn.n.x, cf), coef(rgn.n.y, cf), coef(to.n.x, cf), coef(to.n.y, cf));
-                        try {
-                            ImageIO.write(image, "png", new File(String.format("GraphCalcAnimationWidth/img%05d.png", cnt++)));
-                            System.out.println("Draw " + (cnt - 1)); } catch (Exception e) {
-                            e.printStackTrace(); }*/
                         to.dist[put] = dist_to;
                         if (dist_to <= max_dist) {
                             dest[dest_ind++] = to;
@@ -704,162 +689,8 @@ public class PropertyMap {
         }
     }
 
-    void drawGraph(Graphics2D g, int max_dist){
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        int z = 16;
-        int zoom_level = 13;
-        int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
-        int mode = 0;
-
-        BasicStroke secondary_stroke = new BasicStroke(65f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke primary_stroke = new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke tertiary_stroke = new BasicStroke(60f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke service_stroke = new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke residential_stroke = new BasicStroke(50f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke living_stroke = new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke default_stroke = new BasicStroke(20f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke unknown_stroke = new BasicStroke(10f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        double cf = 1.0/mult;
-        int offx = 0*mult*256;
-        int offy = 0*mult*256;
-        boolean dont_draw = false;
-        int lines = 0;
-        boolean[] visited = new boolean[roadGraph.size()];
-        g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        for (RoadGraphNode rgn : roadGraph.values()){
-            //if (treeNode.inBounds(rgn.n)){
-            visited[rgn.index] = true;
-            for (int i=0; i<rgn.ref_to[mode].length; i++){
-                RoadGraphNode ref = rgn.ref_to[mode][i];
-                if (!visited[ref.index]){
-                    switch (rgn.ref_types[mode][i]){
-                        case SECONDARY:
-                            if (z > zoom_level) {
-                                g.setStroke(secondary_stroke);
-                            }else{
-                                g.setStroke(new BasicStroke(120f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                            }
-                            break;
-                        case RESIDENTIAL:
-                            if (z > zoom_level) {
-                                g.setStroke(residential_stroke);
-                            }else{
-                                dont_draw = true;
-                            }
-                            break;
-                        case SERVICE:
-                            if (z > zoom_level) {
-                                g.setStroke(service_stroke);
-                            }else{
-                                dont_draw = true;
-                            }
-                            break;
-                        case TERTIARY:
-                            if (z > zoom_level) {
-                                g.setStroke(tertiary_stroke);
-                            }else{
-                                g.setStroke(tertiary_stroke);
-                                //dont_draw = true;
-                            }
-                            break;
-                        case PRIMARY:
-                            if (z > zoom_level) {
-                                g.setStroke(primary_stroke);
-                            }else{
-                                g.setStroke(new BasicStroke(120f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                            }
-                            break;
-                        case TRUNK:
-                            g.setStroke(new BasicStroke(80f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                            break;
-                        case DEFAULT:
-                            if (z > zoom_level) {
-                                g.setStroke(default_stroke);
-                            }else{
-                                dont_draw = true;
-                            }
-                            break;
-                        case LIVING_STREET:
-                            if (z > zoom_level) {
-                                g.setStroke(living_stroke);
-                            }else{
-                                dont_draw = true;
-                            }
-                            break;
-                        case SUBWAY:
-                            dont_draw = true;
-                            break;
-                        case TRAM:
-                            dont_draw = true;
-                            break;
-                        case BUS:
-                            dont_draw = true;
-                            break;
-                        case TROLLEYBUS:
-                            dont_draw = true;
-                            break;
-                        case INVISIBLE:
-                            dont_draw = true;
-                            break;
-                        default:
-                            if (z > zoom_level) {
-                                g.setStroke(unknown_stroke);
-                            }else{
-                                dont_draw = true;
-                            }
-                            break;
-                    }
-                    if (!dont_draw) {
-
-                        g.setPaint(new GradientPaint(coef(rgn.n.x - offx, cf), coef(rgn.n.y - offy, cf), rgn.getNodeColor(max_dist, 0),
-                                coef(ref.n.x - offx, cf), coef(ref.n.y - offy, cf), ref.getNodeColor(max_dist, 0)));
-                        g.drawLine(coef(rgn.n.x - offx, cf), coef(rgn.n.y - offy, cf), coef(ref.n.x - offx, cf), coef(ref.n.y - offy, cf));
-                        //lines++;
-                    }else{
-                        dont_draw = false;
-                    }
-                }
-            }
-
-        }
-    }
-
     public static int coef(int n, double cf){
         return (int)Math.round(cf*n);
-    }
-    int big_cnt = 0;
-    int cnt = 0;
-    void recCalculateDistances(RoadGraphNode rgn, final int max_dist, final int mode, final int put){
-        for (int i=0; i<rgn.ref_to[mode].length; i++){
-            RoadGraphNode to = rgn.ref_to[mode][i];
-
-            int dist = rgn.distancesTo[mode][i];
-            if (rgn.dist[put] + dist < to.dist[put]){
-                if (big_cnt % 60 == 0) {
-                    BufferedImage image = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);
-                    Graphics2D g = (Graphics2D) image.getGraphics();
-                    drawGraph(g, 5000);
-
-                    int mult = (int) Math.pow(2, PropertyMap.default_zoom - 16);
-                    double cf = 1.0 / mult;
-                    g.setColor(new Color(0, 0, 240));
-                    g.setStroke(new BasicStroke(50f / mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                    g.drawLine(coef(rgn.n.x, cf), coef(rgn.n.y, cf), coef(to.n.x, cf), coef(to.n.y, cf));
-                    try {
-                        ImageIO.write(image, "png", new File(String.format("GraphCalcAnimation/img%05d.png", cnt++)));
-                        System.out.println("Draw " + (cnt - 1));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                big_cnt++;
-                to.dist[put] = rgn.dist[put] + dist;
-                if (to.dist[put] <= max_dist) {
-                    recCalculateDistances(to, max_dist, mode, put);
-                }
-            }
-        }
     }
 
 

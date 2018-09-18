@@ -206,10 +206,10 @@ void RenderFunction(int v)
 		
 		glBegin(GL_LINES);
 		getNodeColor(r, g, b, dist1, max_dist);
-		glColor4f(r, g, b, 0.8f);
+		glColor4f(r, g, b, 1.0f);
 		glVertex2f(dx1, dy1);
 		getNodeColor(r, g, b, dist2, max_dist);
-		glColor4f(r, g, b, 0.8f);
+		glColor4f(r, g, b, 1.0f);
 		glVertex2f(dx2, dy2);
 
 		glEnd();
@@ -227,15 +227,15 @@ void RenderFunction(int v)
 	glReadBuffer(GL_COLOR_ATTACHMENT1);
 
 	glReadPixels(0, 0, 256, 256, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	/*for (int i = 0; i < 256; i++) {
+	for (int i = 0; i < 256; i++) {
 		for (int j = 0; j < 256; j++) {
 			unsigned char* curr = data + (i * 256 + j) * 4;
-			//curr[0] = curr[0] * 9 / 8;
-			//curr[1] = curr[1] * 9 / 8;
-			//curr[2] = curr[2] * 9 / 8;
-			curr[3] = curr[3] * 15 / 16;
+			curr[0] = curr[0] * 7 / 8;
+			curr[1] = curr[1] * 7 / 8;
+			curr[2] = curr[2] * 7 / 8;
+			curr[3] = curr[3] * 7 / 8;
 		}
-	}*/
+	}
 }
 
 void start_up(int v) {

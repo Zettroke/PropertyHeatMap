@@ -81,9 +81,6 @@ public class TestPolygonClipping {
         }
 
         g.setColor(new Color(255, 0, 0));
-        for (MapPoint point: QuadTreeNode.intersec_debug){
-            g.fillRect(point.x-2, point.y-2, 4, 4);
-        }
 
         //g.setStroke(new BasicStroke(2));
         //g.setColor(new Color(255, 0, 0));
