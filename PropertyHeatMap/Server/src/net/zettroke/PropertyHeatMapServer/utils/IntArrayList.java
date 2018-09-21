@@ -10,9 +10,6 @@ public class IntArrayList implements Iterable<Integer>{
     private int size = 0;
 
     public void add(int i){
-        if (size > 10000){
-            //System.out.println();
-        }
         if (size < container.length){
             container[size] = i;
         }else{

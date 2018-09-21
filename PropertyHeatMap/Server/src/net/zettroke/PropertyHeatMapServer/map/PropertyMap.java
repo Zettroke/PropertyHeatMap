@@ -222,37 +222,6 @@ public class PropertyMap {
                 }
             }
             init_roadGraphLines();
-            /*for (RoadGraphNode rgn: roadGraph.values()){
-                rgn.dist[0] = Integer.MAX_VALUE;
-            }
-            RoadGraphNode st = roadGraph.get(256021027L);
-            st.dist[0] = 0;
-            RoadGraphNode[] src = new RoadGraphNode[roadGraph.size()];
-            RoadGraphNode[] dst = new RoadGraphNode[roadGraph.size()];
-            src[0] = st;
-            start_node = st;
-            widthRecCalculateDistance(src, dst,5000, 0, 0);
-            System.out.println(big_cnt);
-            BufferedImage image = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g = (Graphics2D)image.getGraphics();
-            g.setColor(new Color(0, 0, 0 ,0));
-            g.fillRect(0, 0, 1024, 1024);
-            drawGraph(g, 5000);
-            ImageIO.write(image, "png", new File("skak.png"));
-
-            //int mult = (int) Math.pow(2, PropertyMap.default_zoom - 16);
-            //double cf = 1.0 / mult;
-            //BufferedImage image2 = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);
-            //Graphics2D g2 = (Graphics2D) image2.getGraphics();
-            ////g.setColor(new Color(255, 0, 0, 255));
-            ////g2.fillRect(0 ,0, 1024, 1024);
-            //g2.setColor(new Color(255, 0, 0));
-            //g2.setStroke(new BasicStroke(50f / mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            //g2.drawRect(coef(start_node.n.x, cf)-20, coef(start_node.n.y, cf)-20, 40, 40);
-            //g2.fillRect(coef(start_node.n.x, cf)-10, coef(start_node.n.y, cf)-10, 20, 20);
-            //ImageIO.write(image2, "png", new File("start_overlay.png"));
-            System.exit(0);*/
-            //init_node = treeNode;
             System.gc();
         }catch (Exception e){
             System.err.println("PropertyMapInit Failed!!!");
@@ -272,6 +241,9 @@ public class PropertyMap {
         }
     }
 
+    /**
+     * Magic to pull out public transport routes from osm data.
+     */
     private void public_transport_init(){
         int cnt = 0;
         System.out.println(relations.size());
@@ -654,10 +626,6 @@ public class PropertyMap {
             widthRecCalculateDistance(src, res, max_dist, mode, ind);
         }else{
             System.err.println("Doesn't found any road to calculate building");
-        }
-        //System.out.println("Graph Calculated!");
-        if (!found) {
-            System.err.println("Doesnt found close road to building");
         }
     }
 
