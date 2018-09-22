@@ -99,9 +99,7 @@ public class PropertyMap {
         return new double[]{lon, lat};
     }
 
-    public PropertyMap() {
-
-    }
+    public PropertyMap() {}
 
     class ParallelInitThread extends Thread{
 
@@ -130,14 +128,6 @@ public class PropertyMap {
                 }
                 cnt++;
             }
-        }
-    }
-
-    boolean canCovertToSimpleNode(Node n){
-        if (!Collections.disjoint(n.data.keySet(), keysInfrastructureObject)){
-            return !(!n.data.containsKey("amenity") || (n.data.containsKey("amenity") && available_amenity.contains(n.data.get("amenity"))));
-        }else{
-            return !rgnBuilder.isRGN(n);
         }
     }
 

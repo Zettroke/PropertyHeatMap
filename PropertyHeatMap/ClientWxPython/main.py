@@ -7,11 +7,11 @@ from threading import Thread, Lock, current_thread, Condition
 import json
 import time
 import sys
+import math
 
 
+center = (37.699584961, 55.754940702)
 # temp
-global_off_x = 617
-global_off_y = 318
 
 
 server_address = "127.0.0.1"
@@ -29,6 +29,17 @@ EVT_REFRESH = wx.NewId()
 mx_dist = 18000
 mx_dist_stuff = 6000
 
+
+def mercator(lon, lat, z):
+    return round((2**(z-1)/math.pi)*(math.radians(lon)+math.pi)),\
+           round((2**(z-1)/math.pi)*(math.pi-math.log(math.tan(math.radians(lat)/2+math.pi/4))))
+
+
+def inverse_mercator(x, y, z):
+    return math.degrees(x/(2**(z-1)/math.pi) - math.pi), \
+           math.degrees(-(2*math.atan(math.exp(y/(2 ** (z - 1) / math.pi) - math.pi)) - math.pi/2))
+
+
 if not ip_set_manually:
     try:
         data = requests.get("https://pastebin.com/raw/jkUmzJZ0", timeout=2).text
@@ -44,7 +55,7 @@ base_server_url = "http://" + server_address + "/"
 map_tiles_url = "http://" + server_address + "/image/z{z}/{x}.{y}.png"
 price_tiles_url = "http://" + server_address + "/api/tile/price?z={z}&x={x}&y={y}&price={price}&range={range}"
 road_tiles_url = "http://" + server_address + "/api/tile/road?z={z}&x={x}&y={y}&start_id={start_id}&max_dist={max_dist}&foot={foot}"
-point_search_url = "http://" + server_address + "/api/search/point?z={z}&x={x}&y={y}"
+point_search_url = "http://" + server_address + "/api/search/point?lon={lon}&lat={lat}"
 suggestion_url = "http://" + server_address + "/api/search/predict?text={}&suggestions=10"
 close_things_url = "http://" + server_address + "/api/search/close_objects?id={id}&max_dist={max_dist}&foot={foot}&max_num={max_num}"
 
@@ -111,21 +122,22 @@ class Map(wx.Panel):
         self.Bind(wx.EVT_MOUSEWHEEL, self.zoom_method)
         self.Bind(wx.EVT_CLOSE, self.Destroy)
 
+        self.zoom = 16
+        self.available_zoom_levels = tuple(map(int, requests.get(base_server_url + "image/zoom_levels").text.split()))
         self.moved = False
         self.Show()
-        self.map_x, self.map_y = 0, 0
+        self.map_x, self.map_y = mercator(*center, self.zoom+8)
         self.last_pos = (0, 0)
         self.bitmaps = {}
         self.pressed = False
+
         img = Image.new("RGB", (256, 256), 0xCCCCCC)
         dr = ImageDraw.ImageDraw(img)
         for i in range(0, 257, 64):
             dr.line((0, i, 256, i), 0xDDDDDD, 1)
             dr.line((i, 0, i, 256), 0xDDDDDD, 1)
         self.missing_image = wx.Bitmap.FromBuffer(256, 256, img.tobytes())
-        self.zoom = 16
-        self.available_zoom_levels = tuple(map(int, requests.get(base_server_url + "image/zoom_levels").text.split()))
-        self.bounds = tuple(map(int, requests.get(base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
+
         self.tile_queue = queue.PriorityQueue()
         self.Connect(-1, -1, EVT_REFRESH, self.my_refresh)
         self.loader_lock = Lock()
@@ -145,21 +157,17 @@ class Map(wx.Panel):
 
     def request_location(self, x, y):
         print("request")
-        ans = json.loads(requests.get(point_search_url.format(x=x, y=y, z=self.zoom)).text, encoding="utf-8")
+        lon, lat = inverse_mercator(x, y, self.zoom+8)
+        ans = json.loads(requests.get(point_search_url.format(lon=lon, lat=lat)).text, encoding="utf-8")
         if ans["status"] == "success":
             
             if ans["objects"][0]["id"] not in self.shapes_dict:
                 print(ans["objects"][0]["id"])
                 stuff_close = json.loads(requests.get(close_things_url.format(id=ans["objects"][0]["id"], max_dist=mx_dist_stuff, max_num=300, foot=True)).text, encoding="utf-8")
                 # print(json.dumps(ans, ensure_ascii=False, indent=2))
-                max_x, max_y = 0, 0
-                min_x, min_y = 2 ** 32 - 1, 2 ** 32 - 1
-                for p in ans["objects"][0]["points"]:
-                    max_x, max_y = max(max_x, p[0]), max(max_y, p[1])
-                    min_x, min_y = min(min_x, p[0]), min(min_y, p[1])
 
                 self.shapes_dict.clear()
-                self.shapes_dict[ans["objects"][0]["id"]] = ([min_x, min_y, max_x, max_y], ans["objects"][0]["points"])
+                self.shapes_dict[ans["objects"][0]["id"]] = (ans["objects"][0]["points"])
                 self.render_shapes_to_bitmaps()
                 self.road_turn_on = True
                 self.price_turn_on = False
@@ -193,22 +201,30 @@ class Map(wx.Panel):
             self.Refresh()
 
     def render_shapes_to_bitmaps(self):
+        AAmult = 2**2
         self.shapes_images.clear()
         for k, v in self.shapes_dict.items():
-            AAmult = 4
-            mult = 2 ** (self.server_zoom - self.zoom) // AAmult
-            real_mult = 2 ** (self.server_zoom - self.zoom)
-            bounds = v[0]
+            points = []
+            bounds = [2 ** 32, 2 ** 32, 0, 0]
+            for i in v:
+                p = mercator(i[1], i[0], self.zoom+8)
+                p = [p[0]*AAmult, p[1]*AAmult]
+                bounds[0] = min(bounds[0], p[0])
+                bounds[1] = min(bounds[1], p[1])
+                bounds[2] = max(bounds[2], p[0])
+                bounds[3] = max(bounds[3], p[1])
+                points.append(p)
+                
             bounds[0] -= AAmult*2
             bounds[1] -= AAmult*2
             bounds[2] += AAmult*2
             bounds[3] += AAmult*2
             shape = Image.new("RGBA", (bounds[2] - bounds[0], bounds[3] - bounds[1]), 0x00FFFFFF)
             draw = ImageDraw.ImageDraw(shape)
-            x, y = v[1][0][0] // mult - bounds[0]//mult, v[1][0][1] // mult - bounds[1]//mult
+            x, y = points[0][0] - bounds[0], points[0][1] - bounds[1]
             poly = [x, y]
-            for p in v[1]:
-                x1, y1 = round(p[0] / mult - bounds[0]/mult), round(p[1] / mult - bounds[1]/mult)
+            for p in points:
+                x1, y1 = round(p[0] - bounds[0]), round(p[1] - bounds[1])
                 poly.append(x1)
                 poly.append(y1)
                 draw.line((x, y, x1, y1), fill=0xFF0000FF, width=round(AAmult*2))
@@ -216,9 +232,9 @@ class Map(wx.Panel):
             draw.polygon(poly, fill=0x550000FF)
             shape = shape.resize((shape.size[0] // AAmult, shape.size[1] // AAmult), Image.ANTIALIAS)
             # self.shapes_bitmaps[k] = wx.Bitmap.FromBufferRGBA(shape.size[0], shape.size[1], shape.tobytes())
-            for x in range(v[0][0]//real_mult//256, v[0][2]//real_mult//256+1):
-                for y in range(v[0][1]//real_mult//256, v[0][3]//real_mult//256+1):
-                    self.shapes_images[(x, y)] = ((v[0][0]//real_mult, v[0][1]//real_mult), shape)
+            for x in range(bounds[0]//AAmult//256, bounds[2]//AAmult//256+1):
+                for y in range(bounds[1]//AAmult//256, bounds[3]//AAmult//256+1):
+                    self.shapes_images[(x, y)] = ((bounds[0]//AAmult, bounds[1]//AAmult), shape)
                     self.bitmaps_to_update.add((x, y))
 
     def out_of_window(self, event):
@@ -287,7 +303,6 @@ class Map(wx.Panel):
                 self.zoom -= 1
                 self.map_x = self.map_x // 2 - event.GetPosition()[0] // 2
                 self.map_y = self.map_y // 2 - event.GetPosition()[1] // 2
-            self.bounds = tuple(map(int, requests.get(base_server_url + "image/z" + str(self.zoom) + "/config", "r").text.split()))
 
             self.bitmaps.clear()
             while not self.tile_queue.empty():
@@ -317,48 +332,43 @@ class Map(wx.Panel):
         for x in range(self.map_x//256*256, ((self.map_x+w)//256+1)*256+1, 256):
             for y in range(self.map_y//256*256, ((self.map_y+h)//256+1)*256+1, 256):
                 x2, y2 = x//256, y//256
-                if 0 <= x2 < self.bounds[0] and 0 <= y2 < self.bounds[1]:
-                    if (x2, y2) in self.bitmaps.keys():
-                        if (x2, y2) in self.bitmaps_to_update:
-                            if (x2, y2) in self.tiles_dict.keys():
-                                image_base = self.tiles_dict[(x2, y2)].copy()
-                                if self.price_turn_on:
-                                    if (x2, y2) in self.price_tiles_dict.keys():
-                                        image_base = Image.alpha_composite(image_base, self.price_tiles_dict[(x2, y2)])
-                                if self.road_turn_on:
-                                    if (x2, y2) in self.road_tiles_dict.keys():
-                                        image_base = Image.alpha_composite(image_base, self.road_tiles_dict[(x2, y2)])
-                                if (x2, y2) in self.shapes_images.keys():
-                                    x3 = self.shapes_images[(x2, y2)][0][0] - x2*256
-                                    y3 = self.shapes_images[(x2, y2)][0][1] - y2*256
-                                    img = self.shapes_images[(x2, y2)][1]
-                                    wi = img.size[0]
-                                    hi = img.size[1]
-                                    if x3 > 0 and y3 > 0:
-                                        image_base.alpha_composite(img, (x3, y3))
-                                    else:
-                                        to_compose = img.crop((x2*256-self.shapes_images[(x2, y2)][0][0], y2*256-self.shapes_images[(x2, y2)][0][1], wi, hi))
-                                        image_base.alpha_composite(to_compose, (0, 0))
-                                image_base = image_base.convert("RGB")
-                                self.bitmaps[(x2, y2)] = wx.Bitmap.FromBuffer(256, 256, image_base.tobytes())
-                                self.bitmaps_to_update.remove((x2, y2))
-                    else:
-                        dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
-                        self.bitmaps[(x2, y2)] = self.missing_image
-                        self.tile_queue.put(LoadTask(map_tiles_url, dist, (x2, y2), self.tiles_dict, x=x2+global_off_x*2**(self.zoom-10), y=y2+global_off_y*2**(self.zoom-10), z=self.zoom))
-                        self.already_updated_bitmaps.add((x2, y2))
-                        if self.price_turn_on:
-                            self.tile_queue.put(
-                                LoadTask(price_tiles_url, dist + 1, (x2, y2), self.price_tiles_dict, x=x2, y=y2, z=self.zoom, price=self.price,
-                                         range=self.p_range))
-                        if self.road_turn_on:
-
-                            self.tile_queue.put(
-                                LoadTask(road_tiles_url, dist + 20000, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id,
-                                         max_dist=mx_dist, foot=self.foot))
+                if (x2, y2) in self.bitmaps.keys():
+                    if (x2, y2) in self.bitmaps_to_update:
+                        if (x2, y2) in self.tiles_dict.keys():
+                            image_base = self.tiles_dict[(x2, y2)].copy()
+                            if self.price_turn_on:
+                                if (x2, y2) in self.price_tiles_dict.keys():
+                                    image_base = Image.alpha_composite(image_base, self.price_tiles_dict[(x2, y2)])
+                            if self.road_turn_on:
+                                if (x2, y2) in self.road_tiles_dict.keys():
+                                    image_base = Image.alpha_composite(image_base, self.road_tiles_dict[(x2, y2)])
+                            if (x2, y2) in self.shapes_images.keys():
+                                x3 = self.shapes_images[(x2, y2)][0][0] - x2*256
+                                y3 = self.shapes_images[(x2, y2)][0][1] - y2*256
+                                img = self.shapes_images[(x2, y2)][1]
+                                wi = img.size[0]
+                                hi = img.size[1]
+                                if x3 > 0 and y3 > 0:
+                                    image_base.alpha_composite(img, (x3, y3))
+                                else:
+                                    to_compose = img.crop((x2*256-self.shapes_images[(x2, y2)][0][0], y2*256-self.shapes_images[(x2, y2)][0][1], wi, hi))
+                                    image_base.alpha_composite(to_compose, (0, 0))
+                            image_base = image_base.convert("RGB")
+                            self.bitmaps[(x2, y2)] = wx.Bitmap.FromBuffer(256, 256, image_base.tobytes())
+                            self.bitmaps_to_update.remove((x2, y2))
                 else:
-                    self.bitmaps[(x // 256, y // 256)] = self.missing_image
-
+                    dist = (self.map_x + self.GetSize()[0] // 2 - x) ** 2 + (self.map_y + self.GetSize()[1] // 2 - y) ** 2
+                    self.bitmaps[(x2, y2)] = self.missing_image
+                    self.tile_queue.put(LoadTask(map_tiles_url, dist, (x2, y2), self.tiles_dict, x=x2, y=y2, z=self.zoom))
+                    self.already_updated_bitmaps.add((x2, y2))
+                    if self.price_turn_on:
+                        self.tile_queue.put(
+                            LoadTask(price_tiles_url, dist + 1, (x2, y2), self.price_tiles_dict, x=x2, y=y2, z=self.zoom, price=self.price,
+                                     range=self.p_range))
+                    if self.road_turn_on:
+                        self.tile_queue.put(
+                            LoadTask(road_tiles_url, dist + 20000, (x2, y2), self.road_tiles_dict, x=x2, y=y2, z=self.zoom, start_id=self.current_id,
+                                     max_dist=mx_dist, foot=self.foot))
                 dc.DrawBitmap(self.bitmaps[(x2, y2)], x - self.map_x, y - self.map_y)
 
         self.loader_lock.release()

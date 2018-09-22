@@ -13,7 +13,6 @@ public class PathRouter {
     private ShittyHttpHandler handler = null;
     private static ShittyHttpHandler error_handler = null;
 
-    public static PropertyMap propertyMap;
 
     private void addPath(ShittyHttpHandler handler){
         String path = handler.getPath();

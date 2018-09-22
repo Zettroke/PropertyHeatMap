@@ -10,7 +10,7 @@ import net.zettroke.PropertyHeatMapServer.map.Way;
 import java.util.Map;
 
 public class Jsonizer {
-    public static JsonObject toJson(Way way, boolean points, boolean latlon) {
+    public static JsonObject toJson(Way way, boolean points) {
         JsonObject answer = new JsonObject();
         JsonObject data = new JsonObject();
         for (Map.Entry<String, String> p : way.data.entrySet()) {
@@ -22,14 +22,10 @@ public class Jsonizer {
             JsonArray pointsArr = new JsonArray();
             for (MapPoint p : way.nodes) {
                 JsonArray point = new JsonArray();
-                if (!latlon) {
-                    point.add(p.x);
-                    point.add(p.y);
-                }else{
-                    double[] ltln = PropertyMap.inverse_mercator(p.x, p.y);
-                    point.add(ltln[1]);
-                    point.add(ltln[0]);
-                }
+                double[] ltln = PropertyMap.inverse_mercator(p.x, p.y);
+                point.add(ltln[1]);
+                point.add(ltln[0]);
+
                 pointsArr.add(point);
             }
             answer.add("points", pointsArr);
@@ -49,18 +45,11 @@ public class Jsonizer {
         }
         answer.add("data", data);
         MapPoint center = way.getCenter();
-        if (latlon){
-            double[] c = PropertyMap.inverse_mercator(center.x, center.y);
-            answer.add("center", new JsonArray().add(c[1]).add(c[0]));
-        }else {
-            answer.add("center", new JsonArray().add(center.x).add(center.y));
-        }
 
+        double[] c = PropertyMap.inverse_mercator(center.x, center.y);
+        answer.add("center", new JsonArray().add(c[1]).add(c[0]));
 
         return answer;
-    }
-    public static JsonObject toJson(Way way, boolean points){
-        return toJson(way, points, false);
     }
 
     public static JsonObject toJson(Node n){

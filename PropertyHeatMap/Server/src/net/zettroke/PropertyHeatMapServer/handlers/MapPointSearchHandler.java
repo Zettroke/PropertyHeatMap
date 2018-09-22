@@ -24,13 +24,8 @@ public class MapPointSearchHandler implements ShittyHttpHandler {
         @Override
         protected ParamsChecker initialValue() {
             return new ParamsChecker()
-                    .or(new ParamsChecker()
-                            .addParam("x").type(ParamsChecker.IntegerType).finish()
-                            .addParam("y").type(ParamsChecker.IntegerType).finish()
-                            .addParam("z").type(ParamsChecker.IntegerType).finish())
-                    .or(new ParamsChecker()
                             .addParam("lat").type(ParamsChecker.DoubleType).finish()
-                            .addParam("lon").type(ParamsChecker.DoubleType).finish());
+                            .addParam("lon").type(ParamsChecker.DoubleType).finish();
         }
     };
 
@@ -46,30 +41,18 @@ public class MapPointSearchHandler implements ShittyHttpHandler {
         if (checker.isValid(decoder)) {
             int x;
             int y;
-            boolean latlon = false;
-            if (decoder.parameters().containsKey("lat") && decoder.parameters().containsKey("lon")){
-                double lat = Double.parseDouble(decoder.parameters().get("lat").get(0));
-                double lon = Double.parseDouble(decoder.parameters().get("lon").get(0));
-                int[] xy =  PropertyMap.mercator(lon, lat);
-                x = xy[0]; y = xy[1];
-                latlon = true;
-            }else {
-                int z = Integer.decode(decoder.parameters().get("z").get(0));
-                int mult = (int) Math.pow(2, PropertyMap.default_zoom - z);
-                x = mult * Integer.decode(decoder.parameters().get("x").get(0));
-                y = mult * Integer.decode(decoder.parameters().get("y").get(0));
-            }
+            double lat = Double.parseDouble(decoder.parameters().get("lat").get(0));
+            double lon = Double.parseDouble(decoder.parameters().get("lon").get(0));
+            int[] xy =  PropertyMap.mercator(lon, lat);
+            x = xy[0]; y = xy[1];
             JsonObject answer = new JsonObject();
             Way w = propertyMap.findShapeByPoint(new MapPoint(x, y));
             if (w != null) {
                 answer.add("status", "success");
 
                 JsonArray arr = new JsonArray();
-                if (!latlon) {
-                    arr.add(Jsonizer.toJson(w, true));
-                }else{
-                    arr.add(Jsonizer.toJson(w, true, true));
-                }
+                arr.add(Jsonizer.toJson(w, true));
+
                 answer.add("objects", arr);
 
             } else {
