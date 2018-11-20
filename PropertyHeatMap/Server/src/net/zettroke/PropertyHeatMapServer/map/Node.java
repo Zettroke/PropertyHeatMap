@@ -22,13 +22,13 @@ public class Node extends SimpleNode{
     public Node(MapPoint p, PropertyMap context){
         x = p.x;
         y = p.y;
-        double[] coords = context.inverse_mercator(x, y);
+        double[] coords = PropertyMap.inverse_mercator(x, y);
         lon = coords[0];
         lat = coords[1];
     }
 
-    public Node(SimpleNode n, PropertyMap context){
-        double[] crds = context.inverse_mercator(n.x, n.y);
+    public Node(SimpleNode n){
+        double[] crds = PropertyMap.inverse_mercator(n.x, n.y);
         lon = crds[0];
         lat = crds[1];
         x = n.x;

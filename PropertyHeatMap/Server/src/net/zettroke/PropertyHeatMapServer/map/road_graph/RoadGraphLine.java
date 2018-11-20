@@ -1,4 +1,4 @@
-package net.zettroke.PropertyHeatMapServer.map.roadGraph;
+package net.zettroke.PropertyHeatMapServer.map.road_graph;
 
 import net.zettroke.PropertyHeatMapServer.map.RoadType;
 

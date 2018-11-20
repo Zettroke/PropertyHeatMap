@@ -1,7 +1,7 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
 
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
+import net.zettroke.PropertyHeatMapServer.map.road_graph.RoadGraphBuilder;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -64,35 +64,32 @@ public class MapLoaderOSM implements MapLoader{
     }
 
     @Override
-    public HashMap<Long, Node> getNodes() {
+    public Map<Long, Node> getNodes() {
         return nodes;
     }
 
     @Override
-    public ArrayList<SimpleNode> getSimpleNodes() {
+    public List<SimpleNode> getSimpleNodes() {
         return simpleNodes;
     }
 
     @Override
-    public HashMap<Long, Relation> getRelations() {
+    public Map<Long, Relation> getRelations() {
         return relations;
     }
 
     @Override
-    public HashMap<Long, Way> getWays() {
+    public Map<Long, Way> getWays() {
         return ways;
     }
 
     @Override
-    public HashMap<String, Way> getSearchStrings() throws Exception {
+    public Map<String, Way> getSearchStrings() throws Exception {
         return searchStrings;
     }
 
     @Override
     public void load(RoadGraphBuilder builder) throws XMLStreamException, FileNotFoundException{
-
-
-
 
         Deduplicator dedup = new Deduplicator();
 

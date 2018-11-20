@@ -11,8 +11,6 @@ import math
 
 
 center = (37.699584961, 55.754940702)
-# temp
-
 
 server_address = "127.0.0.1"
 ip_set_manually = False
@@ -23,7 +21,6 @@ if len(sys.argv) > 1:
         server_address = sys.argv[ind+1]
         print("ip set manually to " + server_address)
 
-# 2k18 yaaaay
 
 EVT_REFRESH = wx.NewId()
 mx_dist = 18000
@@ -414,9 +411,6 @@ class Completer(wx.TextCompleterSimple):
         self.ind = 0
         self.app = app
 
-    def GetCompletions(self, prefix, res):
-        pass
-
     def Start(self, prefix):
         self.ind = 0
         s = self.app.search_entry.GetValue()
@@ -434,6 +428,7 @@ class Completer(wx.TextCompleterSimple):
 
 
 class PropertyHeatMap(wx.Frame):
+
     def __init__(self):
         super().__init__(None)
         self.panel = wx.Panel(self)
@@ -464,7 +459,6 @@ class PropertyHeatMap(wx.Frame):
         # self.close_things_panel.Hide()
 
         self.UiInit()
-
 
     def UiInit(self):
         self.SetTitle('PropertyHeatMap')

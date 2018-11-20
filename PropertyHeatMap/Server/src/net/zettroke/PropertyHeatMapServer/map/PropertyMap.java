@@ -4,16 +4,12 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.Loader;
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphLine;
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
+import net.zettroke.PropertyHeatMapServer.map.road_graph.RoadGraphBuilder;
+import net.zettroke.PropertyHeatMapServer.map.road_graph.RoadGraphLine;
+import net.zettroke.PropertyHeatMapServer.map.road_graph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.*;
 
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
@@ -35,8 +31,8 @@ public class PropertyMap {
     public static int cache_size = 10;
     public static int MAP_RESOLUTION = (int)Math.pow(2, default_zoom)*256; //(2**19)*256 = 2**27
     private final static HashSet<String> supportedRoutes = new HashSet<>(Arrays.asList("subway", "tram", "trolleybus", "bus"));
-    public final static HashSet<String> keysInfrastructureObject = new HashSet<>(Arrays.asList("shop", "amenity", "craft"));
-    final static HashSet<String> available_amenity = new HashSet<>(Arrays.asList("pharmacy", "kindergarten", "post_office", "police", "library", "clinic",
+    private final static HashSet<String> keysInfrastructureObject = new HashSet<>(Arrays.asList("shop", "amenity", "craft"));
+    private final static HashSet<String> available_amenity = new HashSet<>(Arrays.asList("pharmacy", "kindergarten", "post_office", "police", "library", "clinic",
             "veterinary", "dentist", "bank", "atm", "cafe"));
 
     // Speed in meters per 0.1 seconds.
@@ -56,11 +52,11 @@ public class PropertyMap {
     public StringPredictor predictor = new StringPredictor();
     public HashMap<String, Way> searchMap = new HashMap<>();
 
-    ArrayList<SimpleNode> simpleNodes = new ArrayList<>();
+    List<SimpleNode> simpleNodes = new ArrayList<>();
 
-    public HashMap<Long, Node> nodes = new HashMap<>();
-    public HashMap<Long, Way> ways = new HashMap<>();
-    public HashMap<Long, Relation> relations = new HashMap<>();
+    public Map<Long, Node> nodes = new HashMap<>();
+    public Map<Long, Way> ways = new HashMap<>();
+    public Map<Long, Relation> relations = new HashMap<>();
 
     // Что бы каждый раз при запросе инфраструктуры не нужно было искать бижайшие ноды, я нахожу их во время инициализации.
     public HashMap<Long, RoadGraphNode[]> infrastructure_connections = new HashMap<>();
@@ -88,14 +84,14 @@ public class PropertyMap {
      * @return int array with x and y coordinates in it
      */
     public static int[] mercator(double lon, double lat){
-        int x = (int)Math.round(MAP_RESOLUTION/2/Math.PI*(Math.toRadians(lon)+Math.PI));
-        int y = (int)Math.round(MAP_RESOLUTION/2/Math.PI*(Math.PI-Math.log(Math.tan(Math.toRadians(lat)/2+Math.PI/4))));
+        int x = (int)Math.round(MAP_RESOLUTION/2d/Math.PI*(Math.toRadians(lon)+Math.PI));
+        int y = (int)Math.round(MAP_RESOLUTION/2d/Math.PI*(Math.PI-Math.log(Math.tan(Math.toRadians(lat)/2+Math.PI/4))));
         return new int[]{x, y};
     }
 
     public static double[] inverse_mercator(double x, double y){
-        double lon = Math.toDegrees((x)/(MAP_RESOLUTION/2/Math.PI) - Math.PI);
-        double lat = Math.toDegrees(-(2*Math.atan(Math.exp((y)/(MAP_RESOLUTION/2/Math.PI) - Math.PI)) - Math.PI/2));
+        double lon = Math.toDegrees((x)/(MAP_RESOLUTION/2d/Math.PI) - Math.PI);
+        double lat = Math.toDegrees(-(2*Math.atan(Math.exp((y)/(MAP_RESOLUTION/2d/Math.PI) - Math.PI)) - Math.PI/2));
         return new double[]{lon, lat};
     }
 
@@ -119,14 +115,10 @@ public class PropertyMap {
                     t.add(n);
                 }
             }
-            //System.out.println(getName() + " Done with nodes!");
-            //int cnt = 0;
-            int cnt = 0;
             for (Way w: ways.values()){
                 if (w.data.containsKey("building") || w.data.containsKey("highway")){// || ways.get(i).data.containsKey("railway")) {
                     t.add(new MapShape(w));
                 }
-                cnt++;
             }
         }
     }
@@ -404,7 +396,7 @@ public class PropertyMap {
                 }
                 int dist = 0;
                 for (int i=start_ind; i < way.nodes.size(); i++){
-                    dist += Math.round(calculateDistance(new Node(prev_simple_node, this), new Node(way.nodes.get(i), this))/divider);
+                    dist += Math.round(calculateDistance(new Node(prev_simple_node), new Node(way.nodes.get(i)))/divider);
                     if (way.nodes.get(i) instanceof Node){
                         Node n = (Node) way.nodes.get(i);
                         if (n.publicTransportStop){
@@ -549,10 +541,10 @@ public class PropertyMap {
     }
     
     public int getCalculatedGraphIndex(long start_id, boolean foot, int max_dist){
-        cache.lock.lock();
         int res = 0;
         CalculatedGraphKey key = new CalculatedGraphKey(start_id, foot, max_dist);
 
+        cache.lock.lock();
         if (cache.loading.containsKey(key)){
             ReentrantLock lk = cache.loading.get(key);
             cache.lock.unlock();
@@ -576,9 +568,7 @@ public class PropertyMap {
                 cache.loading.remove(key);
                 lk.unlock();
                 cache.lock.unlock();
-
             }
-
         }
 
         return res;
@@ -650,8 +640,6 @@ public class PropertyMap {
     public static int coef(int n, double cf){
         return (int)Math.round(cf*n);
     }
-
-
 
 
 }

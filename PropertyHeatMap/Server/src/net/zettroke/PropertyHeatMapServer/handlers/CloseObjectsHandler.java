@@ -8,17 +8,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import net.zettroke.PropertyHeatMapServer.map.Node;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
-import net.zettroke.PropertyHeatMapServer.utils.CalculatedGraphKey;
+import net.zettroke.PropertyHeatMapServer.map.road_graph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.Jsonizer;
 import net.zettroke.PropertyHeatMapServer.utils.ParamsChecker;
-import net.zettroke.PropertyHeatMapServer.utils.TimeMeasurer;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class CloseObjectsHandler implements ShittyHttpHandler{
 

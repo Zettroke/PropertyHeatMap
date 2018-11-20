@@ -36,7 +36,6 @@ public class StringPredictHandler implements ShittyHttpHandler{
         if (checker.isValid(decoder)) {
             String req = decoder.parameters().get("text").get(0);
             int num = Integer.parseInt(decoder.parameters().get("suggestions").get(0));
-            //Way w = propertyMap.predictor.get(req);
             JsonObject obj = new JsonObject();
             ArrayList<String> preds = propertyMap.predictor.predict(req, num);
 
@@ -49,7 +48,6 @@ public class StringPredictHandler implements ShittyHttpHandler{
             obj.add("suggestions", suggesitons);
             //}
             ByteBuf buf = ctx.alloc().buffer().writeBytes(obj.toString().getBytes(Charset.forName("utf-8")));
-            //System.out.println("handled string search");
             DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
             response.headers().set("content-type", "text/json; charset=UTF-8");
             ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);

@@ -1,7 +1,7 @@
 package net.zettroke.PropertyHeatMapServer.utils;
 
 
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
+import net.zettroke.PropertyHeatMapServer.map.road_graph.RoadGraphNode;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -9,7 +9,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class CalculatedGraphCache {
 
     public ReentrantLock lock = new ReentrantLock();
-    public ReentrantLock calculationLock = new ReentrantLock();
     public HashMap<CalculatedGraphKey, ReentrantLock> loading= new HashMap<>();
     HashMap<Long, RoadGraphNode> roadGraph;
     LinkedHashMap<CalculatedGraphKey, Integer> cached = new LinkedHashMap<CalculatedGraphKey, Integer>(){

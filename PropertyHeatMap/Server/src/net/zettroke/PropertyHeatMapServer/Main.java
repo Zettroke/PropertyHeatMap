@@ -14,10 +14,6 @@ import javax.imageio.ImageIO;
 
 public class Main {
 
-    enum EN{
-        A, B, C, D, E, F, G, H, Ad, dsad, dsa, das, dqew, dfs, gfdg
-    }
-
     static HashMap<Long, MapPoint> map = new HashMap<>();
     static PropertyMap propertyMap;
     static ArrayList<Polygon> mapPoly = new ArrayList<>();

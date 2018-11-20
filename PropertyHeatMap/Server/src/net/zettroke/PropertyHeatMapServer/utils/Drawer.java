@@ -2,8 +2,8 @@ package net.zettroke.PropertyHeatMapServer.utils;
 
 import net.zettroke.PropertyHeatMapServer.PropertyMapServer;
 import net.zettroke.PropertyHeatMapServer.map.*;
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphLine;
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
+import net.zettroke.PropertyHeatMapServer.map.road_graph.RoadGraphLine;
+import net.zettroke.PropertyHeatMapServer.map.road_graph.RoadGraphNode;
 
 import javax.imageio.ImageIO;
 import java.awt.*;

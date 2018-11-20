@@ -1,24 +1,26 @@
 package net.zettroke.PropertyHeatMapServer.map;
 
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphBuilder;
+
+import net.zettroke.PropertyHeatMapServer.map.road_graph.RoadGraphBuilder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public interface MapLoader {
     void load(RoadGraphBuilder builder) throws Exception;
 
     int[] getCoordBounds() throws Exception;
 
-    HashMap<Long, Node> getNodes() throws Exception;
+    Map<Long, Node> getNodes() throws Exception;
 
-    ArrayList<SimpleNode> getSimpleNodes() throws Exception;
+    List<SimpleNode> getSimpleNodes() throws Exception;
 
-    HashMap<Long, Way> getWays();
+    Map<Long, Way> getWays();
 
-    HashMap<Long, Relation> getRelations() throws Exception;
+    Map<Long, Relation> getRelations() throws Exception;
 
-    HashMap<String, Way> getSearchStrings() throws Exception;
+    Map<String, Way> getSearchStrings() throws Exception;
 
 }

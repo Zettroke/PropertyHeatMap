@@ -7,12 +7,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import net.zettroke.PropertyHeatMapServer.map.PropertyMap;
 import net.zettroke.PropertyHeatMapServer.map.QuadTreeNode;
-import net.zettroke.PropertyHeatMapServer.map.roadGraph.RoadGraphNode;
+import net.zettroke.PropertyHeatMapServer.map.road_graph.RoadGraphNode;
 import net.zettroke.PropertyHeatMapServer.utils.*;
 
 import java.awt.*;
 import java.nio.charset.Charset;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class RoadGraphTileHandler implements ShittyHttpHandler{
     PropertyMap propertyMap;
@@ -112,118 +111,6 @@ public class RoadGraphTileHandler implements ShittyHttpHandler{
         this.propertyMap = propertyMap;
     }
 
-    private void drawJava(Graphics2D g, QuadTreeNode container, int mult, int x, int y, int z, int mode, int max_dist, int ind){
-        BasicStroke secondary_stroke = new BasicStroke(65f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke primary_stroke = new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke tertiary_stroke = new BasicStroke(60f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke service_stroke = new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke residential_stroke = new BasicStroke(50f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke living_stroke = new BasicStroke(25f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke default_stroke = new BasicStroke(20f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        BasicStroke unknown_stroke = new BasicStroke(10f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
 
-        int offx = x*mult*256;
-        int offy = y*mult*256;
-        boolean dont_draw = false;
-        boolean[] visited = BoolArrayPool.getArray(propertyMap.roadGraph.size());
-        g.setStroke(new BasicStroke(75f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        for (RoadGraphNode rgn : container.roadGraphNodes){
-            //if (treeNode.inBounds(rgn.n)){
-            visited[rgn.index] = true;
-            for (int i=0; i<rgn.ref_to[mode].length; i++){
-                RoadGraphNode ref = rgn.ref_to[mode][i];
-                if (!visited[ref.index]){
-                    switch (rgn.ref_types[mode][i]){
-                        case SECONDARY:
-                            if (z > zoom_level) {
-                                g.setStroke(secondary_stroke);
-                            }else{
-                                g.setStroke(new BasicStroke(120f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                            }
-                            break;
-                        case RESIDENTIAL:
-                            if (z > zoom_level) {
-                                g.setStroke(residential_stroke);
-                            }else{
-                                dont_draw = true;
-                            }
-                            break;
-                        case SERVICE:
-                            if (z > zoom_level) {
-                                g.setStroke(service_stroke);
-                            }else{
-                                dont_draw = true;
-                            }
-                            break;
-                        case TERTIARY:
-                            if (z > zoom_level) {
-                                g.setStroke(tertiary_stroke);
-                            }else{
-                                g.setStroke(tertiary_stroke);
-                                //dont_draw = true;
-                            }
-                            break;
-                        case PRIMARY:
-                            if (z > zoom_level) {
-                                g.setStroke(primary_stroke);
-                            }else{
-                                g.setStroke(new BasicStroke(120f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                            }
-                            break;
-                        case TRUNK:
-                            g.setStroke(new BasicStroke(80f/mult, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                            break;
-                        case DEFAULT:
-                            if (z > zoom_level) {
-                                g.setStroke(default_stroke);
-                            }else{
-                                dont_draw = true;
-                            }
-                            break;
-                        case LIVING_STREET:
-                            if (z > zoom_level) {
-                                g.setStroke(living_stroke);
-                            }else{
-                                dont_draw = true;
-                            }
-                            break;
-                        case SUBWAY:
-                            dont_draw = true;
-                            break;
-                        case TRAM:
-                            dont_draw = true;
-                            break;
-                        case BUS:
-                            dont_draw = true;
-                            break;
-                        case TROLLEYBUS:
-                            dont_draw = true;
-                            break;
-                        case INVISIBLE:
-                            dont_draw = true;
-                            break;
-                        default:
-                            if (z > zoom_level) {
-                                g.setStroke(unknown_stroke);
-                            }else{
-                                dont_draw = true;
-                            }
-                            break;
-                    }
-                    if (!dont_draw) {
-
-                        g.setPaint(new GradientPaint(coef(rgn.n.x - offx), coef(rgn.n.y - offy), rgn.getNodeColor(max_dist, ind),
-                                coef(ref.n.x - offx), coef(ref.n.y - offy), ref.getNodeColor(max_dist, ind)));
-                        g.drawLine(coef(rgn.n.x - offx), coef(rgn.n.y - offy), coef(ref.n.x - offx), coef(ref.n.y - offy));
-                    }else{
-                        dont_draw = false;
-                    }
-                }
-            }
-            //}
-        }
-
-        BoolArrayPool.returnArray(visited);
-    }
 
 }
